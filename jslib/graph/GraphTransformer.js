@@ -526,8 +526,9 @@ var GraphTransformer = {
 	 *	(1) for each pair of edges (u,v), (w,v) a new
 	 *		undirected edge {u,w} is inserted
 	 *		
-	 *	(2) all directed edges are converted to undirected
-	 *		edges
+	 *	(2) all directed edges are converted to undirected edges
+	 *
+	 *  (3) all undirected edges are copied		
 	 */
 	moralGraph : function( g ){
 		var mg = new Graph()
@@ -545,7 +546,14 @@ var GraphTransformer = {
 						comp_p[j].id, Graph.Edgetype.Undirected )
 				}
 			}
-		})		
+		})
+		
+		_.each( g.edges, function( e ){
+			if( e.directed == Graph.Edgetype.Undirected ){
+				mg.addEdge( e.v1.id, e.v2.id, e.directed )
+			}
+		} )
+		
 		g.copyAllVertexPropertiesTo( mg )
 		return mg
 	},
