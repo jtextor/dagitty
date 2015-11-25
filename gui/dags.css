@@ -1,0 +1,197 @@
+html , body{
+   height: 100%;
+   overflow: hidden;
+}
+
+body{
+   background-color: #eee;
+   padding: 0;
+   margin: 0;
+}
+
+body{
+   font-family: Verdana, Arial, sans-serif;
+   font-size: 10pt;
+}
+
+.dagitty{
+	font-family: inherit;
+	font-size: inherit;
+}
+
+#canvas{
+   display: block;
+   border: 1px solid #333;
+   background-color: #eee;
+   border-width: 0px 1px 0px 1px;
+   z-index: 5;
+   position: absolute;
+   top: 0em;
+   left: 15em;
+   right: 18em;
+   bottom: 0em;
+   outline : none;
+   overflow : hidden;
+}
+
+#llegend{
+   width: 15em;
+   position: absolute;
+   left: 0em;
+   top: 0em;
+   border-right: 1px solid #333;
+   z-index: 15;
+   background-color: white;
+   overflow-y: auto;
+   height: 100%;
+}
+
+#rlegend{
+   width: 18em;
+   position: absolute;
+   right: 0em;
+   top: 0em;
+   background-color: white;
+   border-left: 1px solid #333;
+   z-index: 15;
+   overflow-y: auto;
+   height: 100%;
+}
+
+#legend{
+   padding: .5em;
+}
+
+#summary{
+}
+
+#menu{
+   position: relative;   
+   left: 0em; top: 0em;
+   margin: 0em 15em 0em 15em;
+   border: 1px solid #333;
+   border-width: 0px 1px 1px 0px;
+   background-color: white;
+   list-style-type:none;
+   padding: .2em 0 .2em 0;
+   z-Index: 11;
+   background-color: #eef; 
+}
+#menu li {
+    margin: 0; padding: 0em .5em 0em .5em;
+    float: left; 
+    position: relative; top: 0px; left: 0px; 
+    font-weight: bold;
+    border-right: 1px solid #666;
+    z-Index: 11;    
+}
+#menu li ul{
+    position: absolute;
+    display: none;
+    left: 0em; top: 1.4em;
+    list-style-type:none;
+    margin: 0;
+    padding: 0;
+    width: 12em;
+    background-color: black;
+    font-weight: normal;
+}
+
+#menu li ul li{ 
+    float: none;
+    font-weight: normal;
+    border-right: none;
+    margin: 1px;
+    background-color: #eee; 
+    padding: .2em .5em .2em .5em;
+}
+#menu a{
+    color: black;
+    text-decoration: none;
+}
+
+.legend{
+   font-style: italic;
+   margin-bottom: 1em;
+   margin-top: -.5em;
+}
+
+h3{
+   margin: 0;
+   font-size: 100%;
+   border-bottom: 1px solid #333;
+   background-color: #eef;
+   padding: .2em .5em .2em .5em;
+   font-weight: normal;
+}
+
+p{
+   margin: 0 0 .5em 0;
+}
+
+select, input, button, textarea{
+   background-color: white;
+   border: none;
+}
+
+select, button{
+   border: 1px solid #700;  
+}
+
+textarea{
+   font-family: monospace;
+   width: 100%;
+}
+
+form{
+   margin: 0; padding: 0;
+}
+
+#rlegend p, #summary p, #summary table, #llegend form{
+   margin: .2em .5em .2em .5em;
+}
+
+/*
+#rlegend p, #summary p, #summary table{
+   font-style: italic;
+}*/
+
+.info{
+   font-weight: bold;
+}
+
+#adjustmentsets ul, #testable_implications ul{
+   padding: 0 0 0 1em; margin: .5em;
+}
+#adjustmentsets li, #testable_implications li{
+   padding: 0; margin: 0;
+}
+
+#dagstyle, #viewmode, #coloring, #effects, #legend, #summary,
+ #causal_effect, #testable_implications, #model_data
+{
+   border-bottom: 1px solid black;
+}
+
+.dialogwin{
+	width: 100%;
+	height: 100%;
+	position: absolute;
+	background-color: #999;
+	text-align: center;
+	top: 0px;
+	left: 0px;
+	opacity: .9;
+}
+
+.dialogwin form{
+	margin-top: 10%;
+}
+
+.dialogwin input, .dialogwin button{
+	border: 1px solid black; background-color: white;
+}
+
+.dialogwin .err{
+	color: #a00;
+}
