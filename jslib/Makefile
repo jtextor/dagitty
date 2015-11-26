@@ -6,7 +6,7 @@ GRAPH_FILES=underscore-min.js $(RJS)/Hash.js $(RJS)/Class.js $(RJS)/Graph.js \
 	$(RJS)/GraphParser.js $(RJS)/GraphTransformer.js graph/GraphGenerator.js \
 	graph/ObservedGraph.js $(RJS)/GraphSerializer.js
 
-all : install
+all : install dagitty-alg.js
 
 .PHONY : install
 
@@ -14,6 +14,9 @@ jsmin  : jsmin.c
 	gcc -O2 -o $@ $<
 
 .DELETE_ON_ERROR:
+
+dagitty-alg.js : $(GRAPH_FILES)
+	cat $(GRAPH_FILES) > $@
 
 dagitty.js : $(GUI_FILES) $(GRAPH_FILES)
 	cat $(GUI_FILES) $(GRAPH_FILES) > $@
