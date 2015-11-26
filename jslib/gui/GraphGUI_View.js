@@ -45,7 +45,10 @@ var DAGittyGraphView = Class.create({
 		}
 		return undefined;
 	},
-	startDragging : function(){
+	startDragging : function(pointerX, pointerY){
+		this.draggingActive = false;
+		this.draggingStartX = pointerX;
+		this.draggingStartY = pointerY;
 		this.startDraggingVertex();
 		this.startDraggingEdgeShape();
 	},
@@ -56,10 +59,14 @@ var DAGittyGraphView = Class.create({
 		}
 	},
 	stopDragging : function(){
+		delete this.draggingActive;
+		delete this.draggingStartX;
+		delete this.draggingStartY;
 		delete this.vertex_being_dragged;
 		delete this.edge_shape_being_dragged;
 	},
 	isDraggingEdgeShape : function(){
+		if (!this.draggingActive) return false;
 		return this.edge_shape_being_dragged;
 	},
 	startDraggingVertex : function(){
@@ -69,6 +76,7 @@ var DAGittyGraphView = Class.create({
 		}
 	},
 	isDraggingVertex : function(){
+		if (!this.draggingActive) return false;
 		return this.vertex_being_dragged;
 	},
 	dblclickHandler : function( e ){
@@ -88,13 +96,15 @@ var DAGittyGraphView = Class.create({
 			this.newVertexDialog();
 		}
 	},
-	clickHandler : function( e ){
+	clickHandler : function( e ){ 
 		if( this.action_on_click ){
 			if( typeof this.action_on_click !== "function" ){
 				this.keydownhandler( {keyCode:this.action_on_click} );
 			} else {
 				this.action_on_click.apply( this );
 			}
+		} else if (this.getCurrentEdgeShape() && !this.isDraggingEdgeShape()) {
+			this.getController().toggleEdge( this.getCurrentEdgeShape().v1.id, this.getCurrentEdgeShape().v2.id, true );
 		}
 	},
 	setActionOnClick : function( a ){
@@ -144,6 +154,10 @@ var DAGittyGraphView = Class.create({
 			if( myself.dialogOpen() ){ return; };
 			myself.mouse_x = Event.pointerX(e)-myself.getContainer().offsetLeft;
 			myself.mouse_y = Event.pointerY(e)-myself.getContainer().offsetTop;
+			if (typeof myself.draggingStartX !== "undefined") {
+				if (Math.abs(myself.draggingStartX - myself.mouse_x) + Math.abs(myself.draggingStartY - myself.mouse_y) > 7 )
+					myself.draggingActive = true;
+			}
 			var v = myself.isDraggingVertex();
 			if( v ){ // is a vertex
 				myself.unmarkVertex();
@@ -187,9 +201,9 @@ var DAGittyGraphView = Class.create({
 				myself.impl.unsuspendRedraw();
 			}
 		}
-		
+																																																																																																																																																																																																																																																																																									
 		Event.observe( this.getContainer(), 'mousedown', function(e){
-			myself.startDragging();
+			myself.startDragging(Event.pointerX(e) - myself.getContainer().offsetLeft, Event.pointerY(e) - myself.getContainer().offsetTop);
 		} );
 		
 		Event.observe( this.getContainer(), 'dblclick', function(e){
