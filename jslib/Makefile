@@ -1,7 +1,7 @@
 
 RJS=graph
 GUI_FILES=gui/GraphGUI_View.js gui/GraphGUI_Controller.js gui/GraphGUI_SVG.js gui/GraphGUI_Raphael.js 
-GRAPH_FILES=underscore-min.js $(RJS)/Hash.js $(RJS)/Class.js $(RJS)/Graph.js \
+GRAPH_FILES=$(RJS)/Hash.js $(RJS)/Class.js $(RJS)/Graph.js \
 	$(RJS)/GraphAnalyzer.js graph/GraphLayouter.js \
 	$(RJS)/GraphParser.js $(RJS)/GraphTransformer.js graph/GraphGenerator.js \
 	graph/ObservedGraph.js $(RJS)/GraphSerializer.js
@@ -18,8 +18,8 @@ jsmin  : jsmin.c
 dagitty-alg.js : $(GRAPH_FILES)
 	cat $(GRAPH_FILES) > $@
 
-dagitty.js : $(GUI_FILES) $(GRAPH_FILES)
-	cat $(GUI_FILES) $(GRAPH_FILES) > $@
+dagitty.js : $(GUI_FILES) underscore-min.js dagitty-alg.js
+	cat $^ > $@
 
 dagitty-min.js : dagitty.js jsmin
 	./jsmin < dagitty.js > $@
