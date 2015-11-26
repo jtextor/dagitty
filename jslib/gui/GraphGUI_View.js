@@ -360,14 +360,14 @@ var DAGittyGraphView = Class.create({
 		if( v ){
 			if( v2 ){
 				if( v2 !== v ){
-					this.getController().toggleEdge( v2, v );
+					this.lastEdge = this.getController().toggleEdge( v2, v );
 				}
 				this.unmarkVertex( v2 )
 			} else {
 				this.markVertex( v )
 			}
-		}
-
+		} else if (this.lastEdge) 
+			this.lastEdge = this.getController().toggleEdge( this.lastEdge.v1.id, this.lastEdge.v2.id, true);
 	},
 	newVertex : function( n ){
 		if( !n ){

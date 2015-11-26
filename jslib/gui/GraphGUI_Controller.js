@@ -96,8 +96,7 @@ var DAGittyController = Class.create({
 		// function "setGraph" (because they might need to be 
 		// changed when a completely new graph is loaded)
 	},
-	toggleEdge : function( v1, v2, onClick ){
- 
+	toggleEdge : function( v1, v2, onClick ){ 
 		var edgeType = [Graph.Edgetype.Directed, Graph.Edgetype.Bidirected, Graph.Edgetype.Undirected];
 		var e; var e_reverse; var newe;
 		var i=0;
@@ -127,6 +126,7 @@ var DAGittyController = Class.create({
 			newe.layout_pos_y = e.layout_pos_y
 			this.graphChanged();
 		}
+		return newe;
 	},
 	deleteVertex : function( v ){
 		if( this.getGraph().getVertex(v) ){
