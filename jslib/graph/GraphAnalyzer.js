@@ -1070,6 +1070,95 @@ var GraphAnalyzer = {
 			}
 		})
 		return r
-	}
+	},
+
+
+	lexicoGraphicBreadthFirstSearch : function( g, componentV ){
+		if (!componentV) componentV = g.getVertices();
+		else componentV = componentV.concat();
+		
+		/*
+			This uses a (doubly) linked list of sets for the ordering
+			and a cache for each to get a random element from the set without having to call keys()
+		*/
+		
+		
+		var componentSet = new Hash();
+		_.each(componentV, function(v){ componentSet.set(v.id, v); });
+		
+		var firstSet = {
+			next: null,
+			prev: null,
+			prevIteration: 0,
+			set: componentSet,
+			setKeys: componentV.map(function(v){return v.id}), //cache of this.set.keys(), not updated for removed elements
+			setKeyIndex: 0, //processed keys. 
+			id: 0
+		};
+		
+		var containedSet = new Hash();
+		_.each(componentV, function(v){ containedSet.set(v.id, firstSet); });
+			
+		var iteration = 0;
+		var result = [];
+			
+		while (firstSet) {
+			while (firstSet.setKeyIndex < firstSet.setKeys.length 
+			       && !firstSet.set.contains(firstSet.setKeys[firstSet.setKeyIndex]))
+				firstSet.setKeyIndex++;
+			if (firstSet.setKeyIndex >= firstSet.setKeys.length) {
+				firstSet = firstSet.next;
+				continue;
+			}
+			
+			var v = firstSet.set.get(firstSet.setKeys[firstSet.setKeyIndex]);
+			result.push(v);
+			firstSet.setKeyIndex++;
+			iteration++;
+			
+			firstSet.set.unset(v.id);
+			containedSet.unset(v.id);
+				
+			
+			_.each(v.getNeighbours(), function(w){
+				var set = containedSet.get(w.id);
+				if (!set) return;
+				
+				if (set.prevIteration != iteration) {
+					//set has not yet been splitted in this iteration
+					
+					//create new empty set 
+					var newSet = {
+							next: set,
+							prev: set.prev,
+							prevIteration: iteration,
+							set: new Hash(),
+							setKeys: [],
+							setKeyIndex: 0,
+						};
+					set.prevIteration = iteration;
+					//insert newSet in linked list
+					if (set.prev) set.prev.next = newSet;
+					else firstSet = newSet;
+					set.prev = newSet;
+				}
+				//move w from set to newSet
+				var newSet = set.prev;
+				newSet.setKeys.push(w.id);
+				newSet.set.set(w.id, w);
+				set.set.unset(w.id);
+				containedSet.set(w.id, newSet);
+			});
+		}
+	},
+
+	/**
+	 *  Test for chordality
+	 */
+	isChordal : function( g, componentV ){
+		if (!componentV) componentV = g.getVertices();
+		
+
+  }
 };
 
