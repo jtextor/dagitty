@@ -1072,8 +1072,8 @@ var GraphAnalyzer = {
 		return r
 	},
 
-
-	lexicoGraphicBreadthFirstSearch : function( g, componentV ){
+	//see https://en.wikipedia.org/wiki/Lexicographic_breadth-first_search
+	lexicographicBreadthFirstSearch : function( g, componentV ){
 		if (!componentV) componentV = g.getVertices();
 		else componentV = componentV.concat();
 		
@@ -1150,15 +1150,36 @@ var GraphAnalyzer = {
 				containedSet.set(w.id, newSet);
 			});
 		}
+		return result;
 	},
 
 	/**
 	 *  Test for chordality
 	 */
 	isChordal : function( g, componentV ){
-		if (!componentV) componentV = g.getVertices();
-		
-
+		var ordering = GraphAnalyzer.lexicographicBreadthFirstSearch(g, componentV).reverse();
+		var positions = new Hash();
+		_.each(ordering, function(v,i) { positions.set(v.id, i); } );
+		console.log(_.map(ordering, function(v){return v.id}));
+		return _.every(ordering, function(v,i) { 
+			var j = _.max(_.map(v.getNeighbours(), function(w) {
+				var p = positions.get(w.id);
+				if (p < i) return p;
+				else return -1;
+			}));
+			if (j < 0) return true;
+			var w = ordering[j];
+			//alert(w + " " + j  +" < " + i)
+			var earlierNeigboursOfW = new Hash();
+			_.each(w.getNeighbours(), function(x) {
+				var p = positions.get(x.id);
+				if (p < j) earlierNeigboursOfW.set(x.id, p);
+			});
+			return _.every(v.getNeighbours(), function(x){
+				var p = positions.get(x.id);
+				return (p >= j) || earlierNeigboursOfW.get(x.id);
+			});
+		});
   }
 };
 
