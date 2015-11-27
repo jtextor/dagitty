@@ -197,6 +197,26 @@ QUnit.test( "graph analysis", function( assert ) {
 	   vids.sort( function(a,b){ return to[a] < to[b] ? -1 : 1 } )
 	   return vids.toString();
 	})(),"E,D,C,A,B")
+	
+	var chordalGraphs = [
+		"graph { t -- x \n x -- y \n y -- t }",
+		"graph { A -- E \n A -- Z \n B -- D \n B -- Z \n D -- Z \n E -- Z \n }",
+		"graph { A -- B \n A -- E \n A -- Z \n B -- D \n B -- Z \n D -- Z \n E -- Z \n }",
+		"graph { A -- B \n A -- E \n A -- Z \n B -- D \n B -- E \n B -- Z \n D -- Z \n E -- Z }"
+	];
+	_.each(chordalGraphs, function(g) {
+	  assert.equal(GraphAnalyzer.isChordal(GraphParser.parseGuess(g)), true);
+	});
+	assert.equal(GraphAnalyzer.isChordal(TestGraphs.K5), true);
+	
+	var notChordalGraphs = [
+		"graph {a -- b \n a -- x \n b -- y \n x -- y}",
+		"graph {A -- E \n A -- Z \n B -- Z \n B -- D \n D -- E}",
+		"graph {A -- E \n B -- D \n B -- Z \n B -- A \n D -- Z \n E -- Z }"
+	];
+	_.each(notChordalGraphs, function(g) {
+	  assert.equal(GraphAnalyzer.isChordal(GraphParser.parseGuess(g)), false);
+	});
 });
 
 QUnit.test( "biasing paths in DAGs (allowing <->)", function( assert ) {

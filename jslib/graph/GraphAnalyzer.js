@@ -1102,12 +1102,13 @@ var GraphAnalyzer = {
 		var iteration = 0;
 		var result = [];
 			
-		while (firstSet) {
+		while (firstSet) {		
 			while (firstSet.setKeyIndex < firstSet.setKeys.length 
 			       && !firstSet.set.contains(firstSet.setKeys[firstSet.setKeyIndex]))
 				firstSet.setKeyIndex++;
 			if (firstSet.setKeyIndex >= firstSet.setKeys.length) {
 				firstSet = firstSet.next;
+				if (firstSet) firstSet.prev = null;
 				continue;
 			}
 			
@@ -1157,7 +1158,7 @@ var GraphAnalyzer = {
 	 *  Test for chordality
 	 */
 	isChordal : function( g, componentV ){
-		var ordering = GraphAnalyzer.lexicographicBreadthFirstSearch(g, componentV).reverse();
+		var ordering = GraphAnalyzer.lexicographicBreadthFirstSearch(g, componentV);
 		var positions = new Hash();
 		_.each(ordering, function(v,i) { positions.set(v.id, i); } );
 		console.log(_.map(ordering, function(v){return v.id}));
@@ -1173,7 +1174,7 @@ var GraphAnalyzer = {
 			var earlierNeigboursOfW = new Hash();
 			_.each(w.getNeighbours(), function(x) {
 				var p = positions.get(x.id);
-				if (p < j) earlierNeigboursOfW.set(x.id, p);
+				if (p < j) earlierNeigboursOfW.set(x.id, true);
 			});
 			return _.every(v.getNeighbours(), function(x){
 				var p = positions.get(x.id);

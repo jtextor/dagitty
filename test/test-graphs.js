@@ -364,6 +364,25 @@ very_large_dag : function(){
 "Geschwister AllergischeSensibilisierung Erregerexposition\n"+
 "BetreuungKind Infektionen Erregerexposition AllergischeSensibilisierung\n"+
 "Antibiotika Infektionen Darmflora D Erregerexposition");
-}
+},
+
+K5:  GraphParser.parseGuess("graph {\n"+
+		"a [pos=\"0.179,0.301\"]\n"+
+		"b [pos=\"0.618,0.988\"]\n"+
+		"c [pos=\"0.305,0.981\"]\n"+
+		"x [exposure,pos=\"0.484,0.032\"]\n"+
+		"y [outcome,pos=\"0.774,0.285\"]\n"+
+		"a -- b\n"+
+		"a -- c\n"+
+		"a -- x\n"+
+		"a -- y\n"+
+		"b -- c\n"+
+		"b -- x\n"+
+		"b -- y\n"+
+		"c -- x\n"+
+		"c -- y\n"+
+		"x -- y\n"+
+		"}")
+
 
 };
