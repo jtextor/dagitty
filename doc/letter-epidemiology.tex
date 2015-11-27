@@ -1,0 +1,147 @@
+\documentclass[12pt,letterpaper]{article}
+\usepackage{ucs}
+\usepackage[utf8x]{inputenc}
+%\renewcommand{\baselinestretch}{2}
+
+\usepackage{hyperref}
+\usepackage{mathptmx}
+\usepackage{fullpage}
+
+\raggedright
+\urlstyle{rm}
+
+\title{DAGitty: A Graphical Tool for Analyzing Causal Diagrams}
+\author{Johannes Textor \and Juliane Hardt \and Sven Kn\"uppel}
+\date{\today\footnote{This is an updated pre-print 
+version of a ``research letter'' published in the journal Epidemiology
+(\url{http://dx.doi.org/10.1097/EDE.0b013e318225c2be}).}}
+
+\setlength{\parindent}{0em}
+\setlength{\parskip}{1em}
+
+\begin{document}
+
+\maketitle
+
+Causal diagrams, also known in epidemiology as directed 
+acyclic graphs \cite{Pearl2000,GreenlandPR1999},
+provide an entirely graphical, yet mathematically
+rigorous methodology for minimizing bias in epidemiological studies 
+\cite{ShrierP2008,RothmanGL2008}. 
+The analysis of causal diagrams can be cumbersome in practice, 
+and lends itself well 
+to automization by a computer program. Important first steps in this 
+regard include the development of the \emph{DAG program} by 
+Knüppel \cite{KnueppelS2010} and \emph{dagR} by Breitling 
+\cite{Breitling2010}. We are writing to announce the release of 
+\emph{DAGitty}, which to our knowledge is the first program 
+in the field of epidemiology that provides a graphical user interface 
+tailored to draw and analyze causal diagrams. Furthermore, DAGitty overcomes 
+some performance obstacles (pointed out by Breitling \cite{Breitling2010})
+that affect earlier software when analyzing large diagrams.
+
+The addressed performance issues are two-fold.
+First, previous software employed back-tracking algorithms \cite{KnueppelS2010} 
+to enumerate and categorize 
+all paths from exposure to outcome. This is a reasonable approach for small diagrams, 
+but diagrams with tens of variables can already contain millions of paths. 
+A full listing of these is of little interest to the human user, 
+but can take hours or days to generate.
+Instead of a path list, 
+DAGitty identifies the subdiagrams involved 
+in causal and biasing paths and highlights them in different colours. 
+This highlighting algorithm scales to very large diagrams (M Liśkiewicz and J Textor,
+submitted manuscript, 2011). It provides to the user 
+a vivid impression about how causal and biasing effects ``flow'' in the
+diagram, i.e., via which variables and causal arrows these effects are mediated. 
+
+The second problem with previous software 
+arose when identifying \emph{minimal sufficient adjustment sets} 
+(MSA sets). According to causal diagram theory, 
+adjustment for the covariates in an MSA set minimizes bias
+when estimating the total effect from exposure to outcome. 
+A straightforward approach 
+to find MSA sets is checking for each covariate set  
+whether it is an MSA set. In a diagram with
+50 covariates, this means that $2^{50}$ sets may have to be tested -- 
+a 16-digit number which is too large even for computers.  
+To identify MSA sets more efficiently, 
+we adapted an algorithm proposed recently for a related 
+graph-theoretical problem \cite{Takata2010}. This algorithm
+is guaranteed to output the list of MSA sets reasonably quickly 
+(i.e., in polynomial time per MSA set output). Note however 
+that very large or very regularly structured diagrams could in 
+theory have millions of different MSA sets. If such diagrams become
+practically relevant, further research will be necessary to develop appropriate
+computational methods for helping the user to choose appropriate MSA 
+sets.  
+
+The described algorithms enable DAGitty's graphical interface to instantly reflect
+changes made to the diagram, such as adding a new arrow or inverting an arrow 
+with unclear causal direction. Thus, users can interactively assess the effects 
+of their modifications to MSA sets and the flow of causal and biasing effects. We anticipate
+that these interactive possibilies will be of great help to novice users
+in developing an intuition about causal diagram theory, and hope that more
+experienced users will find these features useful when comparing 
+and deciding between different causal diagrams. 
+
+DAGitty is available under an open-source license allowing free
+access, redistribution, and modification. It runs directly in 
+most modern web browsers and is available online and for 
+download at \url{www.dagitty.net}. The current version of the 
+manual is available on arXiv \cite{Textor2015}.
+
+%\bibliographystyle{unsrt}
+
+\begin{thebibliography}{1}
+
+\bibitem{Pearl2000}
+Pearl J. 
+\newblock {\em Causality: Models, Reasoning, and Inference}.
+\newblock Cambridge: Cambridge University Press; 2000.
+
+\bibitem{GreenlandPR1999}
+Greenland S, Pearl J, and Robins JM.
+\newblock Causal diagrams for epidemiologic research.
+\newblock {\em Epidemiology.} 1999;10:37--48.
+
+\bibitem{ShrierP2008}
+Shrier I, Platt RW.
+\newblock Reducing bias through directed acyclic graphs.
+\newblock {\em BMC Medical Research Methodology.} 2008;8:70.
+
+\bibitem{RothmanGL2008}
+Glymour MM, Greenland S.
+\newblock Causal diagrams.
+\newblock In: Rothman KJ, Greenland S, Lash TL, eds. {\em Modern Epidemiology}.
+3rd ed. 
+\newblock Philadelphia: Lippincott Williams \& Wilkins; 2008:183--209.
+
+\bibitem{KnueppelS2010}
+Kn\"uppel S, Stang A.
+\newblock {DAG} program: identifying minimal sufficient adjustment sets [Letter]. 
+\newblock {\em Epidemiology.} 2010;21:159.
+
+\bibitem{Breitling2010}
+Breitling L.
+\newblock {dagR}: A suite of {R} functions for directed acyclic graphs [Letter].
+\newblock {\em Epidemiology.} 2010;21:586--587.
+
+\bibitem{Takata2010}
+Takata K.
+\newblock Space-optimal, backtracking algorithms to list the minimal vertex
+  separators of a graph.
+\newblock {\em Discrete Applied Mathematics.} 2010;158:1660--1667.
+
+
+\bibitem{Textor2015}
+Textor J.
+\newblock
+Drawing and Analyzing Causal DAGs with DAGitty.
+\newblock CoRR abs/1508.04633 (2015). Available at
+\url{http://arxiv.org/abs/1508.04633}.
+
+
+\end{thebibliography}
+
+\end{document}
