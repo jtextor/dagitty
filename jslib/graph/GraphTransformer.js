@@ -789,5 +789,50 @@ var GraphTransformer = {
 		}
 		
 		return gp
+	},
+	
+	/*
+	  Replace every occurence of the induced subgraph A -> B -- C with A -> B -> C
+	*/
+	transformCGToRCG: function(g) {
+		var gn = new Graph();
+		_.each(g.vertices.values(), function(v){gn.addVertex( v.cloneWithoutEdges() )});
+		var fail = false;
+		//checks if v is connected to a node with id w.id in the graph containing v
+		function areConnected(v,w) { 
+			return _.some(v.getAdjacentNodes(), function(x){ return x.id == w.id; });
+		}
+		function processDirectedEdge(a,b){
+			if (fail) return;
+			_.each(b.getNeighbours(), function(c){
+				if (a.id != c.id && !areConnected(a, c)) {
+					_.each(gn.getVertex(c.id).getParents(),  //parents in gn is a superset of the parents in g
+									function(d){ 
+										if (a.id != d.id && b.id != d.id && !areConnected(b,d)) 
+											fail = true; 
+									});
+					if (fail) return;
+					if (!gn.getEdge(b.id, c.id, Graph.Edgetype.Directed)) {
+						gn.addEdge(b.id, c.id, Graph.Edgetype.Directed);
+						processDirectedEdge(b,c);
+					}
+				}
+			});
+		}
+		_.each(g.getEdges(), function(e){
+			if (e.directed == Graph.Edgetype.Directed) 
+				gn.addEdge(e.v1.id, e.v2.id, Graph.Edgetype.Directed)
+		});
+		_.each(g.getEdges(), function(e){
+			if (e.directed == Graph.Edgetype.Directed) 
+				processDirectedEdge(e.v1,e.v2);
+		});
+		if (fail) return null;
+		_.each(g.getEdges(), function(e){
+			if (e.directed != Graph.Edgetype.Directed && !areConnected(gn.getVertex(e.v1.id), e.v2)) 
+				gn.addEdge(e.v1.id, e.v2.id, e.directed);
+		});
+		g.copyAllVertexPropertiesTo( gn )
+		return gn;
 	}
 };

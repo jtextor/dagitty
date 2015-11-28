@@ -308,6 +308,34 @@ QUnit.test( "graph transformations", function( assert ) {
 			GraphTransformer.ancestorGraph(
 				GraphTransformer.backDoorGraph(TestGraphs.m_bias_graph())) ).oldToString()
 	})(), "A E\nB O\nU1 1\nU2 1\n\nA U1\nB U2\nU1 A\nU2 B" )
+	
+	var transformations = [
+		GraphTransformer.transformCGToRCG,
+		"graph { k -- n; l -- m; n -- t; t -- y; x -> y; }",
+		 "graph { k;l;m;n;t;x;y; l -- m; n -> k; t -> n; x -> y; y -> t }",
+		"graph { k -- n; l -- m; l -> n; l -> t; l -> y; n -- t; t -- y; x -> y; }",
+		 "graph { k;l;m;n;t;x;y; l -- m; l -> n; l -> t; l -> y; n -> k; t -> n; x -> y; y -> t }",
+		"graph { a;b;c;d; a -> b; b -- c; d -> c }",
+		 null,
+		"graph { a -> b; b -- c; c <- d; b -- d }",
+		 "graph { a;b;c;d; a -> b; b -> c; b -> d; d -> c }"		
+	];
+	var i = 0; var transfunc;
+	while (i < transformations.length) {
+		if (typeof transformations[i] === "function") {
+			transfunc = transformations[i];
+			i ++;			
+		}
+		var gin = transformations[i]; i++;
+		if (typeof gin === "string") gin = GraphParser.parseGuess(gin);
+		var gout = transfunc(gin);
+		if (gout != null) 
+			gout = "graph { " + 
+			        gout.vertices.keys().sort().join(";") + "; " + 
+			        gout.getEdges().map(function(e){return e.toString()}).sort().join("; ") + " }";			        
+		var gref = transformations[i]; i++;	
+		assert.equal(gout, gref);
+	}
 });
 
 QUnit.test( "adjustment in DAGs", function( assert ) {
