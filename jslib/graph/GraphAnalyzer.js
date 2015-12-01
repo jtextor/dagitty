@@ -1158,6 +1158,7 @@ var GraphAnalyzer = {
 				containedSet.set(w.id, newSet);
 			});
 		}
+
 		return result;
 	},
 
