@@ -370,15 +370,23 @@ function displayGeneralInfo(){
 		displayShow("info_cycle");
 		displayHide("info_summary");
 		$("info_cycle").innerHTML = "<p><b>Model contains cycle: "+cycle+"</b></p>";
-	} else { 
-		displayHide("info_cycle");
-		displayShow("info_summary");
-		$("info_exposure").innerHTML = Model.dag.getSources().pluck('id').join(",");
-		$("info_outcome").innerHTML = Model.dag.getTargets().pluck('id').join(",");
-		$("info_covariates").innerHTML = Model.dag.getNumberOfVertices()-Model.dag.getSources().length
-		-Model.dag.getTargets().length;
-		$("info_frontdoor").innerHTML = Model.dag.countPaths();
-		// $("info_backdoor").innerHTML = dag_ancestor_pair_graph.countPaths();      
+	} else {
+		if ( _.some(Model.dag.getEdges(), function(e) { return e.directed == Graph.Edgetype.Undirected; } ) )
+			cycle = GraphAnalyzer.containsSemiCycle(Model.dag);
+		if (cycle) {
+			displayShow("info_cycle");
+			displayHide("info_summary");
+			$("info_cycle").innerHTML = "<p><b>Model contains semi-cycle: "+cycle+"</b></p>";
+		} else {
+			displayHide("info_cycle");
+			displayShow("info_summary");
+			$("info_exposure").innerHTML = Model.dag.getSources().pluck('id').join(",");
+			$("info_outcome").innerHTML = Model.dag.getTargets().pluck('id').join(",");
+			$("info_covariates").innerHTML = Model.dag.getNumberOfVertices()-Model.dag.getSources().length
+			-Model.dag.getTargets().length;
+			$("info_frontdoor").innerHTML = Model.dag.countPaths();
+			// $("info_backdoor").innerHTML = dag_ancestor_pair_graph.countPaths();      
+		}
 	}
 	/*$("path_information").innerHTML = nl2br("Closed paths:<br/>"+dag_ancestor_graph.listClosedPaths()
 	*         + "<br/><br/>Open paths:<br/>"+dag_ancestor_pair_graph.listPathPairs(),true);*/
