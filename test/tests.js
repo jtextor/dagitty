@@ -318,7 +318,13 @@ QUnit.test( "graph transformations", function( assert ) {
 		"graph { a;b;c;d; a -> b; b -- c; d -> c }",
 		 null,
 		"graph { a -> b; b -- c; c <- d; b -- d }",
-		 "graph { a;b;c;d; a -> b; b -> c; b -> d; d -> c }"		
+		 "graph { a;b;c;d; a -> b; b -> c; b -> d; d -> c }",
+		 
+		function (g){ return GraphTransformer.contractComponents(g, GraphAnalyzer.connectedComponents(g), [Graph.Edgetype.Directed])},
+		"graph { k -- n; l -- m; n -- t; t -- y; x -> y; }",
+		 "graph { k,n,t,y;l,m;x; x -> k%2Cn%2Ct%2Cy }",
+		"graph { a -- b; b -> c; c -- a }",
+		 "graph { a,b,c; a%2Cb%2Cc -> a%2Cb%2Cc }",
 	];
 	var i = 0; var transfunc;
 	while (i < transformations.length) {

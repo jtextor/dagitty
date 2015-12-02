@@ -1192,38 +1192,9 @@ var GraphAnalyzer = {
   },
 
 
-	searchSemiCycle: function( g, fromV ){		
-		function recurse(v, depth, directedEdgeFromDepth) {
-			if (v.traversal_info.depth) {
-				if (v.traversal_info.depth <= directedEdgeFromDepth) return [v]; 
-				return false;
-			}
-			v.traversal_info.depth = depth;
-			var children = v.getChildren(); 
-			for( var i = 0 ; i < children.length ; i ++ ){
-				var cycle = recurse(children[i], depth + 1, depth);
-				if( cycle !== false) return [v].concat(cycle);
-			}
-			var neighs = v.getNeighbours(); 
-			for( var i = 0 ; i < neighs.length ; i ++ ){
-				var cycle = recurse(neighs[i], depth + 1, directedEdgeFromDepth);
-				if( cycle !== false) return [v].concat(cycle);
-			}
-			v.traversal_info.depth = 99999999999; //mark as visited, but far away from directed edge
-			return false;
-		}
-		
-		if( fromV === undefined ) {
-			var vertices = g.getVertices();
-			for( var i = 0 ; i < vertices.length ; i ++ ){
-				var cycle = GraphAnalyzer.searchSemiCycle(g, vertices[i]); //todo: no need to reset traversal_info.depth each time, or ?
-				if (cycle !== false) return cycle;
-			}
-			return false;
-		} else {
-			_.each( g.getVertices(), function( v ){ delete v.traversal_info.depth } );
-			return recurse(fromV, 1, 0);
-		}
+	containsSemiCycle: function (g){
+		return GraphTransformer.contractComponents(g, GraphAnalyzer.connectedComponents(g), [Graph.Edgetype.Directed])
+		                       .containsCycle();
 	}
 };
 

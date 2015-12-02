@@ -834,5 +834,45 @@ var GraphTransformer = {
 		});
 		g.copyAllVertexPropertiesTo( gn )
 		return gn;
+	},
+	
+	/*
+		Contracts every array C of vertices in components to a single vertex V_c that is connected to a vertex W
+		if one of the vertices in C was connected to W
+	*/
+	contractComponents: function(g, components, includeSelfEdges) {
+		var selfEdges = [false, false, false];
+		if (typeof includeSelfEdges === "boolean" ) selfEdges = selfEdges.map(function(t) { return includeSelfEdges; });
+		else if (_.isArray( includeSelfEdges ) ) _.each(includeSelfEdges, function(t) { selfEdges[t] = true; });
+		var targetVertices = new Hash();
+
+		var gn = new Graph();
+		_.each(components, function(component) { 
+			var ids = component.map(function(v){
+				if (typeof v === "string" ) return v;
+				else return v.id; 
+			});
+			var mergedVertex = gn.addVertex(ids.sort().join(","));
+			_.each(ids,function(vid){
+				targetVertices.set(vid, mergedVertex);
+			});
+		});
+		_.each( g.getVertices(), function( v ){
+			if (targetVertices.contains(v.id)) return;
+			var w = gn.addVertex( v.cloneWithoutEdges() );
+			targetVertices.set(v.id, w);
+		} );
+		_.each(g.getEdges(), function(e){
+			var c1 = targetVertices.get(e.v1.id);
+			var c2 = targetVertices.get(e.v2.id);
+			if (c1 == c2 && !selfEdges[e.directed]) return;
+			gn.addEdge( c1, c2, e.directed );
+		});
+		_.each( g.managed_vertex_property_names, ( function( p ){
+			_.each( g.getVerticesWithProperty( p ), function( v ){
+					gn.addVertexProperty( targetVertices.get(v.id), p ) 
+			} )
+		} ) );
+		return gn
 	}
 };
