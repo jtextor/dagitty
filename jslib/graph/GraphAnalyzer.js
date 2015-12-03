@@ -445,7 +445,7 @@ var GraphAnalyzer = {
 			X = g.getSources()
 			Y = g.getTargets()
 		}
-		return g.descendantsOf( _.difference( this.properPossibleCausalPaths( g, X, Y ), 
+		return g.posteriorsOf( _.difference( this.properPossibleCausalPaths( g, X, Y ), 
 			g.getSources() ) )
 	},
 	

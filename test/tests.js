@@ -1213,5 +1213,16 @@ assert.equal((function(){
 	return !GraphAnalyzer.dConnected( g, [g.getVertex("x")], [g.getVertex("y")], [] )
 })(), false )
 
+assert.equal( _.pluck(GraphAnalyzer.dpcp(
+	GraphParser.parseGuess( "graph{ x [exposure]\n y [outcome]\n x -> y -- z }" ) ),"id").
+		join(","),
+	"y,z" )
+
+assert.equal( _.pluck(GraphAnalyzer.dpcp(
+	GraphParser.parseGuess( "graph{ x [exposure]\n y [outcome]\n x -- y -- z }" ) ),"id").
+		join(","),
+	"y,z" )
+
+
 }); // end uncategorized tests
 
