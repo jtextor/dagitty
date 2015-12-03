@@ -8,7 +8,7 @@ var GraphAnalyzer = {
 	/*
 		test if two graphes are equal, with equal id s
 	*/
-	equalGraphes: function (g, h){
+	equalGraphs: function (g, h){
 		return g.vertices.keys().sort().join("\r") == h.vertices.keys().sort().join("\r") &&
 					 g.getEdges().map(function(e){return e.toString()}).sort().join("\r") == h.getEdges().map(function(e){return e.toString()}).sort().join("\r");
 	},

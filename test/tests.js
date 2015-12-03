@@ -1269,13 +1269,13 @@ assert.equal((function(){
 
 assert.equal( _.pluck(GraphAnalyzer.dpcp(
 	GraphParser.parseGuess( "graph{ x [exposure]\n y [outcome]\n x -> y -- z }" ) ),"id").
-		join(","),
+		sort().join(","),
 	"y,z" )
 
 assert.equal( _.pluck(GraphAnalyzer.dpcp(
 	GraphParser.parseGuess( "graph{ x [exposure]\n y [outcome]\n x -- y -- z }" ) ),"id").
-		join(","),
-	"y,z" )
+		sort().join(","),
+	"x,y,z" )
 
 
 }); // end uncategorized tests
