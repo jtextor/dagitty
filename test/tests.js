@@ -197,6 +197,26 @@ QUnit.test( "graph analysis", function( assert ) {
 	   vids.sort( function(a,b){ return to[a] < to[b] ? -1 : 1 } )
 	   return vids.toString();
 	})(),"E,D,C,A,B")
+	
+	var chordalGraphs = [
+		"graph { t -- x \n x -- y \n y -- t }",
+		"graph { A -- E \n A -- Z \n B -- D \n B -- Z \n D -- Z \n E -- Z \n }",
+		"graph { A -- B \n A -- E \n A -- Z \n B -- D \n B -- Z \n D -- Z \n E -- Z \n }",
+		"graph { A -- B \n A -- E \n A -- Z \n B -- D \n B -- E \n B -- Z \n D -- Z \n E -- Z }"
+	];
+	_.each(chordalGraphs, function(g) {
+	  assert.equal(GraphAnalyzer.isChordal(GraphParser.parseGuess(g)), true);
+	});
+	assert.equal(GraphAnalyzer.isChordal(TestGraphs.K5), true);
+	
+	var notChordalGraphs = [
+		"graph {a -- b \n a -- x \n b -- y \n x -- y}",
+		"graph {A -- E \n A -- Z \n B -- Z \n B -- D \n D -- E}",
+		"graph {A -- E \n B -- D \n B -- Z \n B -- A \n D -- Z \n E -- Z }"
+	];
+	_.each(notChordalGraphs, function(g) {
+	  assert.equal(GraphAnalyzer.isChordal(GraphParser.parseGuess(g)), false);
+	});
 });
 
 QUnit.test( "biasing paths in DAGs (allowing <->)", function( assert ) {
@@ -288,6 +308,40 @@ QUnit.test( "graph transformations", function( assert ) {
 			GraphTransformer.ancestorGraph(
 				GraphTransformer.backDoorGraph(TestGraphs.m_bias_graph())) ).oldToString()
 	})(), "A E\nB O\nU1 1\nU2 1\n\nA U1\nB U2\nU1 A\nU2 B" )
+	
+	var transformations = [
+		GraphTransformer.transformCGToRCG,
+		"graph { k -- n; l -- m; n -- t; t -- y; x -> y; }",
+		 "graph { k;l;m;n;t;x;y; l -- m; n -> k; t -> n; x -> y; y -> t }",
+		"graph { k -- n; l -- m; l -> n; l -> t; l -> y; n -- t; t -- y; x -> y; }",
+		 "graph { k;l;m;n;t;x;y; l -- m; l -> n; l -> t; l -> y; n -> k; t -> n; x -> y; y -> t }",
+		"graph { a;b;c;d; a -> b; b -- c; d -> c }",
+		 null,
+		"graph { a -> b; b -- c; c <- d; b -- d }",
+		 "graph { a;b;c;d; a -> b; b -> c; b -> d; d -> c }",
+		 
+		function (g){ return GraphTransformer.contractComponents(g, GraphAnalyzer.connectedComponents(g), [Graph.Edgetype.Directed])},
+		"graph { k -- n; l -- m; n -- t; t -- y; x -> y; }",
+		 "graph { k,n,t,y;l,m;x; x -> k%2Cn%2Ct%2Cy }",
+		"graph { a -- b; b -> c; c -- a }",
+		 "graph { a,b,c; a%2Cb%2Cc -> a%2Cb%2Cc }",
+	];
+	var i = 0; var transfunc;
+	while (i < transformations.length) {
+		if (typeof transformations[i] === "function") {
+			transfunc = transformations[i];
+			i ++;			
+		}
+		var gin = transformations[i]; i++;
+		if (typeof gin === "string") gin = GraphParser.parseGuess(gin);
+		var gout = transfunc(gin);
+		if (gout != null) 
+			gout = "graph { " + 
+			        gout.vertices.keys().sort().join(";") + "; " + 
+			        gout.getEdges().map(function(e){return e.toString()}).sort().join("; ") + " }";			        
+		var gref = transformations[i]; i++;	
+		assert.equal(gout, gref);
+	}
 });
 
 QUnit.test( "adjustment in DAGs", function( assert ) {

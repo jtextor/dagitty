@@ -96,28 +96,37 @@ var DAGittyController = Class.create({
 		// function "setGraph" (because they might need to be 
 		// changed when a completely new graph is loaded)
 	},
-	toggleEdge : function( v1, v2 ){
-		var e = this.getGraph().getEdge( v1, v2, Graph.Edgetype.Directed )
-		if( e ){
-			this.getObservedGraph().deleteEdge( v1, v2, Graph.Edgetype.Directed )
-		} else {
-			var e_reverse = this.graph.getEdge( v2, v1, Graph.Edgetype.Directed )
-			if( e_reverse ){
-				this.getObservedGraph().deleteEdge( v2, v1, Graph.Edgetype.Directed )
-				/*var e = this.getObservedGraph().
-					addEdge( v1, v2, Graph.Edgetype.Bidirected )*/
-				var e = this.getObservedGraph().addEdge( v1, v2, Graph.Edgetype.Directed )
-				e.layout_pos_x = e_reverse.layout_pos_x
-				e.layout_pos_y = e_reverse.layout_pos_y
-			} else {
-				/*var e_bi = this.graph.getEdge( v1, v2, Graph.Edgetype.Bidirected )
-				if( e_bi ){
-					this.getObservedGraph().deleteEdge( v1, v2, Graph.Edgetype.Bidirected )
-				} else {*/
-					this.getObservedGraph().addEdge( v1, v2, Graph.Edgetype.Directed )
-				/*}*/
+	toggleEdge : function( v1, v2, onClick ){ 
+		var edgeType = [Graph.Edgetype.Directed, Graph.Edgetype.Bidirected, Graph.Edgetype.Undirected];
+		var e; var e_reverse; var newe;
+		var i=0;
+		for (;i<edgeType.length;i++) {
+			e = this.getGraph().getEdge( v1, v2, edgeType[i]);
+			e_reverse = this.getGraph().getEdge( v2, v1, edgeType[i]);
+			if (e || e_reverse) {
+				if (e) this.getObservedGraph().deleteEdge( e.v1, e.v2, e.directed );
+				if (e_reverse) this.getObservedGraph().deleteEdge( e_reverse.v1, e_reverse.v2, e_reverse.directed );
+				if (((!e && e_reverse && i == 0) || (i==1)) && !onClick) 
+					newe = this.getObservedGraph().addEdge( v1, v2, i == 0 ? Graph.Edgetype.Bidirected : Graph.Edgetype.Directed )
+				break;
 			}
 		}
+		
+		if (!newe) {
+			if (i >= edgeType.length) {
+				newe = this.getObservedGraph().addEdge( v1, v2, Graph.Edgetype.Directed )
+			} else if (onClick) {
+				newe = this.getObservedGraph().addEdge( v2, v1, edgeType[(i+1) % edgeType.length] )
+			}
+		}
+		
+		if (!e && e_reverse) e = e_reverse;
+		if (newe && e) {
+			newe.layout_pos_x = e.layout_pos_x
+			newe.layout_pos_y = e.layout_pos_y
+			this.graphChanged();
+		}
+		return newe;
 	},
 	deleteVertex : function( v ){
 		if( this.getGraph().getVertex(v) ){

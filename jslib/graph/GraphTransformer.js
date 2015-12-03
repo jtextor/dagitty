@@ -789,5 +789,90 @@ var GraphTransformer = {
 		}
 		
 		return gp
+	},
+	
+	/*
+	  Replace every occurence of the induced subgraph A -> B -- C with A -> B -> C
+	*/
+	transformCGToRCG: function(g) {
+		var gn = new Graph();
+		_.each(g.vertices.values(), function(v){gn.addVertex( v.cloneWithoutEdges() )});
+		var fail = false;
+		//checks if v is connected to a node with id w.id in the graph containing v
+		function areConnected(v,w) { 
+			return _.some(v.getAdjacentNodes(), function(x){ return x.id == w.id; });
+		}
+		function processDirectedEdge(a,b){
+			if (fail) return;
+			_.each(b.getNeighbours(), function(c){
+				if (a.id != c.id && !areConnected(a, c)) {
+					_.each(gn.getVertex(c.id).getParents(),  //parents in gn is a superset of the parents in g
+									function(d){ 
+										if (a.id != d.id && b.id != d.id && !areConnected(b,d)) 
+											fail = true; 
+									});
+					if (fail) return;
+					if (!gn.getEdge(b.id, c.id, Graph.Edgetype.Directed)) {
+						gn.addEdge(b.id, c.id, Graph.Edgetype.Directed);
+						processDirectedEdge(b,c);
+					}
+				}
+			});
+		}
+		_.each(g.getEdges(), function(e){
+			if (e.directed == Graph.Edgetype.Directed) 
+				gn.addEdge(e.v1.id, e.v2.id, Graph.Edgetype.Directed)
+		});
+		_.each(g.getEdges(), function(e){
+			if (e.directed == Graph.Edgetype.Directed) 
+				processDirectedEdge(e.v1,e.v2);
+		});
+		if (fail) return null;
+		_.each(g.getEdges(), function(e){
+			if (e.directed != Graph.Edgetype.Directed && !areConnected(gn.getVertex(e.v1.id), e.v2)) 
+				gn.addEdge(e.v1.id, e.v2.id, e.directed);
+		});
+		g.copyAllVertexPropertiesTo( gn )
+		return gn;
+	},
+	
+	/*
+		Contracts every array C of vertices in components to a single vertex V_c that is connected to a vertex W
+		if one of the vertices in C was connected to W
+	*/
+	contractComponents: function(g, components, includeSelfEdges) {
+		var selfEdges = [false, false, false];
+		if (typeof includeSelfEdges === "boolean" ) selfEdges = selfEdges.map(function(t) { return includeSelfEdges; });
+		else if (_.isArray( includeSelfEdges ) ) _.each(includeSelfEdges, function(t) { selfEdges[t] = true; });
+		var targetVertices = new Hash();
+
+		var gn = new Graph();
+		_.each(components, function(component) { 
+			var ids = component.map(function(v){
+				if (typeof v === "string" ) return v;
+				else return v.id; 
+			});
+			var mergedVertex = gn.addVertex(ids.sort().join(","));
+			_.each(ids,function(vid){
+				targetVertices.set(vid, mergedVertex);
+			});
+		});
+		_.each( g.getVertices(), function( v ){
+			if (targetVertices.contains(v.id)) return;
+			var w = gn.addVertex( v.cloneWithoutEdges() );
+			targetVertices.set(v.id, w);
+		} );
+		_.each(g.getEdges(), function(e){
+			var c1 = targetVertices.get(e.v1.id);
+			var c2 = targetVertices.get(e.v2.id);
+			if (c1 == c2 && !selfEdges[e.directed]) return;
+			gn.addEdge( c1, c2, e.directed );
+		});
+		_.each( g.managed_vertex_property_names, ( function( p ){
+			_.each( g.getVerticesWithProperty( p ), function( v ){
+					gn.addVertexProperty( targetVertices.get(v.id), p ) 
+			} )
+		} ) );
+		return gn
 	}
 };

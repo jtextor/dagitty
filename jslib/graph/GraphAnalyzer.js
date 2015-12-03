@@ -5,6 +5,13 @@
 /* exported GraphAnalyzer */
 
 var GraphAnalyzer = {
+	/*
+		test if two graphes are equal, with equal id s
+	*/
+	equalGraphes: function (g, h){
+		return g.vertices.keys().sort().join("\r") == h.vertices.keys().sort().join("\r") &&
+					 g.getEdges().map(function(e){return e.toString()}).sort().join("\r") == h.getEdges().map(function(e){return e.toString()}).sort().join("\r");
+	},
 	
 	trekRule : function( g, v1, v2, use_ids_as_labels ){
 		var vnr = [], i, j, vi, vj
@@ -1070,6 +1077,124 @@ var GraphAnalyzer = {
 			}
 		})
 		return r
+	},
+
+	//see https://en.wikipedia.org/wiki/Lexicographic_breadth-first_search
+	lexicographicBreadthFirstSearch : function( g, componentV ){
+		if (!componentV) componentV = g.getVertices();
+		else componentV = componentV.concat();
+		
+		/*
+			This uses a (doubly) linked list of sets for the ordering
+			and a cache for each to get a random element from the set without having to call keys()
+		*/
+		
+		
+		var componentSet = new Hash();
+		_.each(componentV, function(v){ componentSet.set(v.id, v); });
+		
+		var firstSet = {
+			next: null,
+			prev: null,
+			prevIteration: 0,
+			set: componentSet,
+			setKeys: componentV.map(function(v){return v.id}), //cache of this.set.keys(), not updated for removed elements
+			setKeyIndex: 0, //processed keys. 
+			id: 0
+		};
+		
+		var containedSet = new Hash();
+		_.each(componentV, function(v){ containedSet.set(v.id, firstSet); });
+			
+		var iteration = 0;
+		var result = [];
+			
+		while (firstSet) {		
+			while (firstSet.setKeyIndex < firstSet.setKeys.length 
+			       && !firstSet.set.contains(firstSet.setKeys[firstSet.setKeyIndex]))
+				firstSet.setKeyIndex++;
+			if (firstSet.setKeyIndex >= firstSet.setKeys.length) {
+				firstSet = firstSet.next;
+				if (firstSet) firstSet.prev = null;
+				continue;
+			}
+			
+			var v = firstSet.set.get(firstSet.setKeys[firstSet.setKeyIndex]);
+			result.push(v);
+			firstSet.setKeyIndex++;
+			iteration++;
+			
+			firstSet.set.unset(v.id);
+			containedSet.unset(v.id);
+				
+			
+			_.each(v.getNeighbours(), function(w){
+				var set = containedSet.get(w.id);
+				if (!set) return;
+				
+				if (set.prevIteration != iteration) {
+					//set has not yet been splitted in this iteration
+					
+					//create new empty set 
+					var newSet = {
+							next: set,
+							prev: set.prev,
+							prevIteration: iteration,
+							set: new Hash(),
+							setKeys: [],
+							setKeyIndex: 0,
+						};
+					set.prevIteration = iteration;
+					//insert newSet in linked list
+					if (set.prev) set.prev.next = newSet;
+					else firstSet = newSet;
+					set.prev = newSet;
+				}
+				//move w from set to newSet
+				var newSet = set.prev;
+				newSet.setKeys.push(w.id);
+				newSet.set.set(w.id, w);
+				set.set.unset(w.id);
+				containedSet.set(w.id, newSet);
+			});
+		}
+
+		return result;
+	},
+
+	/**
+	 *  Test for chordality
+	 */
+	isChordal : function( g, componentV ){
+		var ordering = GraphAnalyzer.lexicographicBreadthFirstSearch(g, componentV);
+		var positions = new Hash();
+		_.each(ordering, function(v,i) { positions.set(v.id, i); } );
+		console.log(_.map(ordering, function(v){return v.id}));
+		return _.every(ordering, function(v,i) { 
+			var j = _.max(_.map(v.getNeighbours(), function(w) {
+				var p = positions.get(w.id);
+				if (p < i) return p;
+				else return -1;
+			}));
+			if (j < 0) return true;
+			var w = ordering[j];
+			//alert(w + " " + j  +" < " + i)
+			var earlierNeigboursOfW = new Hash();
+			_.each(w.getNeighbours(), function(x) {
+				var p = positions.get(x.id);
+				if (p < j) earlierNeigboursOfW.set(x.id, true);
+			});
+			return _.every(v.getNeighbours(), function(x){
+				var p = positions.get(x.id);
+				return (p >= j) || earlierNeigboursOfW.get(x.id);
+			});
+		});
+  },
+
+
+	containsSemiCycle: function (g){
+		return GraphTransformer.contractComponents(g, GraphAnalyzer.connectedComponents(g), [Graph.Edgetype.Directed])
+		                       .containsCycle();
 	}
 };
 

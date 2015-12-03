@@ -370,16 +370,31 @@ var Graph = Class.extend({
 			edgetype = Graph.Edgetype.Directed
 		}
 		if( !(v1 && v2) ){ return undefined; }
-		switch( edgetype ){
-		case Graph.Edgetype.Undirected :
-			return _.find( v1.adjacentUndirectedEdges, function( e ){
-				return e.v2.id === v2.id || e.v1.id == v2.id } )
-		case Graph.Edgetype.Directed :
-			return _.find( v1.outgoingEdges, function( e ){
-				return e.v2.id === v2.id } )
-		case Graph.Edgetype.Bidirected :
-			return _.find( v1.adjacentBidirectedEdges, function( e ){
-				return ( e.v2.id === v2.id || e.v1.id === v2.id ) } )
+		if (v1 !== v2) {
+			switch( edgetype ){
+			case Graph.Edgetype.Undirected :
+				return _.find( v1.adjacentUndirectedEdges, function( e ){
+					return e.v2.id === v2.id || e.v1.id == v2.id } )
+			case Graph.Edgetype.Directed :
+				return _.find( v1.outgoingEdges, function( e ){
+					return e.v2.id === v2.id } )
+			case Graph.Edgetype.Bidirected :
+				return _.find( v1.adjacentBidirectedEdges, function( e ){
+					return ( e.v2.id === v2.id || e.v1.id === v2.id ) } )
+			}
+		} else {
+			var v = v1;
+			switch( edgetype ){
+			case Graph.Edgetype.Undirected :
+				return _.find( v.adjacentUndirectedEdges, function( e ){
+					return e.v2.id === v.id && e.v1.id == v.id } )
+			case Graph.Edgetype.Directed :
+				return _.find( v1.outgoingEdges, function( e ){
+					return e.v2.id === v.id } )
+			case Graph.Edgetype.Bidirected :
+				return _.find( v1.adjacentBidirectedEdges, function( e ){
+					return ( e.v2.id === v.id && e.v1.id === v.id ) } )
+			}
 		}
 		return undefined
 	},
@@ -396,7 +411,8 @@ var Graph = Class.extend({
 			case Graph.Edgetype.Undirected :
 				e = new Graph.Edge.Undirected({v1:v1,v2:v2})
 				e.v1.adjacentUndirectedEdges.push( e )
-				e.v2.adjacentUndirectedEdges.push( e )
+				if (v1 != v2)
+					e.v2.adjacentUndirectedEdges.push( e )
 				break
 			case Graph.Edgetype.Directed :
 				e = new Graph.Edge.Directed({v1:v1,v2:v2})
@@ -406,7 +422,8 @@ var Graph = Class.extend({
 			case Graph.Edgetype.Bidirected :
 				e = new Graph.Edge.Bidirected({v1:v1,v2:v2})
 				e.v1.adjacentBidirectedEdges.push( e )
-				e.v2.adjacentBidirectedEdges.push( e )
+				if (v1 != v2)
+					e.v2.adjacentBidirectedEdges.push( e )
 				break
 			}
 			this.edges.push( e )

@@ -29,7 +29,7 @@ var GraphParser = {
 		var isdot = code.match(  /^\s*(di)?graph(\s+\w+)?\s*\{([\s\S]+)\}/m )
 		var edgestatements = isdot[isdot.length-1]
 		var txt = edgestatements.trim()
-		var lines = txt.split(/\n/)
+		var lines = txt.split(/[\n;]/)
 		
 		var vertexnamere = new RegExp( '^[+%0-9A-Za-z*-._~]+' )
 		var optionnamere = new RegExp( '^([a-z]+)\\s*(=)?\\s*("[^"]+")?' )
