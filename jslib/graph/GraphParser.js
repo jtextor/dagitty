@@ -25,23 +25,23 @@ var GraphParser = {
 		by line.
 	*/
 	parseDot : function( code ){
-		'use strict'
+		"use strict"
 		var isdot = code.match(  /^\s*(di)?graph(\s+\w+)?\s*\{([\s\S]+)\}/m )
 		var edgestatements = isdot[isdot.length-1]
 		var txt = edgestatements.trim()
 		var lines = txt.split(/[\n;]/)
 		
-		var vertexnamere = new RegExp( '^[+%0-9A-Za-z*-._~]+' )
-		var optionnamere = new RegExp( '^([a-z]+)\\s*(=)?\\s*("[^"]+")?' )
-		var edgetypere = new RegExp( '^<?--?>?' )
-		var positionre = new RegExp( '"\\s*(-?[0-9.]+)\\s*,\\s*(-?[0-9.]+)\\s*"' )
-		var labelre = new RegExp( '"\\s*([^"]+)\\s*"' )
+		var vertexnamere = new RegExp( "^[+%0-9A-Za-z*-._~]+" )
+		var optionnamere = new RegExp( "^([a-z]+)\\s*(=)?\\s*(\"[^\"]+\")?" )
+		var edgetypere = new RegExp( "^<?--?>?" )
+		var positionre = new RegExp( "\"\\s*(-?[0-9.]+)\\s*,\\s*(-?[0-9.]+)\\s*\"" )
+		var labelre = new RegExp( "\"\\s*([^\"]+)\\s*\"" )
 		
 		var parse_position = function( s ){
 			tok = s.match(positionre)
 			if( typeof tok[1] !== "string" || 
 				typeof tok[2] !== "string" ){
-				throw('Syntax error in "pos" option')
+				throw("Syntax error in \"pos\" option")
 			}
 			return {x:parseFloat(tok[1]),y:parseFloat(tok[2])}
 		}
@@ -60,7 +60,7 @@ var GraphParser = {
 				case 0: // expecting vertex ID
 					tok = l.match(vertexnamere)
 					if( tok === null || tok[0].length === 0 ){
-						throw('Syntax error: expecting vertex ID at line '+i)
+						throw("Syntax error: expecting vertex ID at line "+i)
 					}
 					tok = tok[0]
 					vertex_names.push( tok )
@@ -74,7 +74,7 @@ var GraphParser = {
 					} else {
 						tok = l.match( edgetypere )
 						if( tok === null ){
-							throw('Syntax error: expecting edge type at line '+i)
+							throw("Syntax error: expecting edge type at line "+i)
 						}
 						edgetypes.push( tok[0] )
 						parser_mode = 0
@@ -90,7 +90,7 @@ var GraphParser = {
 					} else {
 						match = l.match( optionnamere )
 						if( match === null ){
-							throw('Syntax error! Expection option at line '+i)
+							throw("Syntax error! Expection option at line "+i)
 						}
 						if( match[1] ){
 							option_names.push(match[1])
@@ -124,7 +124,7 @@ var GraphParser = {
 						break
 					case "pos":
 						if( typeof option_values[j] !== "string" ){
-							throw('Syntax error pos statement')
+							throw("Syntax error pos statement")
 						}
 						pos = parse_position( option_values[j] )
 						n.layout_pos_x = parseFloat( pos.x )
@@ -139,16 +139,16 @@ var GraphParser = {
 					if( !g.getVertex( n ) ) g.addVertex( n )
 					if( !g.getVertex( n2 ) ) g.addVertex( n2 )
 					switch( edgetypes[0] ){
-					case '--' :
+					case "--" :
 						e = g.addEdge( n, n2, Graph.Edgetype.Undirected )
 						break
-					case '<->' :
+					case "<->" :
 						e = g.addEdge( n, n2, Graph.Edgetype.Bidirected )
 						break
-					case '->' :
+					case "->" :
 						e = g.addEdge( n, n2, Graph.Edgetype.Directed )
 						break
-					case '<-' :
+					case "<-" :
 						e = g.addEdge( n2, n, Graph.Edgetype.Directed )
 						break
 					}
@@ -159,7 +159,7 @@ var GraphParser = {
 					switch( option_names[j] ){ // string-only options
 					case "pos":
 						if( typeof option_values[j] !== "string" ){
-							throw('Syntax error pos statement')
+							throw("Syntax error pos statement")
 						}
 						pos = parse_position( option_values[j] )
 						e.layout_pos_x = parseFloat( pos.x )
@@ -167,7 +167,7 @@ var GraphParser = {
 						break
 					case "label":
 						if( typeof option_values[j] !== "string" ){
-							throw('Syntax error label statement')
+							throw("Syntax error label statement")
 						}
 						e.id = decodeURIComponent( option_values[j].match(labelre)[1] )
 						break
@@ -179,7 +179,7 @@ var GraphParser = {
 	},
 
 	parseVertexLabelsAndWeights : function( vertexLabelsAndWeights ){
-		'use strict'
+		"use strict"
 		var g = new Graph()
 		var txt = vertexLabelsAndWeights.trim()
 		var lines = txt.split(/\n/)
@@ -231,7 +231,7 @@ var GraphParser = {
 	},
   
 	parseAdjacencyList : function( adjacencyList, vertexLabelsAndWeights ){
-		'use strict'
+		"use strict"
 		var g = this.parseVertexLabelsAndWeights( vertexLabelsAndWeights )
 		var adj_list = adjacencyList.split("\n")
 		var i,adj,v1, v1id, v2,v2id
@@ -277,7 +277,7 @@ var GraphParser = {
 	},
 
 	parseAdjacencyMatrix : function( adjacencyMatrix, vertexLabelsAndWeights ){
-		'use strict'
+		"use strict"
 		var g = this.parseVertexLabelsAndWeights( vertexLabelsAndWeights )
 
 		var m = adjacencyMatrix.trim()
@@ -306,7 +306,7 @@ var GraphParser = {
 	},
 
 	parseGuess : function( adjacencyListOrMatrix, vertexLabelsAndWeights ){
-		'use strict'
+		"use strict"
 		var first_blank, firstarg = adjacencyListOrMatrix
 		if( !vertexLabelsAndWeights ){
 			first_blank = adjacencyListOrMatrix.search( /\r?\n[ \t]*\r?\n/ )

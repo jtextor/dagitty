@@ -17,6 +17,9 @@
 
 /* This is a namespace containing various methods that generate graphs,
  * e.g. at random.*/
+ 
+/* globals Graph  */
+/* exported GraphGenerator */
 
 var GraphGenerator = {
 	/**

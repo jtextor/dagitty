@@ -22,10 +22,10 @@ var GraphTransformer = {
 			gn.addVertex( new Graph.Vertex( vertex_array[i] ) )
 		}
 		
-		var other_vertex_ids = _.pluck(vertex_array,'id')
+		var other_vertex_ids = _.pluck(vertex_array,"id")
 		
 		for( i = 0 ; i < g.edges.length ; i++ ){
-			var e = g.edges[i];
+			var e = g.edges[i]
 			if( _.contains( other_vertex_ids, e.v1.id ) && 
 				_.contains( other_vertex_ids, e.v2.id ) ){
 				gn.addEdge( e.v1.id, e.v2.id, e.directed )
@@ -87,8 +87,8 @@ var GraphTransformer = {
 			concat(g.getAdjustedNodes()).
 			concat(g.getSelectionNodes())
 		}
-		var g_an = this.inducedSubgraph( g, g.ancestorsOf( V ) );
-		return g_an;
+		var g_an = this.inducedSubgraph( g, g.ancestorsOf( V ) )
+		return g_an
 	},
 	
 	/***
@@ -121,19 +121,19 @@ var GraphTransformer = {
 		
 		var visit = function( v ){
 			if( !v.traversal_info.visited ){
-				v.traversal_info.visited = true;
+				v.traversal_info.visited = true
 				if( in_Y[ v.id ] ){
-					v.traversal_info.reaches_target = true;
+					v.traversal_info.reaches_target = true
 				} else {
 					var children = _.reject(v.getChildren(),function(v){return in_X[v.id]})
 					_.each( children, visit )
 					v.traversal_info.reaches_target = _.chain(children)
-						.pluck('traversal_info')
-						.pluck('reaches_target')
+						.pluck("traversal_info")
+						.pluck("reaches_target")
 						.some().value()
 				}
 			}
-		};
+		}
 		
 		_.each( X, function(s){
 			visit( s )
@@ -141,25 +141,25 @@ var GraphTransformer = {
 				if( c.traversal_info.reaches_target ){
 					gback.deleteEdge( s, c, Graph.Edgetype.Directed )
 				}
-			});
-		});
-		return gback;
+			})
+		})
+		return gback
 	},
 	
 	/** This is the counterpart of the back-door graph for direct effects.
 	 * We remove only edges pointing from X to Y.
 	 */
 	indirectGraph : function(g){
-		var gback = g.clone();
-		var ee = [];
+		var gback = g.clone()
+		var ee = []
 		_.each(gback.getSources(),function( s ){
 			_.each( gback.getTargets(),function( t ){
-				var e = gback.getEdge( s, t );
-				if( e ) ee.push( e );
-			});
-		});
-		_.each(ee,function(e){gback.deleteEdge(e.v1,e.v2,e.directed);});
-		return gback;
+				var e = gback.getEdge( s, t )
+				if( e ) ee.push( e )
+			})
+		})
+		_.each(ee,function(e){gback.deleteEdge(e.v1,e.v2,e.directed)})
+		return gback
 	},
 	
 	/** TODO
@@ -170,14 +170,14 @@ var GraphTransformer = {
 		var clearVisitedWhereNotAdjusted = function(){
 			_.each( g.vertices.values(), function(v){
 				if( g.isAdjustedNode( v ) ) 
-					Graph.Vertex.markAsVisited( v );
+					Graph.Vertex.markAsVisited( v )
 				else 
-					Graph.Vertex.markAsNotVisited( v );
-			});
-		};
+					Graph.Vertex.markAsNotVisited( v )
+			})
+		}
 		return this.inducedSubgraph( g, 
 				_.intersection(g.ancestorsOf( g.getTargets(), clearVisitedWhereNotAdjusted ),
-						g.descendantsOf( g.getSources(), clearVisitedWhereNotAdjusted ) ) );
+						g.descendantsOf( g.getSources(), clearVisitedWhereNotAdjusted ) ) )
 	},
 	
 	/**
@@ -190,7 +190,7 @@ var GraphTransformer = {
 		var preserve_previous_visited_information = function(){}
 		
 		if( g.getSources().length == 0 || g.getTargets().length == 0 ){
-			return new Graph();
+			return new Graph()
 		}
 		
 		g_canon = GraphTransformer.canonicalGraph(g)
@@ -203,12 +203,12 @@ var GraphTransformer = {
 				g.clearTraversalInfo()
 				_.each( adj, function(v){ Graph.Vertex.markAsVisited(v) } )
 			} ), function(v){
-			reaches_source[v.id] = true
-		});
+				reaches_source[v.id] = true
+			})
 			
 		_.each( g.ancestorsOf( g.getAdjustedNodes() ), function(v){
 			reaches_adjusted_node[v.id] = true
-		});
+		})
 		
 		// ..for this line, such that "pure causal paths" are traced backwards 
 		var target_ancestors_except_ancestors_of_violators = 
@@ -230,8 +230,8 @@ var GraphTransformer = {
 				if( g.isSource(e.v2 ) || _.contains(intermediates_after_source, e.v2 ) ){
 					g_chain.deleteEdge( e.v1, e.v2, Graph.Edgetype.Directed )
 				}
-			});
-		});
+			})
+		})
 
 		// Delete edges emitting from adjusted nodes
 		_.each( g_chain.getAdjustedNodes(), function( v ){
@@ -263,50 +263,50 @@ var GraphTransformer = {
 		var vv = g_chain.getVertices()
 		
 		for( var comp_i = 0 ; comp_i < comps.length ; comp_i ++ ){
-			var comp = comps[comp_i];
+			var comp = comps[comp_i]
 			if( comp.length > 1 ){
 				var bridge_nodes = _.filter( comp, check_bridge_node )
 
 				var current_component = GraphTransformer.inducedSubgraph( 
-					g_chain, comp );
-				var bridge_node_edges = [];
-				var bridge_nodes_bottlenecks = [];
+					g_chain, comp )
+				var bridge_node_edges = []
+				var bridge_nodes_bottlenecks = []
 				_.each( bridge_nodes, function(bn){
 					bridge_nodes_bottlenecks.push(bottleneck_number[bn.id])
 				})
 				_.each( _.uniq(bridge_nodes_bottlenecks), function( i ){
-					current_component.addVertex( '__START'+i )
-					current_component.addVertex( '__END'+i )
+					current_component.addVertex( "__START"+i )
+					current_component.addVertex( "__END"+i )
 					bridge_node_edges.push( 
-						current_component.addEdge( '__START'+i, '__END'+i, 
+						current_component.addEdge( "__START"+i, "__END"+i, 
 							Graph.Edgetype.Undirected ) )
-				});
+				})
 				
 				_.each( bridge_nodes, function( bridge ) {
 					current_component.addEdge( 
-						'__END'+bottleneck_number[bridge.id],
+						"__END"+bottleneck_number[bridge.id],
 						bridge.id, Graph.Edgetype.Undirected )
-				});
+				})
 								
-				var bicomps = GraphAnalyzer.biconnectedComponents( current_component );
+				var bicomps = GraphAnalyzer.biconnectedComponents( current_component )
 								
-				var current_block_tree = GraphAnalyzer.blockTree( current_component, bicomps );
+				var current_block_tree = GraphAnalyzer.blockTree( current_component, bicomps )
 
 				_.each( bridge_node_edges, function( e ){
 					Graph.Vertex.markAsVisited(
-						current_block_tree.getVertex( 'C'+e.component_index ) );
-				} );
-				current_block_tree.visitAllPathsBetweenVisitedNodesInTree();
+						current_block_tree.getVertex( "C"+e.component_index ) )
+				} )
+				current_block_tree.visitAllPathsBetweenVisitedNodesInTree()
 				
 				var visited_components = _.filter( current_block_tree.vertices.values(),
 					function(v){
-						return v.id.charAt(0) == 'C' && v.traversal_info.visited 
-					});
+						return v.id.charAt(0) == "C" && v.traversal_info.visited 
+					})
 								
 				/** TODO is in O(|E|) - can this be accelerated? */
 				_.each( visited_components, function( vc ){
-					var component_index = parseInt(vc.id.substring(1));
-					var component = bicomps[component_index-1];
+					var component_index = parseInt(vc.id.substring(1))
+					var component = bicomps[component_index-1]
 					if( component.length > 1 || 
 						component[0].v1.id.indexOf("__") !== 0 || 
 						component[0].v2.id.indexOf("__") !== 0
@@ -320,9 +320,9 @@ var GraphTransformer = {
 							if( cv2 ){
 								retain[cv2.id] = true
 							}
-						} );
+						} )
 					}
-				} );
+				} )
 			}
 		}
 		// after the above loop, all vertices that have two disjoint paths to 
@@ -347,18 +347,18 @@ var GraphTransformer = {
 			else{
 				Graph.Vertex.markAsNotVisited(v)
 			}
-		} );
+		} )
 		
 		
 		var start_nodes = _.filter( vv, function(v){ 
-				return retain[v.id]
+			return retain[v.id]
 				|| ( topological_index[v.id] !== undefined &&
 				topological_index[v.id] === bottleneck_number[v.id] ) } )
 		
 				
 		var nodes_to_be_retained = g_chain.descendantsOf( start_nodes, 
-			preserve_previous_visited_information );
-		_.each( nodes_to_be_retained, function( v ){ retain[v.id] = true; } )
+			preserve_previous_visited_information )
+		_.each( nodes_to_be_retained, function( v ){ retain[v.id] = true } )
 
 		
 		// All vertices on "back-door" biasing paths (starting with a x <- ) 
@@ -413,7 +413,7 @@ var GraphTransformer = {
 		} )
 		
 		// Replace dummy nodes from canonical graph with original nodess
-		var Lids = _.pluck(g_canon.L,'id'), Sids = _.pluck(g_canon.S,'id')
+		var Lids = _.pluck(g_canon.L,"id"), Sids = _.pluck(g_canon.S,"id")
 		L=[], S=[]
 		_.each(Lids, function(vid){
 			var v = g_chain.getVertex(vid)
@@ -432,33 +432,30 @@ var GraphTransformer = {
 		var ee = g.getEdges()
 		var vup, vdown, ch, i
 		if( ! up_prefix ) up_prefix = "up_"
-			if( ! down_prefix ) down_prefix = "dw_"
-				for( i = 0 ; i < vv.length ; i ++ ){
-					vup = up_prefix+vv[i].id; vdown = down_prefix+vv[i].id
-					n.addVertex( new Graph.Vertex( {id:vup} ) )
-					n.addVertex( new Graph.Vertex( {id:vdown} ) )
-					if( g.isSource( vv[i] ) ) n.addSource( n.getVertex(vup) )
-						if( g.isTarget( vv[i] ) ) n.addSource( n.getVertex(vdown) )
-							n.addEdge( vup, vdown )
-				}
-				for( i = 0 ; i < ee.length ; i ++ ){
-					if( ee[i].directed == 2 ){ // bidirected edge
+		if( ! down_prefix ) down_prefix = "dw_"
+		for( i = 0 ; i < vv.length ; i ++ ){
+			vup = up_prefix+vv[i].id; vdown = down_prefix+vv[i].id
+			n.addVertex( new Graph.Vertex( {id:vup} ) )
+			n.addVertex( new Graph.Vertex( {id:vdown} ) )
+			if( g.isSource( vv[i] ) ) n.addSource( n.getVertex(vup) )
+			if( g.isTarget( vv[i] ) ) n.addSource( n.getVertex(vdown) )
+			n.addEdge( vup, vdown )
+		}
+		for( i = 0 ; i < ee.length ; i ++ ){
+			if( ee[i].directed == 2 ){ // bidirected edge
 				vup = up_prefix+ee[i].v1.id; vdown = down_prefix+ee[i].v2.id
 				n.addEdge( vup, vdown )
-				//vup = up_prefix+ee[i].v2.id; vdown = down_prefix+ee[i].v1.id
-				//n.addEdge( new Graph.Edge.Directed( { v1: n.getVertex(vup),
-				//	v2: n.getVertex(vdown) } ) )
-					}
-				} 
-				for( i = 0 ; i < vv.length ; i ++ ){
-					vup = up_prefix+vv[i].id; vdown = down_prefix+vv[i].id
-					ch = vv[i].getChildren( false ) // true -> consider also bidirected edges
-					for( var j = 0 ; j < ch.length ; j ++ ){
-						n.addEdge( vdown, down_prefix+ch[j].id )
-						n.addEdge( up_prefix+ch[j].id, vup )
-					}
-				}
-				return n
+			}
+		} 
+		for( i = 0 ; i < vv.length ; i ++ ){
+			vup = up_prefix+vv[i].id; vdown = down_prefix+vv[i].id
+			ch = vv[i].getChildren( false ) // true -> consider also bidirected edges
+			for( var j = 0 ; j < ch.length ; j ++ ){
+				n.addEdge( vdown, down_prefix+ch[j].id )
+				n.addEdge( up_prefix+ch[j].id, vup )
+			}
+		}
+		return n
 	},
 	
 	/**
@@ -469,31 +466,33 @@ var GraphTransformer = {
 	canonicalGraph : function( g ){
 		var rg = new Graph(), i = 1, L = [], S = [], v
 		_.each( g.getVertices(), function( v ){
-				rg.addVertex( v.cloneWithoutEdges() )
+			rg.addVertex( v.cloneWithoutEdges() )
 		} )
 		g.copyAllVertexPropertiesTo( rg )
 		_.each( g.getEdges(), function( e ){
-				switch( e.directed ){
-					case Graph.Edgetype.Undirected:
-						while( rg.getVertex( "S"+i ) ){ i ++ }
-						v = new Graph.Vertex({id:"S"+i})
-						rg.addVertex( v ); rg.addSelectionNode( v )
-						rg.addEdge(e.v2,v)
-						rg.addEdge(e.v1,v)
-						S.push(v)
-						break
-					case Graph.Edgetype.Directed:
-						rg.addEdge(e.v1,e.v2)
-						break
-					case Graph.Edgetype.Bidirected:
-						while( rg.getVertex( "L"+i ) ){ i ++ }
-						v = new Graph.Vertex({id:"L"+i})
-						rg.addVertex( v ); rg.addLatentNode( v )
-						rg.addEdge(v,e.v2)
-						rg.addEdge(v,e.v1)
-						L.push(v)
-						break
-				}
+			switch( e.directed ){
+			case Graph.Edgetype.Undirected:
+				while( rg.getVertex( "S"+i ) ){ i ++ }
+				v = new Graph.Vertex({id:"S"+i})
+				rg.addVertex( v ); rg.addSelectionNode( v )
+				rg.addEdge(e.v2,v)
+				rg.addEdge(e.v1,v)
+				S.push(v)
+				break
+
+			case Graph.Edgetype.Directed:
+				rg.addEdge(e.v1,e.v2)
+				break
+
+			case Graph.Edgetype.Bidirected:
+				while( rg.getVertex( "L"+i ) ){ i ++ }
+				v = new Graph.Vertex({id:"L"+i})
+				rg.addVertex( v ); rg.addLatentNode( v )
+				rg.addEdge(v,e.v2)
+				rg.addEdge(v,e.v1)
+				L.push(v)
+				break
+			}
 		} )
 		return {g:rg,L:L,S:S}
 	},
@@ -534,7 +533,7 @@ var GraphTransformer = {
 		var mg = new Graph()
 		
 		_.each( g.getVertices(), function( v ){
-				mg.addVertex( v.cloneWithoutEdges() )
+			mg.addVertex( v.cloneWithoutEdges() )
 		} )
 
 		var comp = GraphAnalyzer.connectedComponents( g, "getSpouses" )
@@ -573,51 +572,51 @@ var GraphTransformer = {
 	flowNetwork : function(g, capacities) {
 		var i, v, vin, vout
 		if( capacities === undefined ) capacities = new Hash()
-			var n = g.clone()
-			for( i = 0 ; i < g.edges.length ; i++ ){
-				var e = g.edges[i]
-				var eback = g.getEdge( e.v2.id, e.v1.id )
-				if( !eback ){
-					eback = n.addEdge( e.v2.id, e.v1.id, Graph.Edgetype.Directed )
-				}
-				
-				if( capacities.get(e) === undefined ){
-					capacities.set(e,1)
-				}
-				if( capacities.get(eback) === undefined ){
-					capacities.set(eback,0)
-				}
-			}
-			var ssource = "__SRC"
-			while( g.getVertex( ssource ) ){
-				ssource = "_" + ssource
-			}
-			var ssink = "__SNK"
-			while( g.getVertex( ssink ) ){
-				ssink = "_" + ssink
-			}
-			n.addVertex( new Graph.Vertex( {id:ssource} ) )
-			n.removeAllSources(); n.addSource( ssource )
-			n.addVertex( new Graph.Vertex( {id:ssink} ) )
-			n.removeAllTargets(); n.addTarget( ssink )
-			
-			vout = n.getVertex(ssource)
-			vin = n.getVertex(ssink)
-			
-			var srcs = g.getSources()
-			for( i = 0 ; i < srcs.length ; i ++ ){
-				v = n.getVertex(srcs[i].id)
-				capacities.set( n.addEdge( vout, v ), Number.MAX_VALUE )
-				capacities.set( n.addEdge( v, vout ), 0 )
+		var n = g.clone()
+		for( i = 0 ; i < g.edges.length ; i++ ){
+			var e = g.edges[i]
+			var eback = g.getEdge( e.v2.id, e.v1.id )
+			if( !eback ){
+				eback = n.addEdge( e.v2.id, e.v1.id, Graph.Edgetype.Directed )
 			}
 			
-			var tgts = g.getTargets()
-			for( i = 0 ; i < tgts.length ; i ++ ){
-				v = n.getVertex(tgts[i].id)
-				capacities.set( n.addEdge( v, vin ), Number.MAX_VALUE )
-				capacities.set( n.addEdge( vin, v ), 0 )
+			if( capacities.get(e) === undefined ){
+				capacities.set(e,1)
 			}
-			return { graph: n, capacities: capacities }
+			if( capacities.get(eback) === undefined ){
+				capacities.set(eback,0)
+			}
+		}
+		var ssource = "__SRC"
+		while( g.getVertex( ssource ) ){
+			ssource = "_" + ssource
+		}
+		var ssink = "__SNK"
+		while( g.getVertex( ssink ) ){
+			ssink = "_" + ssink
+		}
+		n.addVertex( new Graph.Vertex( {id:ssource} ) )
+		n.removeAllSources(); n.addSource( ssource )
+		n.addVertex( new Graph.Vertex( {id:ssink} ) )
+		n.removeAllTargets(); n.addTarget( ssink )
+			
+		vout = n.getVertex(ssource)
+		vin = n.getVertex(ssink)
+			
+		var srcs = g.getSources()
+		for( i = 0 ; i < srcs.length ; i ++ ){
+			v = n.getVertex(srcs[i].id)
+			capacities.set( n.addEdge( vout, v ), Number.MAX_VALUE )
+			capacities.set( n.addEdge( v, vout ), 0 )
+		}
+			
+		var tgts = g.getTargets()
+		for( i = 0 ; i < tgts.length ; i ++ ){
+			v = n.getVertex(tgts[i].id)
+			capacities.set( n.addEdge( v, vin ), Number.MAX_VALUE )
+			capacities.set( n.addEdge( vin, v ), 0 )
+		}
+		return { graph: n, capacities: capacities }
 	},
 	
 	/****
@@ -628,35 +627,35 @@ var GraphTransformer = {
 	 *		to v_out.
 	 **/
 	vertexCapacityGraph : function( g ) {
-		var gn = new Graph();
+		var gn = new Graph()
 		g.vertices.values().each( function( v ){
 			if( g.getSource() !== v ){
-				gn.addVertex( new Graph.Vertex( { id : "I" + v.id } ) );
+				gn.addVertex( new Graph.Vertex( { id : "I" + v.id } ) )
 			}
 			if( g.getTarget() !== v ){
-				gn.addVertex( new Graph.Vertex( { id : "O" + v.id } ) );
+				gn.addVertex( new Graph.Vertex( { id : "O" + v.id } ) )
 			}
 			if( g.getSource() !== v && g.getTarget() !== v ){
 				gn.addEdge( new Graph.Edge.Directed( { 
-					v1:gn.getVertex("I"+v.id), v2:gn.getVertex("O"+v.id), capacity: 1, is_backedge : false } ) );
-					gn.addEdge( new Graph.Edge.Directed( { 
-						v2:gn.getVertex("I"+v.id), v1:gn.getVertex("O"+v.id), capacity: 0, is_backedge : true } ) );
+					v1:gn.getVertex("I"+v.id), v2:gn.getVertex("O"+v.id), capacity: 1, is_backedge : false } ) )
+				gn.addEdge( new Graph.Edge.Directed( { 
+					v2:gn.getVertex("I"+v.id), v1:gn.getVertex("O"+v.id), capacity: 0, is_backedge : true } ) )
 			}
-		} );
+		} )
 		g.edges.each( function( e ){
 			if( e.v1 !== g.getTarget() && e.v2 !== g.getSource() ){
 				gn.addEdge( new Graph.Edge.Directed( { v1 : gn.getVertex("O"+e.v1.id),
-							v2 : gn.getVertex("I"+e.v2.id) , capacity: 1, is_backedge : false } ) );
-		gn.addEdge( new Graph.Edge.Directed( { 
-				v2 : gn.getVertex("O"+e.v1.id),
-				v1 : gn.getVertex("I"+e.v2.id), 
-				capacity: 0, is_backedge : true 
-				} ) );
+							v2 : gn.getVertex("I"+e.v2.id) , capacity: 1, is_backedge : false } ) )
+				gn.addEdge( new Graph.Edge.Directed( { 
+					v2 : gn.getVertex("O"+e.v1.id),
+					v1 : gn.getVertex("I"+e.v2.id), 
+					capacity: 0, is_backedge : true 
+				} ) )
 			}
-		} );
+		} )
 		return gn.
 		setSource(gn.getVertex("O"+g.getSource().id)).
-		setTarget(gn.getVertex("I"+g.getTarget().id));
+		setTarget(gn.getVertex("I"+g.getTarget().id))
 	},
 	
 	/***
@@ -679,7 +678,7 @@ var GraphTransformer = {
 					gn.deleteEdge( e.v1, e.v2, Graph.Edgetype.Directed )
 				}
 			}
-		} );
+		} )
 		return gn
 	},
 	
@@ -795,45 +794,45 @@ var GraphTransformer = {
 	  Replace every occurence of the induced subgraph A -> B -- C with A -> B -> C
 	*/
 	transformCGToRCG: function(g) {
-		var gn = new Graph();
-		_.each(g.vertices.values(), function(v){gn.addVertex( v.cloneWithoutEdges() )});
-		var fail = false;
+		var gn = new Graph()
+		_.each(g.vertices.values(), function(v){gn.addVertex( v.cloneWithoutEdges() )})
+		var fail = false
 		//checks if v is connected to a node with id w.id in the graph containing v
 		function areConnected(v,w) { 
-			return _.some(v.getAdjacentNodes(), function(x){ return x.id == w.id; });
+			return _.some(v.getAdjacentNodes(), function(x){ return x.id == w.id })
 		}
 		function processDirectedEdge(a,b){
-			if (fail) return;
+			if (fail) return
 			_.each(b.getNeighbours(), function(c){
 				if (a.id != c.id && !areConnected(a, c)) {
 					_.each(gn.getVertex(c.id).getParents(),  //parents in gn is a superset of the parents in g
 									function(d){ 
 										if (a.id != d.id && b.id != d.id && !areConnected(b,d)) 
-											fail = true; 
-									});
-					if (fail) return;
+											fail = true 
+									})
+					if (fail) return
 					if (!gn.getEdge(b.id, c.id, Graph.Edgetype.Directed)) {
-						gn.addEdge(b.id, c.id, Graph.Edgetype.Directed);
-						processDirectedEdge(b,c);
+						gn.addEdge(b.id, c.id, Graph.Edgetype.Directed)
+						processDirectedEdge(b,c)
 					}
 				}
-			});
+			})
 		}
 		_.each(g.getEdges(), function(e){
 			if (e.directed == Graph.Edgetype.Directed) 
 				gn.addEdge(e.v1.id, e.v2.id, Graph.Edgetype.Directed)
-		});
+		})
 		_.each(g.getEdges(), function(e){
 			if (e.directed == Graph.Edgetype.Directed) 
-				processDirectedEdge(e.v1,e.v2);
-		});
-		if (fail) return null;
+				processDirectedEdge(e.v1,e.v2)
+		})
+		if (fail) return null
 		_.each(g.getEdges(), function(e){
 			if (e.directed != Graph.Edgetype.Directed && !areConnected(gn.getVertex(e.v1.id), e.v2)) 
-				gn.addEdge(e.v1.id, e.v2.id, e.directed);
-		});
+				gn.addEdge(e.v1.id, e.v2.id, e.directed)
+		})
 		g.copyAllVertexPropertiesTo( gn )
-		return gn;
+		return gn
 	},
 	
 	/*
@@ -841,38 +840,38 @@ var GraphTransformer = {
 		if one of the vertices in C was connected to W
 	*/
 	contractComponents: function(g, components, includeSelfEdges) {
-		var selfEdges = [false, false, false];
-		if (typeof includeSelfEdges === "boolean" ) selfEdges = selfEdges.map(function(t) { return includeSelfEdges; });
-		else if (_.isArray( includeSelfEdges ) ) _.each(includeSelfEdges, function(t) { selfEdges[t] = true; });
-		var targetVertices = new Hash();
+		var selfEdges = [false, false, false]
+		if (typeof includeSelfEdges === "boolean" ) selfEdges = selfEdges.map(function() { return includeSelfEdges })
+		else if (_.isArray( includeSelfEdges ) ) _.each(includeSelfEdges, function(t) { selfEdges[t] = true })
+		var targetVertices = new Hash()
 
-		var gn = new Graph();
+		var gn = new Graph()
 		_.each(components, function(component) { 
 			var ids = component.map(function(v){
-				if (typeof v === "string" ) return v;
-				else return v.id; 
-			});
-			var mergedVertex = gn.addVertex(ids.sort().join(","));
+				if (typeof v === "string" ) return v
+				else return v.id 
+			})
+			var mergedVertex = gn.addVertex(ids.sort().join(","))
 			_.each(ids,function(vid){
-				targetVertices.set(vid, mergedVertex);
-			});
-		});
+				targetVertices.set(vid, mergedVertex)
+			})
+		})
 		_.each( g.getVertices(), function( v ){
-			if (targetVertices.contains(v.id)) return;
-			var w = gn.addVertex( v.cloneWithoutEdges() );
-			targetVertices.set(v.id, w);
-		} );
+			if (targetVertices.contains(v.id)) return
+			var w = gn.addVertex( v.cloneWithoutEdges() )
+			targetVertices.set(v.id, w)
+		} )
 		_.each(g.getEdges(), function(e){
-			var c1 = targetVertices.get(e.v1.id);
-			var c2 = targetVertices.get(e.v2.id);
-			if (c1 == c2 && !selfEdges[e.directed]) return;
-			gn.addEdge( c1, c2, e.directed );
-		});
+			var c1 = targetVertices.get(e.v1.id)
+			var c2 = targetVertices.get(e.v2.id)
+			if (c1 == c2 && !selfEdges[e.directed]) return
+			gn.addEdge( c1, c2, e.directed )
+		})
 		_.each( g.managed_vertex_property_names, ( function( p ){
 			_.each( g.getVerticesWithProperty( p ), function( v ){
-					gn.addVertexProperty( targetVertices.get(v.id), p ) 
+				gn.addVertexProperty( targetVertices.get(v.id), p ) 
 			} )
-		} ) );
+		} ) )
 		return gn
 	}
-};
+}

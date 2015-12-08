@@ -27,13 +27,13 @@ _.extend( Hash.prototype, {
 		return this.kv.hasOwnProperty( key )
 	},
 	get : function( key ){
-		return this.kv[key];
+		return this.kv[key]
 	},
 	set : function( key, value ){
-		this.kv[key] = value;
+		this.kv[key] = value
 	},
 	unset : function( key ){
-		delete this.kv[key];
+		delete this.kv[key]
 	},
 	values : function(){
 		return Object.keys( this.kv ).map( function(k){
@@ -43,7 +43,7 @@ _.extend( Hash.prototype, {
 	keys : function(){
 		return Object.keys( this.kv )
 	},
-    size : function(){
+	size : function(){
 		return Object.keys( this.kv ).length
 	}
 } )

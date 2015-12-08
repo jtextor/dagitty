@@ -1,3 +1,11 @@
+/* 
+   This file is not currently used. A min-cut algorithm is implemented in 
+   GraphAnalyzer.js 
+ */
+
+/* globals _,Graph,GraphTransformer,Hash */
+/* exported GraphAnalyzer */
+
 Graph.addMethods( { 
 
    clearFlow : function(){

@@ -21,53 +21,56 @@
 	GraphAnalyzer and GraphTransform should not be used with this class but rather
 	with the underlying Graph itself (exposed to the outside world via the getGraph()
 	method). */
+	
+/* globals Class  */
+/* exported ObservedGraph */
 
 var ObservedGraph = Class.extend({
 	event_mapping : {
-		'addVertex' : 'change',
-		'renameVertex' : 'change',
-		'addEdge' : 'change',
-		'deleteVertex' : 'change',
-		'deleteEdge' : 'change',
-		'addSource' : 'change',
-		'removeSource' : 'change',
-		'addTarget' : 'change',
-		'removeTarget' : 'change',
-		'addLatentNode' : 'change',
-		'removeLatentNode' : 'change',
-		'addAdjustedNode' : 'change',
-		'removeAdjustedNode' : 'change'
+		"addVertex" : "change",
+		"renameVertex" : "change",
+		"addEdge" : "change",
+		"deleteVertex" : "change",
+		"deleteEdge" : "change",
+		"addSource" : "change",
+		"removeSource" : "change",
+		"addTarget" : "change",
+		"removeTarget" : "change",
+		"addLatentNode" : "change",
+		"removeLatentNode" : "change",
+		"addAdjustedNode" : "change",
+		"removeAdjustedNode" : "change"
 	},
 	initialize : function( graph ){
-		this.graph = graph;
-		this.event_listeners = {};
+		this.graph = graph
+		this.event_listeners = {}
 		Object.keys( this.event_mapping ).each(function(k){
-			this.event_listeners[this.event_mapping[k]]=[];
-		},this);
+			this.event_listeners[this.event_mapping[k]]=[]
+		},this)
 		for( var k in graph ){
 			if( Object.isFunction(graph[k]) ){
-				var f = graph[k];
+				var f = graph[k]
 				if( this.event_mapping[k] ){
 					this[k] = (function(f,k){
 						return function(){
-							var r = f.apply( graph, arguments );
+							var r = f.apply( graph, arguments )
 							this.event_listeners[this.event_mapping[k]].each(
 							function(l){
-								l();
-							});
-							return r;
+								l()
+							})
+							return r
 						}
-					})(f,k);
+					})(f,k)
 				} else {
 					this[k] = (function(f){
-						return function(){return f.apply( graph, arguments );}
-					})(f);
+						return function(){return f.apply( graph, arguments )}
+					})(f)
 				}
 			}
-		};
+		}
 	},
 	observe : function( event, listener ){
-		this.event_listeners[event].push(listener);
+		this.event_listeners[event].push(listener)
 	}
-} );
+} )
 

@@ -15,6 +15,9 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA. */
 
+/* globals _,Graph,GraphAnalyzer */
+/* exported GraphSerializer */
+
 var GraphSerializer = {
 
 	toDot : function( g ){
@@ -30,24 +33,24 @@ var GraphSerializer = {
 			g.isAdjustedNode(v) && properties.push("adjusted")
 			g.isLatentNode(v) && properties.push("latent")
 			g.isSelectionNode(v) && properties.push("selected")
-			if( typeof v.layout_pos_x!== 'undefined'  ){
-				properties.push( 'pos="' + 
+			if( typeof v.layout_pos_x!== "undefined"  ){
+				properties.push( "pos=\"" + 
 					v.layout_pos_x.toFixed(3) + "," + 
-					v.layout_pos_y.toFixed(3) + '"' )
+					v.layout_pos_y.toFixed(3) + "\"" )
 			}
 			if( properties.length > 0 ){
 				property_string = " ["+properties.join(",")+"]"
 			}
 			return encodeURIComponent(v.id) + property_string
-		};
-		var r = "";
-		var ra = [];
+		}
+		var r = ""
+		var ra = []
 		_.each( 
 		g.vertices.values(), function( v ){
-			ra.push(expandLabel( v, g )+"\n");
-		} );
-		ra.sort();
-		return r + ra.join('');
+			ra.push(expandLabel( v, g )+"\n")
+		} )
+		ra.sort()
+		return r + ra.join("")
 	},
 	
 	toDotEdgeStatements : function( g ){
@@ -56,12 +59,12 @@ var GraphSerializer = {
 			es = e.toString()
 			eop = []
 			if( e.layout_pos_x ){
-				eop.push('pos="' + 
+				eop.push("pos=\"" + 
 					e.layout_pos_x.toFixed(3) + "," + 
-					e.layout_pos_y.toFixed(3) + '"')
+					e.layout_pos_y.toFixed(3) + "\"")
 			}
 			if( e.id ){
-				eop.push('label="' + encodeURIComponent( e.id ) + '"')
+				eop.push("label=\"" + encodeURIComponent( e.id ) + "\"")
 			}
 			if( eop.length > 0 ){
 				es += " ["+eop.join(",")+"]"
@@ -120,7 +123,7 @@ var GraphSerializer = {
 			r = "# Remember to set lavaan's fixed.x appopriately!\n"
 		_.each( ee, function(e){
 			edgetype = ""
-			reverse = true
+			var reverse = true
 			if( e instanceof Graph.Edge.Directed ){
 				if( g.isLatentNode( e.v1 ) ){
 					if( g.isLatentNode( e.v2 ) ){
@@ -148,14 +151,15 @@ var GraphSerializer = {
 
 	toTikz : function( g, precision ){
 		if( precision == null ){ precision = 5 }
-		var vv = g.getVertices(), i, r = "", ee = g.getEdges(), v_index = [], edgetype
+		var vv = g.getVertices(), i, r = "", ee = g.getEdges(), v_index = [], edgetype,
+			p1x, p1y, p2x, p2y
 		for( i = 0 ; i < vv.length ; i ++ ){
 			r += "\\node (v"+i+") at ("+vv[i].layout_pos_x.toPrecision(precision)+
 				","+(-vv[i].layout_pos_y).toPrecision(precision)+") {"+vv[i].id+"};\n"
 			v_index[vv[i].id] = i
 		}
 		for( i = 0 ; i < ee.length ; i ++ ){
-			edgetype = "";
+			edgetype = ""
 			if( ee[i] instanceof Graph.Edge.Directed ){
 				edgetype = "[->] "
 			}
@@ -247,19 +251,19 @@ var GraphSerializer = {
 	},
 	
 	toImplicationTestRCode : function( g, max_nr ){
-		var imp, i, j
+		var imp, i, j, r_str
 		if( max_nr == null ){ max_nr = 1000 }
 		imp = GraphAnalyzer.listMinimalImplications( g, max_nr )
 		r_str = []
 		for( i = 0 ; i < imp.length ; i ++ ){
-				for( j = 0 ; j < imp[i][2].length ; j ++ ){
+			for( j = 0 ; j < imp[i][2].length ; j ++ ){
 				r_str.push( "c(\""+
-					imp[i][0]+"\",\""+imp[i][1]+"\""+
-					( imp[i][2][j].length > 0 ?
-						",\""+imp[i][2][j].pluck("id").join("\",\"")+"\""
-						: "" ) +
-					")" )
-				}
+				imp[i][0]+"\",\""+imp[i][1]+"\""+
+				( imp[i][2][j].length > 0 ?
+					",\""+imp[i][2][j].pluck("id").join("\",\"")+"\""
+					: "" ) +
+				")" )
+			}
 		}
 		return "testImplications <- function( covariance.matrix, sample.size ){\n"+
 				"\tlibrary(ggm)\n\t"+
@@ -269,7 +273,7 @@ var GraphSerializer = {
 				r_str.join(",\n\t\t")+")\n\t"+
 				"data.frame( implication=unlist(lapply(implications,tos)),\n\t\t"+
 				"pvalue=unlist( lapply( implications, tst ) ) )\n"+
-			"\n}";
+			"\n}"
 	},
 	
 	toJavascriptMultilineString : function( g ){
@@ -279,4 +283,4 @@ var GraphSerializer = {
 		}
 		return "\t\""+r_str.join("\\n\"+\n\t\"")+"\""
 	}
-};
+}

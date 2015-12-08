@@ -1,5 +1,5 @@
 /* This is a namespace containing various methods that analyze a given
- * graph. These methods to not change the graph. */
+ * graph. These methods do not change the graph. */
 
 /* globals _,Graph,GraphTransformer,Hash */
 /* exported GraphAnalyzer */
@@ -10,7 +10,7 @@ var GraphAnalyzer = {
 	*/
 	equalGraphs: function (g, h){
 		return g.vertices.keys().sort().join("\r") == h.vertices.keys().sort().join("\r") &&
-					 g.getEdges().map(function(e){return e.toString()}).sort().join("\r") == h.getEdges().map(function(e){return e.toString()}).sort().join("\r");
+			g.getEdges().map(function(e){return e.toString()}).sort().join("\r") == h.getEdges().map(function(e){return e.toString()}).sort().join("\r")
 	},
 	
 	trekRule : function( g, v1, v2, use_ids_as_labels ){
@@ -114,7 +114,7 @@ var GraphAnalyzer = {
 		var latents = g.getLatentNodes()
 		var is_latent = []; for( var i = 0 ; i < latents.length ; i ++ ){ is_latent[latents[i].id]=1 }
 		
-		var vv = _.pluck(_.reject(g.getVertices(),function(v){return is_latent[v.id]}),'id'), 
+		var vv = _.pluck(_.reject(g.getVertices(),function(v){return is_latent[v.id]}),"id"), 
 			i1, i2, i3, i4, iside, jside
 		
 		function examineQuadruple( i1, i2, j1, j2 ){
@@ -148,126 +148,126 @@ var GraphAnalyzer = {
 		var i, j, vv, ee, e, is_target = [], s, t
 		
 		if( !sources ) sources = g.getSources()
-			if( !targets ) targets = g.getTargets()
+		if( !targets ) targets = g.getTargets()
 				
-				for( i = 0 ; i < sources.length ; i ++ ){
-					s = sources[i]
-					for( j = 0 ; j < targets.length ; j ++ ){
-						t = targets[j]
-						if( ( s.id == t.id ) || ( g.getEdge( s.id, t.id ) ) )
-							return undefined
-							is_target[t.id] = true
-					}
-				}
+		for( i = 0 ; i < sources.length ; i ++ ){
+			s = sources[i]
+			for( j = 0 ; j < targets.length ; j ++ ){
+				t = targets[j]
+				if( ( s.id == t.id ) || ( g.getEdge( s.id, t.id ) ) )
+					return undefined
+				is_target[t.id] = true
+			}
+		}
 				
-				var flowE = [], flowV = [], parents = []
+		var flowE = [], flowV = [], parents = []
 				
-				vv = g.getVertices()
-				for( i = 0 ; i < vv.length ; i ++ ){
-					flowV[ vv[i].id ] = 0
-					if( flowE[ vv[i].id ] === undefined ) flowE[ vv[i].id ] = []
-				}
+		vv = g.getVertices()
+		for( i = 0 ; i < vv.length ; i ++ ){
+			flowV[ vv[i].id ] = 0
+			if( flowE[ vv[i].id ] === undefined ) flowE[ vv[i].id ] = []
+		}
 				
-				ee = g.getEdges()
-				for( i = 0 ; i < ee.length ; i ++ ){
-					e = ee[i]
-					flowE[ e.v1.id ][ e.v2.id ] = 0
-				}
+		ee = g.getEdges()
+		for( i = 0 ; i < ee.length ; i ++ ){
+			e = ee[i]
+			flowE[ e.v1.id ][ e.v2.id ] = 0
+		}
 				
-				var findAugmentingPath = function( vqueue ){
-					var i, vnext, qfront = 0, forwards
-					var dirqueue = []
-					for( i = 0 ; i < vqueue.length ; i ++ ){
-						dirqueue[i] = 1
-					}
+		var findAugmentingPath = function( vqueue ){
+			var i, vnext, qfront = 0, forwards
+			var dirqueue = []
+			for( i = 0 ; i < vqueue.length ; i ++ ){
+				dirqueue[i] = 1
+			}
 					
-					var pars = [ {}, {} ]
-					for( i = 0 ; i < vqueue.length ; i ++ ) pars[1][vqueue[i]] = -1
+			var pars = [ {}, {} ]
+			for( i = 0 ; i < vqueue.length ; i ++ ) pars[1][vqueue[i]] = -1
 						
-						function checkPath( vn, fw ){
-							if( pars[fw?1:0][vn.id] === undefined ){
-								vqueue.push( vn.id )
-								dirqueue.push( fw?1:0 )
-								pars[fw?1:0][vn.id] = qfront
-							}
-						}
+			function checkPath( vn, fw ){
+				if( pars[fw?1:0][vn.id] === undefined ){
+					vqueue.push( vn.id )
+					dirqueue.push( fw?1:0 )
+					pars[fw?1:0][vn.id] = qfront
+				}
+			}
 						
-						while( qfront < vqueue.length ){
-							vid = vqueue[qfront]
-							forwards = dirqueue[qfront]
+			while( qfront < vqueue.length ){
+				vid = vqueue[qfront]
+				forwards = dirqueue[qfront]
 								// vqueue = [vstart.id], dirqueue = [1],
-								if( is_target[vid] && forwards ){
-									var v2id = t.id, dir = dirqueue[qfront]
-									parents = [v2id]
-									while( pars[dir][vqueue[qfront]] >= 0 ){
-										parents.unshift( dir )
-										qfront = pars[dir][vqueue[qfront]]
-										dir = dirqueue[qfront]
-										parents.unshift( vqueue[qfront] )
-									}
-									return true
-								}
+				if( is_target[vid] && forwards ){
+					var v2id = t.id, dir = dirqueue[qfront]
+					parents = [v2id]
+					while( pars[dir][vqueue[qfront]] >= 0 ){
+						parents.unshift( dir )
+						qfront = pars[dir][vqueue[qfront]]
+						dir = dirqueue[qfront]
+						parents.unshift( vqueue[qfront] )
+					}
+					return true
+				}
 								
-								if( flowV[ vid ] ){
+				if( flowV[ vid ] ){
 									// If there has been flow, we can only move out
 									// in the opposite direction that we came in.
-									if( forwards ){
-										vnext = g.getVertex(vid).getParents()
-										for( i = 0 ; i < vnext.length ; i ++ ){
+					if( forwards ){
+						vnext = g.getVertex(vid).getParents()
+						for( i = 0 ; i < vnext.length ; i ++ ){
 											/// going backwards only if previously went forwards
-											if( flowE[vnext[i].id][vid] ){
-												checkPath( vnext[i], false )
-											}
-										}
-									} else {
-										vnext = g.getVertex(vid).getChildren()
-										for( i = 0 ; i < vnext.length ; i ++ ){
-											checkPath( vnext[i], true )
-										}
-									}
+							if( flowE[vnext[i].id][vid] ){
+								checkPath( vnext[i], false )
+							}
+						}
+					} else {
+						vnext = g.getVertex(vid).getChildren()
+						for( i = 0 ; i < vnext.length ; i ++ ){
+							checkPath( vnext[i], true )
+						}
+					}
 									
-								} else {
+				} else {
 									// If there is no flow in this vertex, none
 									// of the parent edges have flow. We can only move out
 									// forwards. Also, we must have come in forwards.
-									vnext = g.getVertex(vid).getChildren()
-									for( i = 0 ; i < vnext.length ; i ++ ){
-										checkPath( vnext[i], true )
-									}
-								}
-								qfront ++
-						}
+					vnext = g.getVertex(vid).getChildren()
+					for( i = 0 ; i < vnext.length ; i ++ ){
+						checkPath( vnext[i], true )
+					}
+				}
+				qfront ++
+			}
 						
-						return false
-				}
+			return false
+		}
 				
-				var vid, trials = g.getVertices().length
-				i = 0
-				while( findAugmentingPath( _.pluck(sources,'id') ) && --trials > 0 ){
-					i++
-					for( j = 2 ; j < parents.length-1 ; j += 2 ){
-						if( parents[j-1] && parents[j+1] ){ 
-							flowV[parents[j]] = 1
-						}
-						if( !parents[j-1] && !parents[j+1] ){ 
-							flowV[parents[j]] = 0
-						}
-					}
-					for( j = 1 ; j < parents.length ; j += 2 ){
-						if( parents[j] ){
-							flowE[parents[j-1]][parents[j+1]] ++
-						} else {
-							flowE[parents[j+1]][parents[j-1]] --
-						}
-					}
-					parents = []
+		var vid, trials = g.getVertices().length
+		i = 0
+		while( findAugmentingPath( _.pluck(sources,"id") ) && --trials > 0 ){
+			i++
+			for( j = 2 ; j < parents.length-1 ; j += 2 ){
+				if( parents[j-1] && parents[j+1] ){ 
+					flowV[parents[j]] = 1
 				}
-				return i
+				if( !parents[j-1] && !parents[j+1] ){ 
+					flowV[parents[j]] = 0
+				}
+			}
+			for( j = 1 ; j < parents.length ; j += 2 ){
+				if( parents[j] ){
+					flowE[parents[j-1]][parents[j+1]] ++
+				} else {
+					flowE[parents[j+1]][parents[j-1]] --
+				}
+			}
+			parents = []
+		}
+		return i
 	},
 	
 	listMsasTotalEffect : function( g, must, must_not ){
 		if(GraphAnalyzer.violatesAdjustmentCriterion(g)){ return [] }
-		var adjusted_nodes = g.getAdjustedNodes();
+		var adjusted_nodes = g.getAdjustedNodes()
 		var latent_nodes = g.getLatentNodes().concat( this.dpcp(g) )
 		
 		var gam = GraphTransformer.moralGraph( 
@@ -317,32 +317,32 @@ var GraphAnalyzer = {
 	},
 	
 	listMinimalImplications : function( g, max_nr ){
-		var r = [];
-		var g2 = g.clone();
-		var vv = g2.vertices.values();
+		var r = []
+		var g2 = g.clone()
+		var vv = g2.vertices.values()
 		// this ignores adjusted vertices for now 
 		for( var i = 0 ; i < vv.length ; i ++ ){
-			g2.removeAllAdjustedNodes();
+			g2.removeAllAdjustedNodes()
 		}
-		var n = 0;
+		var n = 0
 		for( i = 0 ; i < vv.length ; i ++ ){
 			for( var j = i+1 ; j < vv.length ; j ++ ){
 				if( !g2.isLatentNode( vv[i] ) && !g2.isLatentNode( vv[j] ) 
 					&& !g2.getEdge( vv[i].id, vv[j].id ) && !g2.getEdge( vv[j].id, vv[i].id ) ){
-					g2.removeAllSources().addSource( g2.getVertex( vv[i].id ) );
-				g2.removeAllTargets().addTarget( g2.getVertex( vv[j].id ) );
-				var seps = GraphAnalyzer.listDseparators( g2, [], [], max_nr-n );
-				if( seps.length > 0 ){
-					r.push( [vv[i].id, vv[j].id, seps] );
-					n += seps.length;
-					if( n >= max_nr ){
-						return r;
+					g2.removeAllSources().addSource( g2.getVertex( vv[i].id ) )
+					g2.removeAllTargets().addTarget( g2.getVertex( vv[j].id ) )
+					var seps = GraphAnalyzer.listDseparators( g2, [], [], max_nr-n )
+					if( seps.length > 0 ){
+						r.push( [vv[i].id, vv[j].id, seps] )
+						n += seps.length
+						if( n >= max_nr ){
+							return r
+						}
 					}
 				}
-					}
 			}
 		}
-		return r;
+		return r
 	},
 	
 	/** Given an undirected graph, this function checks whether the graph could
@@ -354,12 +354,12 @@ var GraphAnalyzer = {
 		if( g.edges.all( function( e ){
 			if( typeof cpdag.getEdge( e.v1.id, e.v2.id, 
 					Graph.Edgetype.Undirected ) == "undefined" ){ 
-					p1 = cpdag.getVertex(e.v1.id).getParents().pluck("id")
-					p2 = cpdag.getVertex(e.v2.id).getParents().pluck("id")
-					if( !p1.include(e.v2.id) && !p2.include(e.v1.id) 
+				p1 = cpdag.getVertex(e.v1.id).getParents().pluck("id")
+				p2 = cpdag.getVertex(e.v2.id).getParents().pluck("id")
+				if( !p1.include(e.v2.id) && !p2.include(e.v1.id) 
 						&& p1.intersect(p2).length == 0 ){
-						return false
-					}
+					return false
+				}
 			}
 			return true
 		} ) ){
@@ -374,19 +374,19 @@ var GraphAnalyzer = {
 	 * 
 	 * */
 	listPathPairs : function( g ){
-		var paths = g.listPaths().split('\n');
-		var r = "";
+		var paths = g.listPaths().split("\n")
+		var r = ""
 		_.each( paths, function( p ){
 			if( p == "..." ){
-				r += "\n...";
+				r += "\n..."
 			} else {
-				var p_arr = p.split("->").slice(1).map( function(s){ return s.split(':'); } );
-				var left_side = _.uniq(_.pluck(p_arr,'0')).slice(1).join('->');
-				var right_side = _.uniq(_.pluck(p_arr,'1')).reverse().join('<-');
-				r += ( r == "" ? "" : "\n" ) + right_side + "->" + left_side;
+				var p_arr = p.split("->").slice(1).map( function(s){ return s.split(":") } )
+				var left_side = _.uniq(_.pluck(p_arr,"0")).slice(1).join("->")
+				var right_side = _.uniq(_.pluck(p_arr,"1")).reverse().join("<-")
+				r += ( r == "" ? "" : "\n" ) + right_side + "->" + left_side
 			}
-		} );
-		return r;
+		} )
+		return r
 	},
 	
 	directEffectEqualsTotalEffect : function( g ){
@@ -461,7 +461,7 @@ var GraphAnalyzer = {
 	},
 	
 	nodesThatViolateAdjustmentCriterionWithoutIntermediates : function( g ){
-		var is_on_causal_path = [];
+		var is_on_causal_path = []
 		var set_causal =  function(v){ is_on_causal_path[v.id]=true }
 		_.each( this.properPossibleCausalPaths(g), set_causal )
 		var is_violator = function(v){ return g.isAdjustedNode( v ) && !is_on_causal_path[v.id] }
@@ -539,7 +539,6 @@ var GraphAnalyzer = {
 					listPathsRec( u, v )
 					visited[u.id]=0
 				} catch( e ) {
-					console.log( e )
 					return r
 				}
 			})
@@ -749,50 +748,50 @@ var GraphAnalyzer = {
 	 */                         
 	listMinimalSeparators: function( g, _must, _must_not, max_nr ){
 		if( g.getSources().length == 0 || g.getTargets().length == 0 ){
-			return [];
+			return []
 		}
-		var Uh = new Hash();
-		_.each( g.getTargets(), function( v ){ Uh.set(v.id,v) } );
-		_.each( g.neighboursOf( g.getTargets() ), function( v ){ Uh.set(v.id,v) } );
-		var U = Uh.values();
+		var Uh = new Hash()
+		_.each( g.getTargets(), function( v ){ Uh.set(v.id,v) } )
+		_.each( g.neighboursOf( g.getTargets() ), function( v ){ Uh.set(v.id,v) } )
+		var U = Uh.values()
 		
-		var R = [];
-		var must = [];
+		var R = []
+		var must = []
 		if( _must ){
-			_.each( _must, function(v){must.push(g.getVertex(v.id));});
+			_.each( _must, function(v){must.push(g.getVertex(v.id))})
 		}
-		var must_not = [];
+		var must_not = []
 		if( _must_not ){
-			_.each( _must_not, function(v){must_not.push(g.getVertex(v.id));});
+			_.each( _must_not, function(v){must_not.push(g.getVertex(v.id))})
 		}
 		var realN = function( V ){
-			g.clearVisited();
+			g.clearVisited()
 			_.each( V.concat(must), function(v){
-				Graph.Vertex.markAsVisited(v);
-			} );
-			var r = [];
-			var q = V.slice();
+				Graph.Vertex.markAsVisited(v)
+			} )
+			var r = []
+			var q = V.slice()
 			var mark_visited_and_push = function(w){
 				if( !Graph.Vertex.isVisited( w ) ){
-					Graph.Vertex.markAsVisited(w);
+					Graph.Vertex.markAsVisited(w)
 					if( _.contains(must_not,w) ){
-						q.push( w );
+						q.push( w )
 					} else {
-						r.push( w );                      
+						r.push( w )                      
 					}
 				}
-			}; 
+			} 
 			while( q.length > 0 ){
-				_.each( q.pop().getNeighbours(), mark_visited_and_push );
+				_.each( q.pop().getNeighbours(), mark_visited_and_push )
 			}
-			return r;
-		};
+			return r
+		}
 		
 		var nearSeparator =  function( A, b ){
 			var NA = realN( A )
 			var C = GraphAnalyzer.connectedComponentAvoiding( g, b, NA.concat(must) )
 			return realN( C )
-		};
+		}
 		
 		var listMinSep = function( A, U ){
 			if( R.length >= max_nr ) return
@@ -800,7 +799,7 @@ var GraphAnalyzer = {
 			var Astar = GraphAnalyzer.connectedComponentAvoiding( g, g.getSources(),
 				SA.concat(must) )
 			if( _.intersection( Astar, U ).length == 0 ){
-				var NA = realN(Astar);
+				var NA = realN(Astar)
 				NA = _.difference( NA, U )
 				if( NA.length > 0 ){
 					var v = NA[0]
@@ -816,7 +815,7 @@ var GraphAnalyzer = {
 			}
 		}
 		listMinSep( g.getSources(), U )
-		return R;
+		return R
 	},
 
 	/** 
@@ -831,20 +830,20 @@ var GraphAnalyzer = {
 	 *  Returns an array mapping vertex IDs to topological indices.
 	 */
 	topologicalOrdering: function( g ) {
-		var ind = { i : g.vertices.size() };
+		var ind = { i : g.vertices.size() }
 		var topological_index = {}
 		var visited = {}
 		var visit = function( v ){
 			if( !visited[v.id] ){
-				visited[v.id] = true;
-				var children = v.getChildren();
+				visited[v.id] = true
+				var children = v.getChildren()
 				if( g.isSource(v) || g.isTarget(v) || children.length > 0 ||
 					v.getParents().length > 0 ){ 
 					for( var i = 0 ; i < children.length ; i ++ ){
 						visit( children[i] )
 					} 
-					topological_index[v.id] = ind.i;
-					ind.i--;
+					topological_index[v.id] = ind.i
+					ind.i--
 				}
 			}
 		}
@@ -856,8 +855,8 @@ var GraphAnalyzer = {
 	},
 
 	bottleneckNumbers : function( g, topological_index ) {
-		var s0 = g.getSources()[0];
-		var t0 = g.getTargets()[0];
+		var s0 = g.getSources()[0]
+		var t0 = g.getTargets()[0]
 		var bottleneck_number = {}, reaches_source = {}, reaches_target = {},
 			visited = {}
 		_.each( g.ancestorsOf( g.getSources(),
@@ -866,55 +865,55 @@ var GraphAnalyzer = {
 				g.clearTraversalInfo()
 				_.each( adj, function(v){ Graph.Vertex.markAsVisited(v) })
 			} ), function(v){
-			reaches_source[v.id] = true;
-		});
+				reaches_source[v.id] = true
+			})
 		_.each( g.ancestorsOf( g.getTargets(),
 			function(){
 				var adj = g.getAdjustedNodes()
 				g.clearTraversalInfo()
 				_.each( adj, function(v){ Graph.Vertex.markAsVisited(v) })
 			} ), function(v){
-			reaches_target[v.id] = true;
-		});
-		var vv = g.vertices.values();
-		var bn_s = topological_index[s0.id];
-		var bn_t = topological_index[t0.id];
+				reaches_target[v.id] = true
+			})
+		var vv = g.vertices.values()
+		var bn_s = topological_index[s0.id]
+		var bn_t = topological_index[t0.id]
 		_.each( vv, function(v){
 			if( reaches_source[v.id] && 
 				!reaches_target[v.id] ){
-				bottleneck_number[v.id] = bn_s;
+				bottleneck_number[v.id] = bn_s
 			} else if(!reaches_source[v.id] && 
 				reaches_target[v.id] ){
-				bottleneck_number[v.id] = bn_t;
+				bottleneck_number[v.id] = bn_t
 			} else {
-				bottleneck_number[v.id] = undefined;
+				bottleneck_number[v.id] = undefined
 			}
-		});
+		})
 		_.each( g.getSources(), function(s){
 			topological_index[s.id] = bn_s
 			bottleneck_number[s.id] = bn_s
 			visited[s.id] = true
-		});
+		})
 		_.each( g.getTargets(), function(t){
 			bottleneck_number[t.id] = bn_t
 			topological_index[t.id] = bn_t
 			visited[t.id] = true
-		});
+		})
 		var visit = function( v ){
 			if( !visited[v.id] && 
 				(reaches_source[v.id] || reaches_target[v.id]) ){
 				visited[v.id]=true
 				var children = _.filter( v.getChildren(), function(v){
 					return reaches_source[v.id] ||
-						reaches_target[v.id];
-				});
-				_.each( children, visit);
+						reaches_target[v.id]
+				})
+				_.each( children, visit)
 				if( children.length > 1 && _.some( children,
 					function(v2){ return bottleneck_number[v2.id] != 
 						bottleneck_number[children[0].id] } ) ){
-					bottleneck_number[v.id] = topological_index[v.id];
+					bottleneck_number[v.id] = topological_index[v.id]
 				} else {
-					bottleneck_number[v.id] = bottleneck_number[children[0].id];
+					bottleneck_number[v.id] = bottleneck_number[children[0].id]
 				}
 			}
 		}
@@ -931,11 +930,11 @@ var GraphAnalyzer = {
 			kinship_function = "getNeighbours"
 		}
 		var visited = {}
-		var vv = g.vertices.values();
+		var vv = g.vertices.values()
 		var component = function(v){
 			var q = [v], r =[v]
 			while( q.length > 0 ){
-				var v2 = q.pop();
+				var v2 = q.pop()
 				visited[v2.id] = true
 				_.each( v2[kinship_function](), function(vn2){
 					if( !visited[vn2.id] ){
@@ -945,15 +944,15 @@ var GraphAnalyzer = {
 					}
 				} )
 			}
-			return r;
-		};
-		var r = [];
+			return r
+		}
+		var r = []
 		_.each( vv, function(v){
 			if( !visited[v.id] ){
-				r.push( component(v) );
+				r.push( component(v) )
 			}
-		});
-		return r;
+		})
+		return r
 	},
 	
 	/***
@@ -991,24 +990,24 @@ var GraphAnalyzer = {
 	 */
 	blockTree : function( g, bicomps ) {
 		if( bicomps == null ){
-			bicomps = this.biconnectedComponents( g );
+			bicomps = this.biconnectedComponents( g )
 		}
-		var bt = new Graph();
+		var bt = new Graph()
 		_.each( bicomps, function( edge_list ){
-			bt.addVertex( new Graph.Vertex( { id : "C"+edge_list[0].component_index } ) );
-		} );
+			bt.addVertex( new Graph.Vertex( { id : "C"+edge_list[0].component_index } ) )
+		} )
 		_.each( g.vertices.values(), function( v ){
 			if( v.is_articulation_point ){
-				bt.addVertex( new Graph.Vertex( { id : "A"+v.id } ) );
-				var vn = bt.getVertex("A"+v.id);
-				vn.is_articulation_point = true;
+				bt.addVertex( new Graph.Vertex( { id : "A"+v.id } ) )
+				var vn = bt.getVertex("A"+v.id)
+				vn.is_articulation_point = true
 				_.each( v.adjacentUndirectedEdges, function( e ){
 					bt.addEdge( vn, bt.getVertex("C"+e.component_index),
 						Graph.Edgetype.Undirected ) 
-				} );
+				} )
 			}
-		} );
-		return bt;
+		} )
+		return bt
 	},
 	
 	/**
@@ -1023,7 +1022,7 @@ var GraphAnalyzer = {
 			v.traversal_info.parent = 0
 			v.traversal_info.dtime = 0
 			v.traversal_info.lowlink = vv.length + 1
-		});
+		})
 		var component_index = 0
 		var visit = function(v){
 			v.traversal_info.dtime = ++time
@@ -1037,7 +1036,7 @@ var GraphAnalyzer = {
 					if( v.traversal_info.dtime == 1 ){
 						children_of_root ++
 					}
-					visit( w );
+					visit( w )
 					if( w.traversal_info.lowlink >= v.traversal_info.dtime ){
 						if( v.traversal_info.dtime > 1 ){
 							v.is_articulation_point = true
@@ -1060,17 +1059,17 @@ var GraphAnalyzer = {
 					if(  (w.traversal_info.dtime < v.traversal_info.dtime)
 						&& (w != v.traversal_info.parent) ){ // (v,w) is a back edge
 						q.push( e )
-					if( w.traversal_info.dtime < v.traversal_info.lowlink ){
-						v.traversal_info.lowlink = w.traversal_info.dtime
-					}
+						if( w.traversal_info.dtime < v.traversal_info.lowlink ){
+							v.traversal_info.lowlink = w.traversal_info.dtime
 						}
+					}
 				}
-			});
+			})
 			// special case for root
 			if( children_of_root > 1 ){
 				v.is_articulation_point = true
 			}
-		};
+		}
 		_.each( vv, function(v){
 			if( v.traversal_info.dtime == 0 ){
 				visit(v)
@@ -1081,8 +1080,8 @@ var GraphAnalyzer = {
 
 	//see https://en.wikipedia.org/wiki/Lexicographic_breadth-first_search
 	lexicographicBreadthFirstSearch : function( g, componentV ){
-		if (!componentV) componentV = g.getVertices();
-		else componentV = componentV.concat();
+		if (!componentV) componentV = g.getVertices()
+		else componentV = componentV.concat()
 		
 		/*
 			This uses a (doubly) linked list of sets for the ordering
@@ -1090,8 +1089,8 @@ var GraphAnalyzer = {
 		*/
 		
 		
-		var componentSet = new Hash();
-		_.each(componentV, function(v){ componentSet.set(v.id, v); });
+		var componentSet = new Hash()
+		_.each(componentV, function(v){ componentSet.set(v.id, v) })
 		
 		var firstSet = {
 			next: null,
@@ -1101,100 +1100,100 @@ var GraphAnalyzer = {
 			setKeys: componentV.map(function(v){return v.id}), //cache of this.set.keys(), not updated for removed elements
 			setKeyIndex: 0, //processed keys. 
 			id: 0
-		};
+		}
 		
-		var containedSet = new Hash();
-		_.each(componentV, function(v){ containedSet.set(v.id, firstSet); });
+		var containedSet = new Hash()
+		_.each(componentV, function(v){ containedSet.set(v.id, firstSet) })
 			
-		var iteration = 0;
-		var result = [];
+		var iteration = 0
+		var result = []
 			
 		while (firstSet) {		
-			while (firstSet.setKeyIndex < firstSet.setKeys.length 
-			       && !firstSet.set.contains(firstSet.setKeys[firstSet.setKeyIndex]))
-				firstSet.setKeyIndex++;
+			while (firstSet.setKeyIndex < firstSet.setKeys.length && 
+				!firstSet.set.contains(firstSet.setKeys[firstSet.setKeyIndex]))
+				firstSet.setKeyIndex++
 			if (firstSet.setKeyIndex >= firstSet.setKeys.length) {
-				firstSet = firstSet.next;
-				if (firstSet) firstSet.prev = null;
-				continue;
+				firstSet = firstSet.next
+				if (firstSet) firstSet.prev = null
+				continue
 			}
 			
-			var v = firstSet.set.get(firstSet.setKeys[firstSet.setKeyIndex]);
-			result.push(v);
-			firstSet.setKeyIndex++;
-			iteration++;
+			var v = firstSet.set.get(firstSet.setKeys[firstSet.setKeyIndex])
+			result.push(v)
+			firstSet.setKeyIndex++
+			iteration++
 			
-			firstSet.set.unset(v.id);
-			containedSet.unset(v.id);
+			firstSet.set.unset(v.id)
+			containedSet.unset(v.id)
 				
 			
 			_.each(v.getNeighbours(), function(w){
-				var set = containedSet.get(w.id);
-				if (!set) return;
+				var set = containedSet.get(w.id), newSet
+				if (!set) return
 				
 				if (set.prevIteration != iteration) {
 					//set has not yet been splitted in this iteration
 					
 					//create new empty set 
-					var newSet = {
-							next: set,
-							prev: set.prev,
-							prevIteration: iteration,
-							set: new Hash(),
-							setKeys: [],
-							setKeyIndex: 0,
-						};
-					set.prevIteration = iteration;
+					newSet = {
+						next: set,
+						prev: set.prev,
+						prevIteration: iteration,
+						set: new Hash(),
+						setKeys: [],
+						setKeyIndex: 0
+					}
+					set.prevIteration = iteration
 					//insert newSet in linked list
-					if (set.prev) set.prev.next = newSet;
-					else firstSet = newSet;
-					set.prev = newSet;
+					if (set.prev) set.prev.next = newSet
+					else firstSet = newSet
+					set.prev = newSet
 				}
 				//move w from set to newSet
-				var newSet = set.prev;
-				newSet.setKeys.push(w.id);
-				newSet.set.set(w.id, w);
-				set.set.unset(w.id);
-				containedSet.set(w.id, newSet);
-			});
+				newSet = set.prev
+				newSet.setKeys.push(w.id)
+				newSet.set.set(w.id, w)
+				set.set.unset(w.id)
+				containedSet.set(w.id, newSet)
+			})
 		}
 
-		return result;
+		return result
 	},
 
 	/**
 	 *  Test for chordality
 	 */
 	isChordal : function( g, componentV ){
-		var ordering = GraphAnalyzer.lexicographicBreadthFirstSearch(g, componentV);
-		var positions = new Hash();
-		_.each(ordering, function(v,i) { positions.set(v.id, i); } );
-		console.log(_.map(ordering, function(v){return v.id}));
+		var ordering = GraphAnalyzer.lexicographicBreadthFirstSearch(g, componentV)
+		var positions = new Hash()
+		_.each(ordering, function(v,i) { positions.set(v.id, i) } )
 		return _.every(ordering, function(v,i) { 
 			var j = _.max(_.map(v.getNeighbours(), function(w) {
-				var p = positions.get(w.id);
-				if (p < i) return p;
-				else return -1;
-			}));
-			if (j < 0) return true;
-			var w = ordering[j];
+				var p = positions.get(w.id)
+				if (p < i) return p
+				else return -1
+			}))
+			if (j < 0) return true
+			var w = ordering[j]
 			//alert(w + " " + j  +" < " + i)
-			var earlierNeigboursOfW = new Hash();
+			var earlierNeigboursOfW = new Hash()
 			_.each(w.getNeighbours(), function(x) {
-				var p = positions.get(x.id);
-				if (p < j) earlierNeigboursOfW.set(x.id, true);
-			});
+				var p = positions.get(x.id)
+				if (p < j) earlierNeigboursOfW.set(x.id, true)
+			})
 			return _.every(v.getNeighbours(), function(x){
-				var p = positions.get(x.id);
-				return (p >= j) || earlierNeigboursOfW.get(x.id);
-			});
-		});
-  },
+				var p = positions.get(x.id)
+				return (p >= j) || earlierNeigboursOfW.get(x.id)
+			})
+		})
+	},
 
 
 	containsSemiCycle: function (g){
-		return GraphTransformer.contractComponents(g, GraphAnalyzer.connectedComponents(g), [Graph.Edgetype.Directed])
-		                       .containsCycle();
+		return GraphTransformer.contractComponents(g, 
+			GraphAnalyzer.connectedComponents(g), [Graph.Edgetype.Directed])
+			.containsCycle()
 	}
-};
+}
 
