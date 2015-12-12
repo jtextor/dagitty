@@ -21,7 +21,7 @@
 var GraphSerializer = {
 
 	toDot : function( g ){
-		return "graph {\n" + this.toDotVertexStatements(g)+
+		return g.getType()+" {\n" + this.toDotVertexStatements(g)+
 			this.toDotEdgeStatements(g)+"\n}\n"
 	},
 	

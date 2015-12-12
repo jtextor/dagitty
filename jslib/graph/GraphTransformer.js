@@ -87,7 +87,7 @@ var GraphTransformer = {
 			concat(g.getAdjustedNodes()).
 			concat(g.getSelectionNodes())
 		}
-		var g_an = this.inducedSubgraph( g, g.ancestorsOf( V ) )
+		var g_an = this.inducedSubgraph( g, g.anteriorsOf( V ) )
 		return g_an
 	},
 	
@@ -713,11 +713,13 @@ var GraphTransformer = {
 				}
 			}
 		} )
+		gm.setType("graph")
 		return gm
 	},
 	
 	dependencyGraph2CPDAG : function( g ){
 		var gn = new Graph()
+		gn.setType( "pdag" )
 		var vv = g.vertices.values()
 		vv.each( function(v){ gn.addVertex( v.cloneWithoutEdges() ) } )
 		g.edges.each(function(e){
@@ -793,8 +795,10 @@ var GraphTransformer = {
 	/*
 	  Replace every occurence of the induced subgraph A -> B -- C with A -> B -> C
 	*/
-	transformCGToRCG: function(g) {
+	cgToRcg: function(g) {
 		var gn = new Graph()
+		gn.setType( g.getType() )
+
 		_.each(g.vertices.values(), function(v){gn.addVertex( v.cloneWithoutEdges() )})
 		var fail = false
 		//checks if v is connected to a node with id w.id in the graph containing v
@@ -846,6 +850,8 @@ var GraphTransformer = {
 		var targetVertices = new Hash()
 
 		var gn = new Graph()
+		gn.setType( g.getType() )
+
 		_.each(components, function(component) { 
 			var ids = component.map(function(v){
 				if (typeof v === "string" ) return v

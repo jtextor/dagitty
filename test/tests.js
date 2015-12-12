@@ -54,14 +54,14 @@ QUnit.test( "parsing and serializing", function( assert ) {
 
 	assert.equal((function(){
 		var g = GraphParser.parseGuess( 
-			"digraph G {\nx [ exposure , pos =\" 12. , .13 \"]\ny [outcome]\n}" )
+			"graph G {\nx [ exposure , pos =\" 12. , .13 \"]\ny [outcome]\n}" )
 		return GraphSerializer.toDot(g) 
 	})(), "graph {\nx [exposure,pos=\"12.000,0.130\"]\ny [outcome]\n\n}\n" )
 
 
 	assert.equal((function(){
 		var g = GraphParser.parseGuess( 
-			"digraph G { x [exposure] \n y [outcome] }" )
+			"graph G { x [exposure] \n y [outcome] }" )
 		g.getVertex("x").layout_pos_x = 1.0
 		g.getVertex("x").layout_pos_y = 1.0
 		return GraphSerializer.toDot(g)
@@ -69,13 +69,13 @@ QUnit.test( "parsing and serializing", function( assert ) {
 
 	assert.equal((function(){
 		var g = GraphParser.parseGuess( 
-			"digraph G { x \n y }" )
+			"graph G { x \n y }" )
 		return GraphSerializer.toDot(g)
 	})(), "graph {\nx\ny\n\n}\n" )
 
 	assert.equal((function(){
 		var g = GraphParser.parseGuess( 
-			"digraph G { x [] \n y [] }" )
+			"graph G { x [] \n y [] }" )
 		return GraphSerializer.toDot(g)
 	})(), "graph {\nx\ny\n\n}\n" )
 
@@ -104,7 +104,7 @@ QUnit.test( "parsing and serializing", function( assert ) {
 	})(), "x -> m" )
 
 	assert.equal((function(){
-		var g = GraphParser.parseGuess( "digraph G { M [pos=\"-0.521,-0.265\"] \n "+
+		var g = GraphParser.parseGuess( "graph G { M [pos=\"-0.521,-0.265\"] \n "+
 			"X [exposure,pos=\"-1.749,-0.238\"] \n "+
 			"Y [outcome,pos=\"1.029,-0.228\"] \n "+
 			"M <-> Y [pos=\"0.645,-0.279\"] \n "+
@@ -185,7 +185,7 @@ QUnit.test( "separators", function( assert ) {
 
 QUnit.test( "graph analysis", function( assert ) {
 	assert.equal( 
-		TestGraphs.cyclic_graph().containsCycle(), "A&rarr;B&rarr;C&rarr;A" ) 
+		GraphAnalyzer.containsCycle( TestGraphs.cyclic_graph() ), "A&rarr;B&rarr;C&rarr;A" ) 
 	assert.equal(
 		GraphParser.parseGuess("x E\ny O\nz\na\n\nx y a z\na y\nz y").countPaths(),3)
 	assert.equal((function(){
@@ -310,7 +310,7 @@ QUnit.test( "graph transformations", function( assert ) {
 	})(), "A E\nB O\nU1 1\nU2 1\n\nA U1\nB U2\nU1 A\nU2 B" )
 	
 	var transformations = [
-		GraphTransformer.transformCGToRCG,
+		GraphTransformer.cgToRcg,
 		"graph { k -- n; l -- m; n -- t; t -- y; x -> y; }",
 		 "graph { k;l;m;n;t;x;y; l -- m; n -> k; t -> n; x -> y; y -> t }",
 		"graph { k -- n; l -- m; l -> n; l -> t; l -> y; n -- t; t -- y; x -> y; }",
@@ -377,11 +377,20 @@ QUnit.test( "adjustment in DAGs", function( assert ) {
 	})(), false )
 	
 	assert.equal( sep_2_str(GraphAnalyzer.listMsasTotalEffect(
-		GraphParser.parseGuess("graph { X1 [exposure]\n "+
+		GraphParser.parseGuess("dag { X1 [exposure]\n "+
 		"X2 [exposure]\n Y1 [outcome] \n Y2 [outcome]\n "+
 		"C -> Y1 \n"+
 		"C -> m \n X1 -> X2 \n X1 -> Y2 -> Y1 \n X2 -> Y1 \n X1 -> m2 -> m -> X2 }"))),
 		"{C}\n{m, m2}")
+});
+
+QUnit.test( "adjustment in chain graphs", function( assert ) {
+	assert.equal( sep_2_str(GraphAnalyzer.listMsasTotalEffect(
+		GraphParser.parseGuess("pdag { X [exposure]\n"+
+		"Y [outcome]\n"+
+		"X -> W -> Y ; F -> W -- Z ; X <- F -> Z }") 
+			 ) ), 
+		"{F}" )
 });
 
 QUnit.test( "testable implications", function( assert ) {
@@ -493,6 +502,26 @@ QUnit.test( "instrumental variables", function( assert ) {
 	})(), ""  )
 });
 
+QUnit.test( "graph validation", function( assert ) {
+	assert.equal( GraphAnalyzer.validate( GraphParser.parseGuess(
+		"dag { x -> y -> z }"
+	)), true )
+	assert.equal( GraphAnalyzer.validate( GraphParser.parseGuess(
+		"dag { x -> y -> z -> x }"
+	)), false )
+
+	assert.equal( GraphAnalyzer.validate( GraphParser.parseGuess(
+		"pdag { x -> y -> z }"
+	)), true )
+	
+	assert.equal( GraphAnalyzer.validate( GraphParser.parseGuess(
+		"dag { x -- y -> z -> x }"
+	)), false )
+	assert.equal( GraphAnalyzer.validate( GraphParser.parseGuess(
+		"pdag { x -- y -> z }"
+	)), true )
+});
+
 QUnit.test( "uncategorized tests", function( assert ) {
 
 assert.equal((function(){
@@ -600,8 +629,8 @@ assert.equal((function(){
 "xobs y\n"+
 "y t\n"+
 "t xobs" );
-   g.containsCycle();
-   return g.containsCycle();
+   GraphAnalyzer.containsCycle( g );
+   return GraphAnalyzer.containsCycle( g );
 })(), "xobs&rarr;y&rarr;t&rarr;xobs" )
 
 assert.equal((function(){
@@ -1129,8 +1158,6 @@ assert.equal((function(){
 	).addSource("x").addTarget("y")
 	return GraphSerializer.toDotEdgeStatements(GraphTransformer.activeBiasGraph(g))
 })(), "m -> x\ny -> m" )
-
-
 
 assert.equal((function(){
 	var g = GraphParser.parseGuess( 

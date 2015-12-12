@@ -266,6 +266,14 @@ var GraphAnalyzer = {
 	},
 	
 	listMsasTotalEffect : function( g, must, must_not ){
+		var gtype = g.getType()
+		if( gtype != "dag" && gtype != "pdag" ){
+			throw( "Don't know how to compute adjustment sets for graphs of type "+gtype )
+		}
+		if( gtype == "pdag" ){
+			g = GraphTransformer.cgToRcg( g )
+		}
+	
 		if(GraphAnalyzer.violatesAdjustmentCriterion(g)){ return [] }
 		var adjusted_nodes = g.getAdjustedNodes()
 		var latent_nodes = g.getLatentNodes().concat( this.dpcp(g) )
@@ -283,6 +291,14 @@ var GraphAnalyzer = {
 	},
 	
 	listMsasDirectEffect : function( g, must, must_not ){
+		var gtype = g.getType()
+		if( gtype != "dag" && gtype != "pdag" ){
+			throw( "Don't know how to compute adjustment sets for graphs of type "+gtype )
+		}
+		if( gtype == "pdag" ){
+			g = GraphTransformer.cgToRcg( g )
+		}
+
 		var adjusted_nodes = g.getAdjustedNodes()
 		var de_y = g.descendantsOf( _.intersection( g.descendantsOf( g.getSources() ),
 			g.getTargets() ) )
@@ -1189,11 +1205,76 @@ var GraphAnalyzer = {
 		})
 	},
 
+	/** Check whether the graph is syntactically valid for its type */
+	validate : function( g ){
+		switch( g.getType() ){
+		case "dag":
+			if( !_.every(g.getEdges(),function(e){ return e.directed ==
+				Graph.Edgetype.Directed }) ){
+				return false
+			}
+			if( GraphAnalyzer.containsCycle( g ) ){
+				return false
+			}
+			return true
+		break
+		case "pdag":
+			if( !_.every(g.getEdges(),function(e){ return e.directed ==
+				Graph.Edgetype.Directed || e.directed == Graph.Edgetype.Undirected }) ){
+				return false
+			}
+			if( GraphAnalyzer.containsSemiCycle( g ) ){
+				return false
+			}
+			return true
+		break
+		default:
+			throw("Do not know how to validate graph of type "+this.type)
+		}
+	},
+
+	containsCycle: function(g){
+		var vv = g.vertices.values()
+		for( var i = 0 ; i < vv.length ; i ++ ){
+			var v = vv[i]
+			g.clearVisited()
+			var c = this.searchCycleFrom( v )
+			if( c !== undefined ){
+				var v_count = []
+				for( var j = 0 ; j < c.length ; j ++ ){
+					v_count[c[j]]?v_count[c[j]]++:v_count[c[j]]=1
+				}
+				for( j = 0 ; j < c.length ; j ++ ){
+					if( v_count[c[j]] > 1 ){
+						return c.slice( c.indexOf( c[j] ),  c.lastIndexOf( c[j] )+1 ).join("&rarr;")
+					}
+				}
+			}
+		}
+	},
+	
+	searchCycleFrom: function( v, p ){
+		if( p === undefined ){ p = [] }
+		if( Graph.Vertex.isVisited( v ) ){ return p.concat(v.id) } 
+		Graph.Vertex.markAsVisited( v )
+		var children = v.getChildren() 
+		// consider only simple directed edges, because
+		// bidirected edges can never lie on a cycle
+		for( var i = 0 ; i < children.length ; i ++ ){
+			var pp = this.searchCycleFrom( children[i], p.concat(v.id) )
+			if( pp !== undefined ){
+				return pp
+			}
+		}
+		Graph.Vertex.markAsNotVisited( v )
+		return undefined
+	},
+	
 
 	containsSemiCycle: function (g){
-		return GraphTransformer.contractComponents(g, 
+		return GraphAnalyzer.containsCycle( GraphTransformer.contractComponents(g, 
 			GraphAnalyzer.connectedComponents(g), [Graph.Edgetype.Directed])
-			.containsCycle()
+			)
 	}
 }
 

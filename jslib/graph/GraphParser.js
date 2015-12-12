@@ -26,8 +26,9 @@ var GraphParser = {
 	*/
 	parseDot : function( code ){
 		"use strict"
-		var isdot = code.match(  /^\s*(di)?graph(\s+\w+)?\s*\{([\s\S]+)\}/m )
+		var isdot = code.trim().match(  /^(digraph|graph|dag|pdag|mag)(\s+\w+)?\s*\{([\s\S]+)\}$/m )
 		var edgestatements = isdot[isdot.length-1]
+		var gtype = isdot[1]
 		var txt = edgestatements.trim()
 		var lines = txt.split(/[\n;]/)
 		
@@ -47,6 +48,7 @@ var GraphParser = {
 		}
 		
 		var g = new Graph()
+		g.setType( gtype )
 		var i,j,n,n2,e
 		
 		for( i = 0 ; i < lines.length ; i ++ ){
@@ -227,6 +229,7 @@ var GraphParser = {
 				g.getVertex( vid ).layout_pos_y = parseFloat(posn[1])
 			}
 		}
+		g.setType("dag")
 		return g
 	},
   
@@ -317,7 +320,7 @@ var GraphParser = {
 			return this.parseAdjacencyMatrix( adjacencyListOrMatrix, vertexLabelsAndWeights )
 		} else {
 			// [\s\S] is like . but also matches newline!
-			var isdot = firstarg.match(  /^\s*(di)?graph(\s+\w+)?\s*\{([\s\S]+)\}/m )
+			var isdot = firstarg.trim().match(  /^(digraph|graph|dag|pdag|mag)(\s+\w+)?\s*\{([\s\S]+)\}$/m )
 			if( isdot && isdot.length > 1 ){
 				return this.parseDot( firstarg )
 			} else {

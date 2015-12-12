@@ -15,11 +15,21 @@ var Graph = Class.extend({
 	initialize : function(){
 		this.vertices = new Hash()
 		this.edges = []
+		this.type = "dag"
 		this.managed_vertex_properties = {}
 		_.each(this.managed_vertex_property_names,function(p){
 			this.managed_vertex_properties[p] = new Hash()
 		},this)
 	},
+	
+	getType : function(){
+		return this.type
+	},
+	
+	setType : function( type ){
+		this.type = type
+	},
+	
 	getNumberOfVertices : function(){
 		return this.vertices.size()
 	},
@@ -155,6 +165,7 @@ var Graph = Class.extend({
 			} )
 		}
 		this.copyAllVertexPropertiesTo(g2)
+		g2.setType( this.getType() )
 		return g2
 	},
 	
@@ -454,43 +465,6 @@ var Graph = Class.extend({
 		}
 		this.edges = _.without( this.edges, e )
 		return true
-	},
-	
-	containsCycle: function(){
-		var vv = this.vertices.values()
-		for( var i = 0 ; i < vv.length ; i ++ ){
-			var v = vv[i]
-			this.clearVisited()
-			var c = this.searchCycleFrom( v )
-			if( c !== undefined ){
-				var v_count = []
-				for( var j = 0 ; j < c.length ; j ++ ){
-					v_count[c[j]]?v_count[c[j]]++:v_count[c[j]]=1
-				}
-				for( j = 0 ; j < c.length ; j ++ ){
-					if( v_count[c[j]] > 1 ){
-						return c.slice( c.indexOf( c[j] ),  c.lastIndexOf( c[j] )+1 ).join("&rarr;")
-					}
-				}
-			}
-		}
-	},
-	
-	searchCycleFrom: function( v, p ){
-		if( p === undefined ){ p = [] }
-		if( Graph.Vertex.isVisited( v ) ){ return p.concat(v.id) } 
-		Graph.Vertex.markAsVisited( v )
-		var children = v.getChildren() 
-		// consider only simple directed edges, because
-		// bidirected edges can never lie on a cycle
-		for( var i = 0 ; i < children.length ; i ++ ){
-			var pp = this.searchCycleFrom( children[i], p.concat(v.id) )
-			if( pp !== undefined ){
-				return pp
-			}
-		}
-		Graph.Vertex.markAsNotVisited( v )
-		return undefined
 	},
 	
 	toAdjacencyList: function(){
