@@ -365,7 +365,7 @@ function exportImplicationTests(){
 
 /** updates the "summary" component */ 
 function displayGeneralInfo(){
-	var cycle = Model.dag.containsCycle();
+	var cycle = GraphAnalyzer.containsCycle( Model.dag );
 	if( cycle ){
 		displayShow("info_cycle");
 		displayHide("info_summary");
