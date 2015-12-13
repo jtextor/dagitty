@@ -32,7 +32,7 @@ var GraphTransformer = {
 			}
 		}
 		
-		g.copyAllVertexPropertiesTo( gn )
+		g.copyAllPropertiesTo( gn )
 		return gn
 	},
 	
@@ -46,10 +46,11 @@ var GraphTransformer = {
 			gn.addEdge( edge_other.v1.id, edge_other.v2.id,
 				Graph.Edgetype.Undirected )
 		}
-		g.copyAllVertexPropertiesTo( gn )
+		g.copyAllPropertiesTo( gn )
+		gn.setType( "graph" )
 		return gn
 	},
-	
+
 	/**
 	 * The sugraph of this graph induced by the edges in edge_array.
 	 */
@@ -67,7 +68,7 @@ var GraphTransformer = {
 				gn.addEdge( edge_my.v1.id, edge_my.v2.id, edge_my.directed )
 			}
 		}
-		g.copyAllVertexPropertiesTo( gn ) 
+		g.copyAllPropertiesTo( gn ) 
 		return gn
 	},
 	
@@ -149,9 +150,13 @@ var GraphTransformer = {
 	/** This is the counterpart of the back-door graph for direct effects.
 	 * We remove only edges pointing from X to Y.
 	 */
-	indirectGraph : function(g){
+	indirectGraph : function( g, X, Y ){
 		var gback = g.clone()
 		var ee = []
+		if( arguments.length == 1 ){
+			X = g.getSources()
+			Y = g.getTargets()
+		}
 		_.each(gback.getSources(),function( s ){
 			_.each( gback.getTargets(),function( t ){
 				var e = gback.getEdge( s, t )
@@ -166,7 +171,11 @@ var GraphTransformer = {
 	 *		this is such a minor change from the usual descendants/ancestors
 	 *		that there should be a nice generalization of both to avoid duplicating
 	 *		the code here. */
-	causalFlowGraph : function(g){
+	causalFlowGraph : function( g, X, Y ){
+		if( arguments.length == 1 ){
+			X = g.getSources()
+			Y = g.getTargets()
+		}
 		var clearVisitedWhereNotAdjusted = function(){
 			_.each( g.vertices.values(), function(v){
 				if( g.isAdjustedNode( v ) ) 
@@ -184,16 +193,22 @@ var GraphTransformer = {
 	 *		This function returns the subgraph of this graph that is induced
 	 *		by all open simple non-causal routes from s to t. 
 	 */
-	activeBiasGraph : function( g ){
-		var g_chain, g_canon, L, S,
+	activeBiasGraph : function( g, X, Y ){
+		var g_chain, g_canon, L, S, in_type = g.getType(),
 			reaches_source = {}, reaches_adjusted_node = {}, retain = {}
 		var preserve_previous_visited_information = function(){}
+		
+		if( arguments.length > 1 ){
+			g = g.clone()
+			_.each(X,function(v){g.addSource(v.id)})
+			_.each(Y,function(v){g.addTarget(v.id)})
+		}
 		
 		if( g.getSources().length == 0 || g.getTargets().length == 0 ){
 			return new Graph()
 		}
 		
-		g_canon = GraphTransformer.canonicalGraph(g)
+		g_canon = GraphTransformer.canonicalDag(g)
 		g = g_canon.g
 		g_chain = GraphTransformer.ancestorGraph(g)
 		
@@ -423,7 +438,9 @@ var GraphTransformer = {
 			var v = g_chain.getVertex(vid)
 			if( v ) S.push( v )
 		})
-		return GraphTransformer.decanonicalize( g_chain, L, S )
+		g = GraphTransformer.decanonicalize( g_chain, L, S )
+		g.setType( in_type )
+		return g
 	}, // end of activeBiasGraph
 	
 	trekGraph : function( g, up_prefix, down_prefix ) {
@@ -462,13 +479,17 @@ var GraphTransformer = {
 		For a graph with bi- and undirected edges, forms the "canonical version"
 		by replacing each <->  with <- L -> and each -- with -> S <-. Returns 
 		an object {g,L,S] containing the graph and the newly created nodes L and
-		S. */
-	canonicalGraph : function( g ){
+		S. 
+		
+		The output graph is always a DAG.
+		
+		*/
+	canonicalDag : function( g ){
 		var rg = new Graph(), i = 1, L = [], S = [], v
 		_.each( g.getVertices(), function( v ){
 			rg.addVertex( v.cloneWithoutEdges() )
 		} )
-		g.copyAllVertexPropertiesTo( rg )
+		g.copyAllPropertiesTo( rg )
 		_.each( g.getEdges(), function( e ){
 			switch( e.directed ){
 			case Graph.Edgetype.Undirected:
@@ -494,8 +515,10 @@ var GraphTransformer = {
 				break
 			}
 		} )
+		rg.setType( "dag" )
 		return {g:rg,L:L,S:S}
 	},
+
 	decanonicalize : function( g, L, S ){
 		var rg = g.clone(), vv, i, j
 		_.each( L, function(v){
@@ -516,6 +539,11 @@ var GraphTransformer = {
 			}
 			rg.deleteVertex(v)
 		})
+		if( S.length == 0 ){
+			rg.setType("dag")
+		} else {
+			rg.setType("mag")
+		}
 		return rg
 	},
 	
@@ -552,8 +580,8 @@ var GraphTransformer = {
 				mg.addEdge( e.v1.id, e.v2.id, e.directed )
 			}
 		} )
-		
-		g.copyAllVertexPropertiesTo( mg )
+		g.copyAllPropertiesTo( mg )
+		mg.setType("graph")
 		return mg
 	},
 	
@@ -694,7 +722,7 @@ var GraphTransformer = {
 	
 	/** TODO make this work with undirected edges */
 	dependencyGraph : function( g ){
-		var gc = GraphTransformer.canonicalGraph( g ).g
+		var gc = GraphTransformer.canonicalDag( g ).g
 		var gd = GraphTransformer.dag2DependencyGraph( gc )
 		var vn = []
 		g.vertices.values().each( function(v){ vn.push(gd.getVertex(v.id)) } )
@@ -835,7 +863,7 @@ var GraphTransformer = {
 			if (e.directed != Graph.Edgetype.Directed && !areConnected(gn.getVertex(e.v1.id), e.v2)) 
 				gn.addEdge(e.v1.id, e.v2.id, e.directed)
 		})
-		g.copyAllVertexPropertiesTo( gn )
+		g.copyAllPropertiesTo( gn )
 		return gn
 	},
 	

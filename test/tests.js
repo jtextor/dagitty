@@ -1,3 +1,5 @@
+GraphParser.VALIDATE_GRAPH_STRUCTURE = true;
+
 QUnit.test( "parsing and serializing", function( assert ) {
 	assert.equal( TestGraphs.small1().oldToString(), "A 1\nS E\nT O\n\nA S\nS T" )
 
@@ -25,7 +27,7 @@ QUnit.test( "parsing and serializing", function( assert ) {
 
 	assert.equal((function(){
 		var g = GraphParser.parseDot( 
-			"graph { xi1 [latent]\n"+
+			"digraph { xi1 [latent]\n"+
 			"xi2 [latent]\n"+
 			"xi1 <-> xi2\n"+
 			"xi1 -> x1\n"+
@@ -39,7 +41,7 @@ QUnit.test( "parsing and serializing", function( assert ) {
 	})(), "x1 1\nx2 1\nx3 1\nx4 1\nx5 1\nx6 1\nxi1 U\nxi2 U\n\nxi1 x1 x2 x3 xi2\nxi2 x4 x5 x6 xi1" )
 
 	assert.equal((function(){
-		var g = GraphParser.parseDot( "graph { x -> y\ny -> z\nx <-> y } " )
+		var g = GraphParser.parseDot( "digraph { x -> y\ny -> z\nx <-> y } " )
 		//console.log( g.toString() )
 		return GraphSerializer.toDotEdgeStatements(g)
 	})(), "x -> y\nx <-> y\ny -> z" )
@@ -89,29 +91,29 @@ QUnit.test( "parsing and serializing", function( assert ) {
 	})(), "x -- y\nx -> y\nx <-> y" )
 
 	assert.equal((function(){
-		var g = GraphParser.parseGuess( "graph G { x <-> m } " )
+		var g = GraphParser.parseGuess( "digraph G { x <-> m } " )
 		return typeof g.getEdge("m","x",2)
 	})(), "object" )
 
 	assert.equal((function(){
-		var g = GraphParser.parseGuess( "graph G { x <-> m } " )
+		var g = GraphParser.parseGuess( "digraph G { x <-> m } " )
 		return typeof g.getEdge("x","m",2)
 	})(), "object" )
 
 	assert.equal((function(){
-		var g = GraphParser.parseGuess( "graph G { x -> m } " )
+		var g = GraphParser.parseGuess( "digraph G { x -> m } " )
 		return GraphSerializer.toDotEdgeStatements(g)
 	})(), "x -> m" )
 
 	assert.equal((function(){
-		var g = GraphParser.parseGuess( "graph G { M [pos=\"-0.521,-0.265\"] \n "+
+		var g = GraphParser.parseGuess( "dag G { M [pos=\"-0.521,-0.265\"] \n "+
 			"X [exposure,pos=\"-1.749,-0.238\"] \n "+
 			"Y [outcome,pos=\"1.029,-0.228\"] \n "+
 			"M <-> Y [pos=\"0.645,-0.279\"] \n "+
 			"X -> Y \n "+
 			"X -> M -> Y } " )
 		return GraphSerializer.toDot(g)
-	})(), "graph {\nM [pos=\"-0.521,-0.265\"]\n"+
+	})(), "dag {\nM [pos=\"-0.521,-0.265\"]\n"+
 		"X [exposure,pos=\"-1.749,-0.238\"]\n"+
 		"Y [outcome,pos=\"1.029,-0.228\"]\n"+
 		"M -> Y\n"+
@@ -231,9 +233,8 @@ QUnit.test( "biasing paths in DAGs (allowing <->)", function( assert ) {
 	})(),"A,B,M" )
 assert.equal((function(){
 	var g = GraphParser.parseGuess( "digraph G { x <-> y } " )
-	g.addSource("x")
-	g.addTarget("y")
-	return GraphSerializer.toDotEdgeStatements(GraphTransformer.activeBiasGraph(g))
+	return GraphSerializer.toDotEdgeStatements(
+		GraphTransformer.activeBiasGraph(g,g.getVertex(["x"]),g.getVertex(["y"])))
 })(), "x <-> y" )
 
 assert.equal((function(){
@@ -311,20 +312,20 @@ QUnit.test( "graph transformations", function( assert ) {
 	
 	var transformations = [
 		GraphTransformer.cgToRcg,
-		"graph { k -- n; l -- m; n -- t; t -- y; x -> y; }",
-		 "graph { k;l;m;n;t;x;y; l -- m; n -> k; t -> n; x -> y; y -> t }",
-		"graph { k -- n; l -- m; l -> n; l -> t; l -> y; n -- t; t -- y; x -> y; }",
-		 "graph { k;l;m;n;t;x;y; l -- m; l -> n; l -> t; l -> y; n -> k; t -> n; x -> y; y -> t }",
-		"graph { a;b;c;d; a -> b; b -- c; d -> c }",
+		"pdag { k -- n; l -- m; n -- t; t -- y; x -> y; }",
+		 "pdag { k;l;m;n;t;x;y; l -- m; n -> k; t -> n; x -> y; y -> t }",
+		"pdag { k -- n; l -- m; l -> n; l -> t; l -> y; n -- t; t -- y; x -> y; }",
+		 "pdag { k;l;m;n;t;x;y; l -- m; l -> n; l -> t; l -> y; n -> k; t -> n; x -> y; y -> t }",
+		"pdag { a;b;c;d; a -> b; b -- c; d -> c }",
 		 null,
-		"graph { a -> b; b -- c; c <- d; b -- d }",
-		 "graph { a;b;c;d; a -> b; b -> c; b -> d; d -> c }",
+		"digraph { a -> b; b -- c; c <- d; b -- d }",
+		"digraph { a;b;c;d; a -> b; b -> c; b -> d; d -> c }",
 		 
 		function (g){ return GraphTransformer.contractComponents(g, GraphAnalyzer.connectedComponents(g), [Graph.Edgetype.Directed])},
-		"graph { k -- n; l -- m; n -- t; t -- y; x -> y; }",
-		 "graph { k,n,t,y;l,m;x; x -> k%2Cn%2Ct%2Cy }",
-		"graph { a -- b; b -> c; c -- a }",
-		 "graph { a,b,c; a%2Cb%2Cc -> a%2Cb%2Cc }",
+		"pdag { k -- n; l -- m; n -- t; t -- y; x -> y; }",
+		 "pdag { k,n,t,y;l,m;x; x -> k%2Cn%2Ct%2Cy }",
+		"digraph { a -- b; b -> c; c -- a }",
+		 "digraph { a,b,c; a%2Cb%2Cc -> a%2Cb%2Cc }",
 	];
 	var i = 0; var transfunc;
 	while (i < transformations.length) {
@@ -336,7 +337,7 @@ QUnit.test( "graph transformations", function( assert ) {
 		if (typeof gin === "string") gin = GraphParser.parseGuess(gin);
 		var gout = transfunc(gin);
 		if (gout != null) 
-			gout = "graph { " + 
+			gout = gout.getType()+" { " + 
 			        gout.vertices.keys().sort().join(";") + "; " + 
 			        gout.getEdges().map(function(e){return e.toString()}).sort().join("; ") + " }";			        
 		var gref = transformations[i]; i++;	
@@ -413,7 +414,7 @@ QUnit.test( "testable implications", function( assert ) {
 
 QUnit.test( "tetrad analysis", function( assert ) {
 	assert.equal((function(){
-		var g = GraphParser.parseGuess("graph { xi1 [latent] \n xi2[latent] \n xi3 [latent] \n xi1 <-> xi2 <-> xi3 <-> xi1 \n X1 <- xi1 -> X2 \n xi1 -> X3 \n X4 <- xi2 -> X5 \n xi2 -> X6 \n X7 <- xi3 -> X8 \n xi3 -> X9 }")
+		var g = GraphParser.parseGuess("dag { xi1 [latent] \n xi2[latent] \n xi3 [latent] \n xi1 <-> xi2 <-> xi3 <-> xi1 \n X1 <- xi1 -> X2 \n xi1 -> X3 \n X4 <- xi2 -> X5 \n xi2 -> X6 \n X7 <- xi3 -> X8 \n xi3 -> X9 }")
 		return GraphAnalyzer.vanishingTetrads( g ).length
 	})(), 162 )
 
@@ -503,6 +504,7 @@ QUnit.test( "instrumental variables", function( assert ) {
 });
 
 QUnit.test( "graph validation", function( assert ) {
+	GraphParser.VALIDATE_GRAPH_STRUCTURE = false;
 	assert.equal( GraphAnalyzer.validate( GraphParser.parseGuess(
 		"dag { x -> y -> z }"
 	)), true )
@@ -520,6 +522,49 @@ QUnit.test( "graph validation", function( assert ) {
 	assert.equal( GraphAnalyzer.validate( GraphParser.parseGuess(
 		"pdag { x -- y -> z }"
 	)), true )
+	GraphParser.VALIDATE_GRAPH_STRUCTURE = true;
+});
+
+QUnit.test( "graph types", function( assert ) {
+	var graphs = {
+		graph : GraphParser.parseGuess( "graph { x -- y -- z }" ),
+		dag : GraphParser.parseGuess( "dag { x -> y -> z }" ),
+		pdag : GraphParser.parseGuess( "pdag { x -- y -> z }" ),
+		mag : GraphParser.parseGuess( "mag { x <-> y -> z }" )
+	};
+	
+	_.each( Object.keys(graphs), function(t){
+		assert.equal( GraphTransformer.inducedSubgraph(graphs[t],
+			graphs[t].getVertex(["x","y"])).getType(), t )
+	});
+
+	_.each( Object.keys(graphs), function(t){
+		assert.equal( GraphTransformer.edgeInducedSubgraph(graphs[t],
+			graphs[t].edges).getType(), t )
+	});
+	
+	_.each( Object.keys(graphs), function(t){
+		assert.equal( GraphTransformer.ancestorGraph(graphs[t],
+			graphs[t].getVertex(["x","y"])).getType(), t )
+	});
+
+	_.each( ["backDoorGraph","indirectGraph","activeBiasGraph"], function(f){
+		_.each( Object.keys(graphs), function(t){
+			assert.equal( GraphTransformer[f](graphs[t],
+				graphs[t].getVertex(["x"]),graphs[t].getVertex(["z"])).getType(), t )
+		})
+	});
+	
+	_.each( Object.keys(graphs), function(t){
+		assert.equal( GraphTransformer.canonicalDag(graphs[t]).g.getType(), "dag" )
+	});
+
+	_.each( ["moralGraph","skeleton"], function(f){
+		_.each( Object.keys(graphs), function(t){
+			assert.equal( GraphTransformer[f](graphs[t]).getType(), "graph" )
+		});
+	});
+
 });
 
 QUnit.test( "uncategorized tests", function( assert ) {
@@ -622,6 +667,7 @@ assert.equal((function(){
 })(), "a,x" )
 
 assert.equal((function(){
+	GraphParser.VALIDATE_GRAPH_STRUCTURE = false;
    var g = GraphParser.parseGuess( "xobs 1 @0.350,0.000\n"+
 "y 1 @0.562,0.000\n"+
 "t 1 @0.351,-0.017\n"+
@@ -629,6 +675,7 @@ assert.equal((function(){
 "xobs y\n"+
 "y t\n"+
 "t xobs" );
+	GraphParser.VALIDATE_GRAPH_STRUCTURE = true;
    GraphAnalyzer.containsCycle( g );
    return GraphAnalyzer.containsCycle( g );
 })(), "xobs&rarr;y&rarr;t&rarr;xobs" )
@@ -691,7 +738,7 @@ assert.equal((function(){;
    // because it is not listed as compulsory in the call to "listSeparators()"
    // (see the api of the function there) 
    var g_bias = GraphTransformer.activeBiasGraph( g )
-   var g_can = GraphTransformer.canonicalGraph( g_bias )
+   var g_can = GraphTransformer.canonicalDag( g_bias )
    g = GraphTransformer.moralGraph( g_can.g )
    return sep_2_str( GraphAnalyzer.listMinimalSeparators( g, [], 
 	g.getAdjustedNodes() ) ) 
@@ -1176,7 +1223,7 @@ assert.equal((function(){
 assert.equal((function(){
     var g = GraphParser.parseGuess( 
 		"digraph G { x [exposure]\ny [outcome]\nm [adjusted]\nx -> m\ny -> m }" )
-	g = GraphTransformer.canonicalGraph( g ).g
+	g = GraphTransformer.canonicalDag( g ).g
 	g = GraphTransformer.ancestorGraph( g )
  	return ""+GraphSerializer.toDotEdgeStatements(g)
 })(), "x -> m\ny -> m" )
@@ -1225,7 +1272,7 @@ assert.equal((function(){
 assert.equal((function(){
     var g = GraphParser.parseGuess( 
 		"digraph G { a [exposure] \n b [outcome] \n a <-> c \n c -> b }" )
-	return GraphSerializer.toDotEdgeStatements(GraphTransformer.canonicalGraph(g).g)
+	return GraphSerializer.toDotEdgeStatements(GraphTransformer.canonicalDag(g).g)
 })(), "L1 -> a\nL1 -> c\nc -> b" )
 
 assert.equal((function(){
@@ -1295,12 +1342,12 @@ assert.equal((function(){
 })(), false )
 
 assert.equal( _.pluck(GraphAnalyzer.dpcp(
-	GraphParser.parseGuess( "graph{ x [exposure]\n y [outcome]\n x -> y -- z }" ) ),"id").
+	GraphParser.parseGuess( "digraph{ x [exposure]\n y [outcome]\n x -> y -- z }" ) ),"id").
 		sort().join(","),
 	"y,z" )
 
 assert.equal( _.pluck(GraphAnalyzer.dpcp(
-	GraphParser.parseGuess( "graph{ x [exposure]\n y [outcome]\n x -- y -- z }" ) ),"id").
+	GraphParser.parseGuess( "digraph{ x [exposure]\n y [outcome]\n x -- y -- z }" ) ),"id").
 		sort().join(","),
 	"x,y,z" )
 

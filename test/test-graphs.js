@@ -210,6 +210,7 @@ small1 : function(){
 
 intermediate_adjustment_graph : function(){
    var g = new Graph();
+   g.setType("dag")
    _.each(["X","Y","Z","I"],function(v){
       g.addVertex( new Graph.Vertex( {id:v} ) );
    });
@@ -285,6 +286,7 @@ cyclic_graph : function(){
 
 m_bias_graph : function(){
    var g = new Graph();
+   g.setType("dag");
    g.addVertex( new Graph.Vertex( {id:"A"} ) );
    g.addVertex( new Graph.Vertex( {id:"B"} ) );
    g.addVertex( new Graph.Vertex( {id:"M"} ) );
@@ -302,6 +304,7 @@ m_bias_graph : function(){
 
 confounding_triangle_with_irrelevant_nodes : function(){
    var g = new Graph();
+   g.setType("dag");
    g.addVertex( new Graph.Vertex( {id:"A"} ) );
    g.addVertex( new Graph.Vertex( {id:"B"} ) );
    g.addVertex( new Graph.Vertex( {id:"M"} ) );

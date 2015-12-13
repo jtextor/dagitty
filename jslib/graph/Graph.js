@@ -15,7 +15,7 @@ var Graph = Class.extend({
 	initialize : function(){
 		this.vertices = new Hash()
 		this.edges = []
-		this.type = "dag"
+		this.type = "digraph"
 		this.managed_vertex_properties = {}
 		_.each(this.managed_vertex_property_names,function(p){
 			this.managed_vertex_properties[p] = new Hash()
@@ -64,13 +64,17 @@ var Graph = Class.extend({
 		var vv = this.getVertex( v )
 		return vv && this.managed_vertex_properties[p].contains( vv.id )
 	},
-	copyAllVertexPropertiesTo : function( g2 ){
+	
+	/** Copies all properties of every vertex of this graph to the same 
+	    vertex in g2 and sets the type of g2 to the type of this graph. */
+	copyAllPropertiesTo : function( g2 ){
 		var g = this
 		_.each( g.managed_vertex_property_names, ( function( p ){
 			_.each( g.getVerticesWithProperty( p ), function( v ){
 				g2.addVertexProperty( v, p ) 
 			} )
 		} ) )
+		g2.setType( this.getType() )
 	},
 	
 	getVertex : function( v ){
@@ -164,7 +168,7 @@ var Graph = Class.extend({
 				g2.addEdge( e.v1.id, e.v2.id, e.directed )
 			} )
 		}
-		this.copyAllVertexPropertiesTo(g2)
+		this.copyAllPropertiesTo(g2)
 		g2.setType( this.getType() )
 		return g2
 	},

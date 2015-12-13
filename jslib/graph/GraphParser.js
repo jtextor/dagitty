@@ -19,6 +19,7 @@
 /* exported GraphParser */
 
 var GraphParser = {
+	VALIDATE_GRAPH_STRUCTURE : false,
 	/**
 		This is work in progress ... not safe to use yet.
 		For the time being, edge statements are assumed to come line 
@@ -177,6 +178,11 @@ var GraphParser = {
 				}
 			}
 		}
+		if( this.VALIDATE_GRAPH_STRUCTURE ){
+			if( !GraphAnalyzer.validate( g ) ){
+				throw("invalid graph : ",g.toString() )
+			}
+		}
 		return g
 	},
 
@@ -276,6 +282,11 @@ var GraphParser = {
 				}
 			}
 		}
+		if( this.VALIDATE_GRAPH_STRUCTURE ){
+			if( !GraphAnalyzer.validate( g ) ){
+				throw("invalid graph : ",g.toString() )
+			}
+		}
 		return g
 	},
 
@@ -305,6 +316,12 @@ var GraphParser = {
 				}
 			}
 		}
+		if( this.VALIDATE_GRAPH_STRUCTURE ){
+			if( !GraphAnalyzer.validate( g ) ){
+				throw("invalid graph : ",g.toString() )
+			}
+		}
+		g.setType( "dag" )
 		return g
 	},
 

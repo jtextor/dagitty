@@ -109,7 +109,7 @@ var GraphAnalyzer = {
 	
 	vanishingTetrads : function( g, nr_limit ){
 		var r = []
-		g = GraphTransformer.canonicalGraph(g).g
+		g = GraphTransformer.canonicalDag(g).g
 		var gtrek = GraphTransformer.trekGraph( g, "up_", "dw_" )		
 		var latents = g.getLatentNodes()
 		var is_latent = []; for( var i = 0 ; i < latents.length ; i ++ ){ is_latent[latents[i].id]=1 }
@@ -715,7 +715,7 @@ var GraphAnalyzer = {
 			if( y.length > 1 ) return false
 			y = y[0]
 		}
-		g = GraphTransformer.canonicalGraph( g ).g
+		g = GraphTransformer.canonicalDag( g ).g
 		x = g.getVertex(x)
 		y = g.getVertex(y)
 		var vv = _.difference( g.getVertices(), [x,y] )
@@ -1210,14 +1210,24 @@ var GraphAnalyzer = {
 		switch( g.getType() ){
 		case "dag":
 			if( !_.every(g.getEdges(),function(e){ return e.directed ==
-				Graph.Edgetype.Directed }) ){
+				Graph.Edgetype.Directed || e.directed == Graph.Edgetype.Bidirected }) ){
 				return false
 			}
 			if( GraphAnalyzer.containsCycle( g ) ){
 				return false
 			}
 			return true
-		break
+		case "mag":
+			// TODO implement proper MAG validation
+			if( GraphAnalyzer.containsSemiCycle( g ) ){
+				return false
+			}
+			return true
+		case "graph":
+			return _.every(g.getEdges(),function(e){ return e.directed ==
+				Graph.Edgetype.Undirected })
+		case "digraph":
+			return true
 		case "pdag":
 			if( !_.every(g.getEdges(),function(e){ return e.directed ==
 				Graph.Edgetype.Directed || e.directed == Graph.Edgetype.Undirected }) ){
@@ -1227,9 +1237,8 @@ var GraphAnalyzer = {
 				return false
 			}
 			return true
-		break
 		default:
-			throw("Do not know how to validate graph of type "+this.type)
+			throw("Do not know how to validate graph of type "+g.getType())
 		}
 	},
 
