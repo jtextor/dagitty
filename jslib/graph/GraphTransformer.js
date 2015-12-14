@@ -153,9 +153,9 @@ var GraphTransformer = {
 	indirectGraph : function( g, X, Y ){
 		var gback = g.clone()
 		var ee = []
-		if( arguments.length == 1 ){
-			X = g.getSources()
-			Y = g.getTargets()
+		if( arguments.length == 3 ){
+			_.each( X, function(v){ gback.addSource(v.id) } )
+			_.each( Y, function(v){ gback.addTarget(v.id) } )
 		}
 		_.each(gback.getSources(),function( s ){
 			_.each( gback.getTargets(),function( t ){
@@ -185,8 +185,8 @@ var GraphTransformer = {
 			})
 		}
 		return this.inducedSubgraph( g, 
-				_.intersection(g.ancestorsOf( g.getTargets(), clearVisitedWhereNotAdjusted ),
-						g.descendantsOf( g.getSources(), clearVisitedWhereNotAdjusted ) ) )
+				_.intersection(g.ancestorsOf( Y, clearVisitedWhereNotAdjusted ),
+						g.descendantsOf( X, clearVisitedWhereNotAdjusted ) ) )
 	},
 	
 	/**
