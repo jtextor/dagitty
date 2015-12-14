@@ -15,7 +15,7 @@
 */
 
 /* jshint undef: true, unused: true, asi: true */
-/* globals Graph */
+/* globals Graph,GraphAnalyzer */
 /* exported GraphParser */
 
 var GraphParser = {
@@ -116,10 +116,12 @@ var GraphParser = {
 						break
 					case "source":
 					case "exposure":
+					case "e":
 						g.addSource( n )
 						break
 					case "target":
 					case "outcome":
+					case "o":
 						g.addTarget( n )
 						break
 					case "adjusted":
