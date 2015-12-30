@@ -58,7 +58,7 @@ QUnit.test( "parsing and serializing", function( assert ) {
 		var g = GraphParser.parseGuess( 
 			"graph G {\nx [ exposure , pos =\" 12. , .13 \"]\ny [outcome]\n}" )
 		return GraphSerializer.toDot(g) 
-	})(), "graph {\nx [exposure,pos=\"12.000,0.130\"]\ny [outcome]\n\n}\n" )
+	})(), "graph G{\nx [exposure,pos=\"12.000,0.130\"]\ny [outcome]\n\n}\n" )
 
 
 	assert.equal((function(){
@@ -67,19 +67,19 @@ QUnit.test( "parsing and serializing", function( assert ) {
 		g.getVertex("x").layout_pos_x = 1.0
 		g.getVertex("x").layout_pos_y = 1.0
 		return GraphSerializer.toDot(g)
-	})(), "graph {\nx [exposure,pos=\"1.000,1.000\"]\ny [outcome]\n\n}\n" )
+	})(), "graph G{\nx [exposure,pos=\"1.000,1.000\"]\ny [outcome]\n\n}\n" )
 
 	assert.equal((function(){
 		var g = GraphParser.parseGuess( 
 			"graph G { x \n y }" )
 		return GraphSerializer.toDot(g)
-	})(), "graph {\nx\ny\n\n}\n" )
+	})(), "graph G{\nx\ny\n\n}\n" )
 
 	assert.equal((function(){
 		var g = GraphParser.parseGuess( 
 			"graph G { x [] \n y [] }" )
 		return GraphSerializer.toDot(g)
-	})(), "graph {\nx\ny\n\n}\n" )
+	})(), "graph G{\nx\ny\n\n}\n" )
 
 	assert.equal((function(){
 		var g = GraphParser.parseGuess( 
@@ -113,7 +113,23 @@ QUnit.test( "parsing and serializing", function( assert ) {
 			"X -> Y \n "+
 			"X -> M -> Y } " )
 		return GraphSerializer.toDot(g)
-	})(), "dag {\nM [pos=\"-0.521,-0.265\"]\n"+
+	})(), "dag G{\nM [pos=\"-0.521,-0.265\"]\n"+
+		"X [exposure,pos=\"-1.749,-0.238\"]\n"+
+		"Y [outcome,pos=\"1.029,-0.228\"]\n"+
+		"M -> Y\n"+
+		"M <-> Y [pos=\"0.645,-0.279\"]\n"+
+		"X -> M\n"+
+		"X -> Y\n}\n" )
+
+	assert.equal((function(){
+		var g = GraphParser.parseGuess( "dag G { M [pos=\"-0.521,-0.265\"] "+
+			"X [exposure,pos=\"-1.749,-0.238\"] "+
+			"Y [outcome,pos=\"1.029,-0.228\"] "+
+			"M <-> Y [pos=\"0.645,-0.279\"] "+
+			"X -> Y "+
+			"X -> M -> Y } " )
+		return GraphSerializer.toDot(g)
+	})(), "dag G{\nM [pos=\"-0.521,-0.265\"]\n"+
 		"X [exposure,pos=\"-1.749,-0.238\"]\n"+
 		"Y [outcome,pos=\"1.029,-0.228\"]\n"+
 		"M -> Y\n"+
@@ -129,10 +145,12 @@ QUnit.test( "parsing and serializing", function( assert ) {
 
 	assert.equal((function(){
 		var g = GraphParser.parseGuess( 
-			"digraph G {\n  y --   x -> y   <-> x [pos=\"1.0,0.1\" }" )
+			"digraph G {\n  y --   x -> y   <-> x [pos=\"1.0,0.1\"] }" )
 		return GraphSerializer.toDotEdgeStatements(g) 
-	})(), "x -- y\nx -> y\nx <-> y [pos=\"1.000,0.100\"]" )
+	})(), "x -- y [pos=\"1.000,0.100\"]\nx -> y [pos=\"1.000,0.100\"]\nx <-> y [pos=\"1.000,0.100\"]" )
 
+	assert.equal(GraphSerializer.toLavaan(GraphParser.parseGuess("dag{x1}")).split("\n")[1]
+		,"x1 ~~ x1")
 });
 
 QUnit.test( "separators", function( assert ) {

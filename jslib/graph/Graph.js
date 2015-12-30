@@ -16,10 +16,19 @@ var Graph = Class.extend({
 		this.vertices = new Hash()
 		this.edges = []
 		this.type = "digraph"
+		this.name = null
 		this.managed_vertex_properties = {}
 		_.each(this.managed_vertex_property_names,function(p){
 			this.managed_vertex_properties[p] = new Hash()
 		},this)
+	},
+
+	getName : function(){
+		return this.name
+	},
+	
+	setName : function( name ){
+		this.name = name
 	},
 	
 	getType : function(){

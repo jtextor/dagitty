@@ -15,7 +15,7 @@
 */
 
 /* jshint undef: true, unused: true, asi: true */
-/* globals Graph,GraphAnalyzer */
+/* globals Graph,GraphAnalyzer,GraphDotParser */
 /* exported GraphParser */
 
 var GraphParser = {
@@ -25,92 +25,29 @@ var GraphParser = {
 		For the time being, edge statements are assumed to come line 
 		by line.
 	*/
+	
 	parseDot : function( code ){
 		"use strict"
-		var isdot = code.trim().match(  /^(digraph|graph|dag|pdag|mag)(\s+\w+)?\s*\{([\s\S]+)\}$/m )
-		var edgestatements = isdot[isdot.length-1]
-		var gtype = isdot[1]
-		var txt = edgestatements.trim()
-		var lines = txt.split(/[\n;]/)
-		
-		var vertexnamere = new RegExp( "^[+%0-9A-Za-z*-._~]+" )
-		var optionnamere = new RegExp( "^([a-z]+)\\s*(=)?\\s*(\"[^\"]+\")?" )
-		var edgetypere = new RegExp( "^<?--?>?" )
-		var positionre = new RegExp( "\"\\s*(-?[0-9.]+)\\s*,\\s*(-?[0-9.]+)\\s*\"" )
-		var labelre = new RegExp( "\"\\s*([^\"]+)\\s*\"" )
-		
+		var ast = GraphDotParser.parse( code )
+		var g = new Graph()
+		g.setType( ast.type )
+		if( ast.name ){ g.setName( ast.name ) }
+		var v = function(id){ return( g.getVertex( id ) || g.addVertex( id ) ) }
+		var i,j,n,n2,e,pos
+		var positionre = new RegExp( "\\s*(-?[0-9.]+)\\s*,\\s*(-?[0-9.]+)\\s*" )
 		var parse_position = function( s ){
-			tok = s.match(positionre)
+			var tok = s.match(positionre)
 			if( typeof tok[1] !== "string" || 
 				typeof tok[2] !== "string" ){
-				throw("Syntax error in \"pos\" option")
+				throw("Syntax error in \"pos\" option!")
 			}
 			return {x:parseFloat(tok[1]),y:parseFloat(tok[2])}
 		}
-		
-		var g = new Graph()
-		g.setType( gtype )
-		var i,j,n,n2,e
-		
-		for( i = 0 ; i < lines.length ; i ++ ){
-			var l = lines[i].trim()
-			var parser_mode = 0
-			var vertex_names = [], 
-				edgetypes = [], option_names=[], option_values=[], 
-				tok = "", match, pos
-			while( l.length > 0 && parser_mode >= 0 ){
-				switch( parser_mode ){
-				case 0: // expecting vertex ID
-					tok = l.match(vertexnamere)
-					if( tok === null || tok[0].length === 0 ){
-						throw("Syntax error: expecting vertex ID at line "+i)
-					}
-					tok = tok[0]
-					vertex_names.push( tok )
-					parser_mode = 1
-					l = l.substring( tok.length )
-					break
-				case 1: // expecting either option or edgetype
-					if( l.substring(0,1) == "[" ){
-						parser_mode = 2
-						l = l.substring( 1 )
-					} else {
-						tok = l.match( edgetypere )
-						if( tok === null ){
-							throw("Syntax error: expecting edge type at line "+i)
-						}
-						edgetypes.push( tok[0] )
-						parser_mode = 0
-						l = l.substring( tok[0].length )
-					}
-					break
-				case 2: // inside option
-					if( l.substring(0,1) == "]" ){
-						parser_mode = -1 // finished
-						l = l.substring( 1 )
-					} else if( l.substring(0,1) == "," ){
-						l = l.substring( 1 )
-					} else {
-						match = l.match( optionnamere )
-						if( match === null ){
-							throw("Syntax error! Expection option at line "+i)
-						}
-						if( match[1] ){
-							option_names.push(match[1])
-							option_values.push(match[3])
-						}
-						l = l.substring( match[0].length )
-					}
-					break
-				}
-				l = l.trim()
-			}
-			if( vertex_names.length == 1 ){
-				// vertex statement
-				tok = decodeURIComponent( vertex_names[0] )
-				n = g.getVertex( tok ) || g.addVertex( tok )
-				for( j = 0 ; j < option_names.length ; j ++ ){
-					switch( option_names[j] ){ // string-only options
+		_.each( ast.statements, function(s) {
+			if( s.type == 'node' ){
+				n = v(s.id)
+				for( i = 0 ; i < s.attributes.length ; i ++ ){
+					switch( s.attributes[i][0] ){
 					case "latent":
 						g.addLatentNode( n )
 						break
@@ -128,58 +65,46 @@ var GraphParser = {
 						g.addAdjustedNode( n )
 						break
 					case "pos":
-						if( typeof option_values[j] !== "string" ){
-							throw("Syntax error pos statement")
-						}
-						pos = parse_position( option_values[j] )
+						pos = parse_position( s.attributes[i][1] )
 						n.layout_pos_x = parseFloat( pos.x )
 						n.layout_pos_y = parseFloat( pos.y )
 						break
 					}
 				}
-			} else {
-				while( vertex_names.length >= 2 && edgetypes.length >= 1 ){
-					n = decodeURIComponent( vertex_names[0] )
-					n2 = decodeURIComponent( vertex_names[1] )
-					if( !g.getVertex( n ) ) g.addVertex( n )
-					if( !g.getVertex( n2 ) ) g.addVertex( n2 )
-					switch( edgetypes[0] ){
-					case "--" :
-						e = g.addEdge( n, n2, Graph.Edgetype.Undirected )
-						break
-					case "<->" :
-						e = g.addEdge( n, n2, Graph.Edgetype.Bidirected )
-						break
-					case "->" :
-						e = g.addEdge( n, n2, Graph.Edgetype.Directed )
-						break
-					case "<-" :
-						e = g.addEdge( n2, n, Graph.Edgetype.Directed )
-						break
+			}
+			if( s.type == 'edge' ){
+				for( i = 3; i <= s.content.length ; i += 2 ){
+					n = v(s.content[i-3])
+					n2 = v(s.content[i-1])
+					switch( s.content[i-2] ){
+						case "--" :
+							e = g.addEdge( n, n2, Graph.Edgetype.Undirected )
+							break
+						case "<->" :
+							e = g.addEdge( n, n2, Graph.Edgetype.Bidirected )
+							break
+						case "->" :
+							e = g.addEdge( n, n2, Graph.Edgetype.Directed )
+							break
+						case "<-" :
+							e = g.addEdge( n2, n, Graph.Edgetype.Directed )
+							break
 					}
-					vertex_names.shift()
-					edgetypes.shift()
-				}
-				for( j = 0 ; j < option_names.length ; j ++ ){
-					switch( option_names[j] ){ // string-only options
-					case "pos":
-						if( typeof option_values[j] !== "string" ){
-							throw("Syntax error pos statement")
+					for( j = 0 ; j < s.attributes.length ; j ++ ){
+						switch( s.attributes[j][0] ){
+							case "pos":
+								pos = parse_position( s.attributes[j][1] )
+								e.layout_pos_x = parseFloat( pos.x )
+								e.layout_pos_y = parseFloat( pos.y )
+								break
+							case "label":
+								e.id = s.attributes[j][1]
+								break
 						}
-						pos = parse_position( option_values[j] )
-						e.layout_pos_x = parseFloat( pos.x )
-						e.layout_pos_y = parseFloat( pos.y )
-						break
-					case "label":
-						if( typeof option_values[j] !== "string" ){
-							throw("Syntax error label statement")
-						}
-						e.id = decodeURIComponent( option_values[j].match(labelre)[1] )
-						break
 					}
 				}
 			}
-		}
+		} )
 		if( this.VALIDATE_GRAPH_STRUCTURE ){
 			if( !GraphAnalyzer.validate( g ) ){
 				throw("invalid graph : ",g.toString() )
@@ -187,7 +112,7 @@ var GraphParser = {
 		}
 		return g
 	},
-
+	
 	parseVertexLabelsAndWeights : function( vertexLabelsAndWeights ){
 		"use strict"
 		var g = new Graph()

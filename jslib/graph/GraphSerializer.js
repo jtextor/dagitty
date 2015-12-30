@@ -4,7 +4,8 @@
 var GraphSerializer = {
 
 	toDot : function( g ){
-		return g.getType()+" {\n" + this.toDotVertexStatements(g)+
+		var n = g.getName()
+		return g.getType()+" "+(n !== null?n:"")+"{\n" + this.toDotVertexStatements(g)+
 			this.toDotEdgeStatements(g)+"\n}\n"
 	},
 	
@@ -103,7 +104,8 @@ var GraphSerializer = {
 
 	toLavaan : function( g ){
 		var ee = g.getEdges(), edgetype, 
-			r = "# Remember to set lavaan's fixed.x appopriately!\n"
+			r = "# Please set lavaan's fixed.x appopriately!\n"
+		var v_nonzero_degree = {}
 		_.each( ee, function(e){
 			edgetype = ""
 			var reverse = true
@@ -128,7 +130,15 @@ var GraphSerializer = {
 			} else {
 				r += e.v1.id + edgetype + e.v2.id+ "\n"
 			}
+			v_nonzero_degree[e.v1.id] = 1
+			v_nonzero_degree[e.v2.id] = 1
 		} )
+		// include vertices without adjacent edges as well
+		_.each( _.without( _.pluck(g.getVertices(),"id"), _.keys( v_nonzero_degree ) ),
+			function(vid){
+				r += vid+" ~~ "+vid+"\n"
+			}
+		)
 		return r
 	},
 
@@ -266,4 +276,4 @@ var GraphSerializer = {
 		}
 		return "\t\""+r_str.join("\\n\"+\n\t\"")+"\""
 	}
-}
+};
