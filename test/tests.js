@@ -151,6 +151,9 @@ QUnit.test( "parsing and serializing", function( assert ) {
 
 	assert.equal(GraphSerializer.toLavaan(GraphParser.parseGuess("dag{x1}")).split("\n")[1]
 		,"x1 ~~ x1")
+		
+	assert.equal( GraphSerializer.toDotEdgeStatements(GraphParser.parseGuess( 
+			"dag{ U -> {a b c d} }" )), "U -> a\nU -> b\nU -> c\nU -> d" )
 });
 
 QUnit.test( "separators", function( assert ) {
@@ -432,7 +435,8 @@ QUnit.test( "testable implications", function( assert ) {
 
 QUnit.test( "tetrad analysis", function( assert ) {
 	assert.equal((function(){
-		var g = GraphParser.parseGuess("dag { xi1 [latent] \n xi2[latent] \n xi3 [latent] \n xi1 <-> xi2 <-> xi3 <-> xi1 \n X1 <- xi1 -> X2 \n xi1 -> X3 \n X4 <- xi2 -> X5 \n xi2 -> X6 \n X7 <- xi3 -> X8 \n xi3 -> X9 }")
+		var g = GraphParser.parseGuess("dag { xi1 [u] xi2 [u] xi3 [u] xi1 <-> xi2 <-> xi3 <-> xi1 "+
+			" xi1 -> {X1 X2 X3} xi2 -> {X4 X5 X6} xi3 -> {X7 X8 X9} }")
 		return GraphAnalyzer.vanishingTetrads( g ).length
 	})(), 162 )
 

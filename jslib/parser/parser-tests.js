@@ -1,6 +1,8 @@
 
 QUnit.test( "parsing and serializing", function( assert ) {
 	assert.equal( 
+		GraphDotParser.parse("dag{ U -> {a b c d} }"),"dag")
+	assert.equal( 
 		GraphDotParser.parse(" dag{ x -> { a b } }"),"dag")
 	assert.equal( 
 		GraphDotParser.parse(" strict Dag { x y ; z \n q }").type,"dag")

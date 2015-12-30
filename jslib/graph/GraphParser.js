@@ -49,6 +49,7 @@ var GraphParser = {
 				for( i = 0 ; i < s.attributes.length ; i ++ ){
 					switch( s.attributes[i][0] ){
 					case "latent":
+					case "u":
 						g.addLatentNode( n )
 						break
 					case "source":
@@ -62,6 +63,7 @@ var GraphParser = {
 						g.addTarget( n )
 						break
 					case "adjusted":
+					case "a":
 						g.addAdjustedNode( n )
 						break
 					case "pos":
@@ -76,13 +78,27 @@ var GraphParser = {
 				for( i = 3; i <= s.content.length ; i += 2 ){
 					if( typeof(s.content[i-3]) === "string" ){
 						n = [v(s.content[i-3])]
-					} 
+					} else {
+						n = []
+						_.each( s.content[i-3].statements, function(s){
+							if( s.type == "node" ){
+								n.push(v(s.id))
+							}
+						})
+					}
 					if( typeof(s.content[i-1]) === "string" ){
 						n2 = [v(s.content[i-1])]
+					} else {
+						n2 = []
+						_.each( s.content[i-1].statements, function(s){
+							if( s.type == "node" ){
+								n2.push(v(s.id))
+							}
+						})
 					}
 
-					_.each( n, function(n) ){
-						_.each( n2, function(n2) ){
+					_.each( n, function(n){
+						_.each( n2, function(n2){
 							switch( s.content[i-2] ){
 								case "--" :
 									e = g.addEdge( n, n2, Graph.Edgetype.Undirected )
@@ -97,8 +113,8 @@ var GraphParser = {
 									e = g.addEdge( n2, n, Graph.Edgetype.Directed )
 									break
 							}
-						}
-					}
+						})
+					})
 
 					for( j = 0 ; j < s.attributes.length ; j ++ ){
 						switch( s.attributes[j][0] ){
