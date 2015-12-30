@@ -74,22 +74,32 @@ var GraphParser = {
 			}
 			if( s.type == 'edge' ){
 				for( i = 3; i <= s.content.length ; i += 2 ){
-					n = v(s.content[i-3])
-					n2 = v(s.content[i-1])
-					switch( s.content[i-2] ){
-						case "--" :
-							e = g.addEdge( n, n2, Graph.Edgetype.Undirected )
-							break
-						case "<->" :
-							e = g.addEdge( n, n2, Graph.Edgetype.Bidirected )
-							break
-						case "->" :
-							e = g.addEdge( n, n2, Graph.Edgetype.Directed )
-							break
-						case "<-" :
-							e = g.addEdge( n2, n, Graph.Edgetype.Directed )
-							break
+					if( typeof(s.content[i-3]) === "string" ){
+						n = [v(s.content[i-3])]
+					} 
+					if( typeof(s.content[i-1]) === "string" ){
+						n2 = [v(s.content[i-1])]
 					}
+
+					_.each( n, function(n) ){
+						_.each( n2, function(n2) ){
+							switch( s.content[i-2] ){
+								case "--" :
+									e = g.addEdge( n, n2, Graph.Edgetype.Undirected )
+									break
+								case "<->" :
+									e = g.addEdge( n, n2, Graph.Edgetype.Bidirected )
+									break
+								case "->" :
+									e = g.addEdge( n, n2, Graph.Edgetype.Directed )
+									break
+								case "<-" :
+									e = g.addEdge( n2, n, Graph.Edgetype.Directed )
+									break
+							}
+						}
+					}
+
 					for( j = 0 ; j < s.attributes.length ; j ++ ){
 						switch( s.attributes[j][0] ){
 							case "pos":

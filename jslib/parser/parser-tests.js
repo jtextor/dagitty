@@ -1,6 +1,8 @@
 
 QUnit.test( "parsing and serializing", function( assert ) {
 	assert.equal( 
+		GraphDotParser.parse(" dag{ x -> { a b } }"),"dag")
+	assert.equal( 
 		GraphDotParser.parse(" strict Dag { x y ; z \n q }").type,"dag")
 	assert.equal( 
 		GraphDotParser.parse(" STRICT dag{ x -> m -> a b }").type,"dag")
@@ -21,7 +23,7 @@ QUnit.test( "parsing and serializing", function( assert ) {
 		"c -- x\n"+
 		"c -- y\n"+
 		"x -- y\n"+
-		"}"),"graph")
+		"}").type,"graph")
 	assert.equal(
 		GraphDotParser.parse("digraph G { xi1 [latent]\n"+
 			"xi1 -> x1\n"+
@@ -30,5 +32,5 @@ QUnit.test( "parsing and serializing", function( assert ) {
 			"xi1 -> x5\n"+
 			"x5 -> x6\n"+
 			"x1 -> x6\n"+
-			"x6 -> x3 }\n"),"digraph")
+			"x6 -> x3 }\n").type,"digraph")
 } )

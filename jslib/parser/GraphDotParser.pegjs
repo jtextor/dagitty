@@ -12,21 +12,25 @@ start
 
 graph
   = _ 'strict'i?  _ type:graphtype _ id:ID? _ '{' statements:stmt_list '}' _  {
-  	var r = { type : type.toLowerCase(), name:id, statements:statements }
-  	return r
+  	return { type : type.toLowerCase(), name:id, statements:statements }
   }
   
 graphtype
   = 'graph'i / 'digraph'i / 'dag'i / 'mag'i / 'pdag'i
 
+subgraph 
+  =  id:ID? _ '{' statements:stmt_list '}' {
+	  return { type : 'subgraph', name:id, statements:statements }
+  }
+
 stmt_list
   = _ l:(hd:stmt _ ';'? _ tl:stmt_list? {return [hd].concat(tl||[]) })?  { return l }
 
 stmt
-  = edge_stmt / node_stmt
+  = edge_stmt / node_stmt / subgraph
 
 edge_stmt
- = v:node_id _ tl:edgeRHS _ a:attr_list? { 
+ = v:(node_id / subgraph) _ tl:edgeRHS _ a:attr_list? { 
    	if( a === null ){
   		a = {}
   	}
@@ -34,7 +38,7 @@ edge_stmt
  }
 
 edgeRHS
- = l:(a:edgeop _ v:node_id more:( _ tl:edgeRHS {return tl} )? {return [a,v].concat(more||[]) } ) { return l }
+ = l:(a:edgeop _ v:(node_id / subgraph) more:( _ tl:edgeRHS {return tl} )? {return [a,v].concat(more||[]) } ) { return l }
 
 node_stmt
   = id:node_id _ a:attr_list? { 
