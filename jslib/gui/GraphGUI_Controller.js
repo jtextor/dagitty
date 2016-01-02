@@ -1,5 +1,5 @@
 
-var DAGittyController = Class.create({
+var DAGittyController = Class.extend({
 	getGraph : function(){
 		return this.graph;
 	},
@@ -50,12 +50,12 @@ var DAGittyController = Class.create({
 	graphChanged : function(){
 		this.redraw();
 		var g = this.getGraph();
-		this.event_listeners['graphchange'].each(
+		_.each(this.event_listeners['graphchange'],
 			function(l){ l( g ); });
 	},
 	graphLayoutChanged : function(){
 		var g = this.getGraph();
-		this.event_listeners['graphlayoutchange'].each(
+		_.each(this.event_listeners['graphlayoutchange'],
 			function(l){ l( g ); });	
 	},
 	observe : function( event, listener ){
@@ -78,7 +78,7 @@ var DAGittyController = Class.create({
 			this.setGraph( obj.graph );
 		} else {
 			this.setGraph( GraphParser.parseGuess( 
-				(obj.canvas.textContent||obj.canvas.innerText).strip() 
+				obj.canvas.textContent||obj.canvas.innerText
 			) );
 		}
 
@@ -174,7 +174,7 @@ var DAGittyController = Class.create({
 		if( v ){
 			var pcamel = p.substring(0,1).toUpperCase()+p.substring(1,p.length); 
 			// at the moment, just one property at a time
-			["Source","Target","AdjustedNode","LatentNode"].each(function(pc){
+			_.each(["Source","Target","AdjustedNode","LatentNode"],function(pc){
 				this.getGraph()["remove"+pc](v);
 			},this);
 			this.getObservedGraph()["add"+pcamel](v);

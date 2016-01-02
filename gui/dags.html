@@ -24,8 +24,7 @@
     <title>DAGitty v2.3</title>
     <link rel="stylesheet" type="text/css" href="dags.css" />
     	<!-- IE 6 is no longer supported! -->
-	
-	<script type="text/javascript" src="js/prototype.js"></script>
+
 	<script type="text/javascript" src="js/dagitty.js"></script>
 	<script type="text/javascript" src="js/example-dags.js"></script>
 
@@ -68,19 +67,19 @@
 
 	function initialize(){
 		DAGitty.setup({autofocus:true});
-		Event.observe( window, 'resize', DAGitty.resize );
+		window.addEventListener( 'resize', DAGitty.resize );
 		DAGittyControl = DAGitty.controllers[0];
 		
 		GUI.menus = ["model","examples","howto","layout","help"]
-		GUI.menus.each(function(t){
-			Event.observe( $("menu_"+t+"_title"), 'click', 
+		_.each(GUI.menus,function(t){
+			document.getElementById("menu_"+t+"_title").addEventListener( 'click', 
 				function(){menuToggle(t)} );
 		});
 		
 		DAGittyControl.observe( 'graphchange',
 			function(g){
 				Model.dag = g;
-				$("adj_matrix").value = g.toString();
+				document.getElementById("adj_matrix").value = g.toString();
 				displayImplicationInfo( false );
 				causalEffectEstimates();
 				displayGeneralInfo();
@@ -89,7 +88,7 @@
 		
 		DAGittyControl.observe( 'graphlayoutchange',
 			function(g){
-				$("adj_matrix").value = g.toString();
+				document.getElementById("adj_matrix").value = g.toString();
 			}
 		);
 
@@ -110,8 +109,8 @@
 			DAGittyControl.graphChanged();
 		}
 	}
-
-	Event.observe( window, 'load', initialize );
+	
+	window.onload = initialize;
 
     </script>
 	

@@ -1,7 +1,7 @@
 
 var svgns = "http://www.w3.org/2000/svg";
 
-var GraphGUI_SVG = Class.create({
+var GraphGUI_SVG = Class.extend({
 	getStyle : function(){
 		return this.style
 	},
@@ -71,8 +71,8 @@ var GraphGUI_SVG = Class.create({
 		el.dom.style.cursor = "move"
 		var myself = this;
 		
-		Event.observe( el.dom, 'mouseover', function(e){ myself.element_in_focus=el; } );
-		Event.observe( el.dom, 'mouseout', function(e){ myself.element_in_focus=undefined; } );
+		el.dom.addEventListener( 'mouseover', function(e){ myself.element_in_focus=el; } );
+		el.dom.addEventListener( 'mouseout', function(e){ myself.element_in_focus=undefined; } );
 	},
 	anchorEdgeShape : function( el ){
 		
@@ -176,8 +176,8 @@ var GraphGUI_SVG = Class.create({
 		el.dom.style.cursor = "move";
 		var myself = this;
 
-		Event.observe( el.dom, 'mouseover', function(e){ myself.element_in_focus=el; } );
-		Event.observe( el.dom, 'mouseout', function(e){ myself.element_in_focus=undefined; } );
+		el.dom.addEventListener( 'mouseover', function(e){ myself.element_in_focus=el; } );
+		el.dom.addEventListener( 'mouseout', function(e){ myself.element_in_focus=undefined; } );
 		
 		this.moveVertexShape( el );
 	},

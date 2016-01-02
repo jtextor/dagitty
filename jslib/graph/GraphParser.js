@@ -280,7 +280,7 @@ var GraphParser = {
 
 	parseGuess : function( adjacencyListOrMatrix, vertexLabelsAndWeights ){
 		"use strict"
-		var first_blank, firstarg = adjacencyListOrMatrix
+		var first_blank, firstarg = adjacencyListOrMatrix.trim()
 		if( !vertexLabelsAndWeights ){
 			first_blank = adjacencyListOrMatrix.search( /\r?\n[ \t]*\r?\n/ )
 			vertexLabelsAndWeights = adjacencyListOrMatrix.substr( 0, first_blank ).trim()

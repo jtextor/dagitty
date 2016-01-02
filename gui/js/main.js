@@ -60,7 +60,7 @@ var GUI = {
 	},
 	set_highlight_ancestors : function( b ){
 		this.highlight_ancestors = b;
-		["confounder","anexposure","anoutcome"].each(function(n){
+		_.each(["confounder","anexposure","anoutcome"],function(n){
 			this.activate_node_style( n, b );
 		},this);
 		b ? displayShow("legend_ancestors") : displayHide("legend_ancestors");
@@ -73,19 +73,19 @@ var GUI = {
 	set_style : function( s ){
 		DAGitty.stylesheets.default = DAGitty.stylesheets[s]
 		var sty = DAGitty.stylesheets.default.style
-		$("highlight_ancestral").checked = typeof(sty["confoundernode_inactive"]) === "undefined";
-		$("highlight_ancestral").checked ? displayShow("legend_ancestors") : displayHide("legend_ancestors");
+		document.getElementById("highlight_ancestral").checked = typeof(sty["confoundernode_inactive"]) === "undefined";
+		document.getElementById("highlight_ancestral").checked ? displayShow("legend_ancestors") : displayHide("legend_ancestors");
 		
-		$("highlight_causal").checked = typeof(sty["causalpath_inactive"]) === "undefined";
-		$("highlight_causal").checked ? displayShow("legend_causal") : displayHide("legend_causal");
+		document.getElementById("highlight_causal").checked = typeof(sty["causalpath_inactive"]) === "undefined";
+		document.getElementById("highlight_causal").checked ? displayShow("legend_causal") : displayHide("legend_causal");
 		
-		$("highlight_biasing").checked = typeof(sty["biasingpath_inactive"]) === "undefined";
-		$("highlight_biasing").checked ? displayShow("legend_biasing") : displayHide("legend_biasing");
+		document.getElementById("highlight_biasing").checked = typeof(sty["biasingpath_inactive"]) === "undefined";
+		document.getElementById("highlight_biasing").checked ? displayShow("legend_biasing") : displayHide("legend_biasing");
 		
-		$("highlight_puredirect").checked = typeof(sty["puredirectpath_inactive"]) === "undefined";
-		["biasingpath","causalpath","exposure","latentnode","lnode","mnode","other",
-			"outcome","rnode","adjustednode"].each(function(n){
-			$("li"+n).src="images/legend/"+s+"/"+n+".png"
+		document.getElementById("highlight_puredirect").checked = typeof(sty["puredirectpath_inactive"]) === "undefined";
+		_.each(["biasingpath","causalpath","exposure","latentnode","lnode","mnode","other",
+			"outcome","rnode","adjustednode"],function(n){
+			document.getElementById("li"+n).src="images/legend/"+s+"/"+n+".png"
 		},this);
 		DAGittyControl.setStyle( s )
 	}
@@ -101,12 +101,12 @@ function log(a) {
 }
 
 function displayArrow( id, on ){
-	if( $("a_"+id) ){
-		$("a_"+id).src =  "images/arrow-" + (on?"down":"right") + ".png";
+	if( document.getElementById("a_"+id) ){
+		document.getElementById("a_"+id).src =  "images/arrow-" + (on?"down":"right") + ".png";
 	}
 }
 function displayShow( id ){
-	var e = $(id);
+	var e = document.getElementById(id);
 	if( !e ){ 
 		return;
 	}
@@ -118,7 +118,7 @@ function displayShow( id ){
 	displayArrow( id, true );
 }
 function displayHide( id ){
-	var e = $(id);
+	var e = document.getElementById(id);
 	if( !e ){ 
 		return;
 	}
@@ -127,11 +127,11 @@ function displayHide( id ){
 }
 function displayToggle( id ){
 	var on = true;
-	if( $(id).style.display == "block" ){
-		$(id).style.display = "none";
+	if( document.getElementById(id).style.display == "block" ){
+		document.getElementById(id).style.display = "none";
 		on = false;
 	} else {
-		$(id).style.display = "block";
+		document.getElementById(id).style.display = "block";
 	}
 	displayArrow( id, on );
 }
@@ -176,7 +176,7 @@ function setsToHTML( sets ){
 		var msas_html = [];
 		for( var i = 0 ; i < sets.length ; i ++ ){
 			msas_html[i] = "{";
-			var ids = sets[i].pluck('id').sort();
+			var ids = _.pluck(sets[i],'id').sort();
 			for( var j = 0 ; j < ids.length ; j ++ ){
 				if( j > 0 ){
 					msas_html[i] += ", ";
@@ -196,7 +196,7 @@ function setsToHTML( sets ){
 }
 
 function causalEffectEstimates(){
-	switch( $("causal_effect_kind").value ){
+	switch( document.getElementById("causal_effect_kind").value ){
 		case "adj_total" :
 			displayAdjustmentInfo("total"); break
 		case "adj_direct" :
@@ -214,7 +214,7 @@ function msasToHtml( msas ){
 		var msas_html = [];
 		for( var i = 0 ; i < msas.length ; i ++ ){
 			msas_html[i] = "";
-			var ids = msas[i].pluck('id').sort();
+			var ids = _.pluck(msas[i],'id').sort();
 			for( var j = 0 ; j < ids.length ; j ++ ){
 				if( j > 0 ){
 					msas_html[i] += ", ";
@@ -233,43 +233,42 @@ function msasToHtml( msas ){
 }
 
 function displayAdjustmentInfo( kind ){	
-	var adjusted_nodes = Model.dag.vertices.values().
-		findAll(Model.dag.isAdjustedNode, Model.dag);
+	var adjusted_nodes = Model.dag.getAdjustedNodes();
 	var html_adjustment = "";
 	if( kind != "total" ){
 		kind = "direct";
 	}
 	if( adjusted_nodes.length > 0 ){
-		html_adjustment = " containing "+adjusted_nodes.pluck('id').sort().join(", ");
+		html_adjustment = " containing "+_.pluck(adjusted_nodes,'id').sort().join(", ");
 	}
 	if( Model.dag.getSources().length==0 || Model.dag.getTargets().length==0 ){
-		$("causal_effect").innerHTML = "<p>Exposure and/or outcome not defined.</p>"
+		document.getElementById("causal_effect").innerHTML = "<p>Exposure and/or outcome not defined.</p>"
 		return
 	}
 	
 	var showMsas = function( t, msas, html_a ){
 		if( msas.length == 1 && msas[0].length == 0 ){
-			$("causal_effect").innerHTML = 
+			document.getElementById("causal_effect").innerHTML = 
 				"<p>No adjustment is necessary to estimate the "+t+" effect of "+
-					Model.dag.getSources().pluck('id').join(",") +
-					" on " + Model.dag.getTargets().pluck('id').join(",") + ".</p>"
+					_.pluck(Model.dag.getSources(),'id').join(",") +
+					" on " + _.pluck(Model.dag.getTargets(),'id').join(",") + ".</p>"
 			return
 		}
 		var msas_html = msasToHtml( msas );
 		if( msas_html ){
-			$("causal_effect").innerHTML = 
+			document.getElementById("causal_effect").innerHTML = 
 			"<p>Minimal sufficient adjustment sets "+html_a+" for estimating the "+t+" effect of "
-			+ Model.dag.getSources().pluck('id').join(",") 
-			+ " on " + Model.dag.getTargets().pluck('id').join(",") + ": " + msas_html;
+			+ _.pluck(Model.dag.getSources(),'id').join(",") 
+			+ " on " + _.pluck(Model.dag.getTargets(),'id').join(",") + ": " + msas_html;
 		} else {
-			$("causal_effect").innerHTML 
+			document.getElementById("causal_effect").innerHTML 
 			= "<p>The "+t+" effect cannot be estimated by covariate adjustment.</p>";
 		}
 	};
 	
 	if( kind == "total" ){
 		if( GraphAnalyzer.violatesAdjustmentCriterion( Model.dag ) ){
-			$("causal_effect").innerHTML 
+			document.getElementById("causal_effect").innerHTML 
 			= "<p>The total effect cannot be estimated due to adjustment for an intermediate or a descendant of an intermediate.</p>";
 		} else {
 
@@ -291,7 +290,7 @@ function ivsToHtml( ivs ){
 		for( var i = 0 ; i < ivs.length ; i ++ ){
 			ivs_html[i] = ivs[i][0].id
 			if( ivs[i][1].length > 0 ){
-				ivs_html[i] += " | "+ivs[i][1].pluck('id').join(', ');
+				ivs_html[i] += " | "+_.pluck(ivs[i][1],'id').join(', ');
 			}
 		} 
 		return "<ul><li>"+ivs_html.sort().join("</li><li>")+"</li></ul>";
@@ -303,19 +302,19 @@ function ivsToHtml( ivs ){
 function displayInstrumentInfo(){
 	if( Model.dag.getSources().length != 1 || 
 		Model.dag.getTargets().length != 1 ){
-		$("causal_effect").innerHTML = "<p>Instrumental variable identification is only supported for a single exposure and a single outcome.</p>"
+		document.getElementById("causal_effect").innerHTML = "<p>Instrumental variable identification is only supported for a single exposure and a single outcome.</p>"
 		return
 	}
 	var ivs = GraphAnalyzer.conditionalInstruments( Model.dag )
 	if( ivs === false ){
-		$("causal_effect").innerHTML = "<p>Instrumental variable identification is not supported for this kind of DAG.</p>"
+		document.getElementById("causal_effect").innerHTML = "<p>Instrumental variable identification is not supported for this kind of DAG.</p>"
 		return
 	}
 	if( ivs.length == 0 ){
-		$("causal_effect").innerHTML = "<p>There are no instruments or conditional instruments in this DAG.</p>"
+		document.getElementById("causal_effect").innerHTML = "<p>There are no instruments or conditional instruments in this DAG.</p>"
 		return
 	}
-	$("causal_effect").innerHTML = "<p>Instruments and conditional instruments:</p>"
+	document.getElementById("causal_effect").innerHTML = "<p>Instruments and conditional instruments:</p>"
 		+ ivsToHtml( ivs )
 }
 
@@ -337,7 +336,7 @@ function displayImplicationInfo( full ){
 					if( i > 0 || j > 0 ) imp_html += "</li><li>";
 					imp_html += imp[i][0]+" &perp; "+imp[i][1];
 					if( imp[i][2][j].length > 0 ){
-						imp_html += " | "+imp[i][2][j].pluck('id').sort().join(", ");
+						imp_html += " | "+_.pluck(imp[i][2][j],'id').sort().join(", ");
 					} 
 				}  else {
 					more_link = true;
@@ -345,11 +344,11 @@ function displayImplicationInfo( full ){
 			}
 		}
 		imp_html += "</ul>";
-		$("testable_implications").innerHTML = imp_html +
+		document.getElementById("testable_implications").innerHTML = imp_html +
 			(more_link?'<p><a href="javascript:void(0)" onclick="displayImplicationInfo( true )">Show all ...</a></p>':'')+
 			('<p><a href="javascript:void(0)" onclick="exportImplicationTests()">Export R code</a></p>');
 	} else {
-		$("testable_implications").innerHTML = 
+		document.getElementById("testable_implications").innerHTML = 
 		"<p>Either the model does not imply any conditional independencies "
 		+" or the implied ones are untestable due to unobserved variables.</p>";
 	}
@@ -369,22 +368,22 @@ function displayGeneralInfo(){
 	if( cycle ){
 		displayShow("info_cycle");
 		displayHide("info_summary");
-		$("info_cycle").innerHTML = "<p><b>Model contains cycle: "+cycle+"</b></p>";
+		document.getElementById("info_cycle").innerHTML = "<p><b>Model contains cycle: "+cycle+"</b></p>";
 	} else {
 		if ( _.some(Model.dag.getEdges(), function(e) { return e.directed == Graph.Edgetype.Undirected; } ) )
 			cycle = GraphAnalyzer.containsSemiCycle(Model.dag);
 		if (cycle) {
 			displayShow("info_cycle");
 			displayHide("info_summary");
-			$("info_cycle").innerHTML = "<p><b>Model contains semi-cycle: "+cycle+"</b></p>";
+			document.getElementById("info_cycle").innerHTML = "<p><b>Model contains semi-cycle: "+cycle+"</b></p>";
 		} else {
 			displayHide("info_cycle");
 			displayShow("info_summary");
-			$("info_exposure").innerHTML = Model.dag.getSources().pluck('id').join(",");
-			$("info_outcome").innerHTML = Model.dag.getTargets().pluck('id').join(",");
-			$("info_covariates").innerHTML = Model.dag.getNumberOfVertices()-Model.dag.getSources().length
+			document.getElementById("info_exposure").innerHTML = _.pluck(Model.dag.getSources(),'id').join(",");
+			document.getElementById("info_outcome").innerHTML = _.pluck(Model.dag.getTargets(),'id').join(",");
+			document.getElementById("info_covariates").innerHTML = Model.dag.getNumberOfVertices()-Model.dag.getSources().length
 			-Model.dag.getTargets().length;
-			$("info_frontdoor").innerHTML = Model.dag.countPaths();
+			document.getElementById("info_frontdoor").innerHTML = Model.dag.countPaths();
 			// $("info_backdoor").innerHTML = dag_ancestor_pair_graph.countPaths();      
 		}
 	}
@@ -393,25 +392,25 @@ function displayGeneralInfo(){
 }
 
 function loadDAGFromTextData(){
-	Model.dag = GraphParser.parseGuess( $("adj_matrix").value );
+	Model.dag = GraphParser.parseGuess( document.getElementById("adj_matrix").value );
 	if( !Model.dag.hasCompleteLayout() ){
 		var layouter = new GraphLayouter.Spring( Model.dag );
 		layouter.layout();
 	}
 	DAGittyControl.setGraph( Model.dag  );
 	displayHide("model_refresh");
-	$("adj_matrix").style.backgroundColor="#fff";
+	document.getElementById("adj_matrix").style.backgroundColor="#fff";
 }
 
 function generateSpringLayout(){
 	var layouter = new GraphLayouter.Spring( Model.dag );
-	Model.dag.edges.each(function(e){delete e["layout_pos_x"];delete e["layout_pos_y"]})
+	_.each(Model.dag.edges,function(e){delete e["layout_pos_x"];delete e["layout_pos_y"]})
 	layouter.layout();
 	DAGittyControl.setGraph( Model.dag ); // trigges to refresh the rendering
 };
 
 function loadExample( nr ){
-	$("adj_matrix").value = examples[parseInt(nr)].v+"\n\n"+examples[parseInt(nr)].e;
+	document.getElementById("adj_matrix").value = examples[parseInt(nr)].v+"\n\n"+examples[parseInt(nr)].e;
 	loadDAGFromTextData();
 }
 
@@ -432,7 +431,7 @@ function newModel3(ename,oname){
 	if( oname == null ){ return false; }
 	oname = (""+oname).strip()
 	if( oname == "" || ename == oname ){ return false; }
-	$("adj_matrix").value = ename+" E @0,0\n"+oname+" O @1,1\n\n"+ename+" "+oname
+	document.getElementById("adj_matrix").value = ename+" E @0,0\n"+oname+" O @1,1\n\n"+ename+" "+oname
 	loadDAGFromTextData()
 	DAGittyControl.getView().closeDialog()
 }
@@ -444,33 +443,33 @@ function supportsSVG() {
 
 function exportPDF(){
 	if( supportsSVG() ){
-		$("exportformsvg").value = $("canvas").innerHTML;
-		$("exportform").action = "http://www.dagitty.net/pdf/batik-pdf.php";
-		$("exportform").submit();
+		document.getElementById("exportformsvg").value = document.getElementById("canvas").innerHTML;
+		document.getElementById("exportform").action = "http://www.dagitty.net/pdf/batik-pdf.php";
+		document.getElementById("exportform").submit();
 	}
 }
 
 function exportJPEG(){
 	if( supportsSVG() ){
-		$("exportformsvg").value = $("canvas").innerHTML;
-		$("exportform").action = "http://www.dagitty.net/pdf/batik-jpeg.php";
-		$("exportform").submit();
+		document.getElementById("exportformsvg").value = document.getElementById("canvas").innerHTML;
+		document.getElementById("exportform").action = "http://www.dagitty.net/pdf/batik-jpeg.php";
+		document.getElementById("exportform").submit();
 	}
 }
 
 function exportPNG(){
 	if( supportsSVG() ){
-		$("exportformsvg").value = $("canvas").innerHTML;
-		$("exportform").action = "http://www.dagitty.net/pdf/batik-png.php";
-		$("exportform").submit();
+		document.getElementById("exportformsvg").value = document.getElementById("canvas").innerHTML;
+		document.getElementById("exportform").action = "http://www.dagitty.net/pdf/batik-png.php";
+		document.getElementById("exportform").submit();
 	}
 }
 
 function exportSVG(){
 	if( supportsSVG() ){
-		$("exportformsvg").value = $("canvas").innerHTML;
-		$("exportform").action = "http://www.dagitty.net/pdf/svg.php";
-		$("exportform").submit();
+		document.getElementById("exportformsvg").value = document.getElementById("canvas").innerHTML;
+		document.getElementById("exportform").action = "http://www.dagitty.net/pdf/svg.php";
+		document.getElementById("exportform").submit();
 	}
 }
 
@@ -536,7 +535,7 @@ function validateCaptcha()
 				networkFailMsg(); return
 			}
 			if( t.responseText == "fail" ){
-				$("captcha_status").innerHTML = "You did not solve the CAPTCHA. Please try again.";
+				document.getElementById("captcha_status").innerHTML = "You did not solve the CAPTCHA. Please try again.";
 				grecaptcha.reset();
 			} else {
 				saveOnline( t.responseText );
@@ -546,8 +545,8 @@ function validateCaptcha()
 }
 
 function saveOnlineValidate(){
-	if( $('modelsavefrm_name').value.length < 3 ){
-		$('modelsavefrm_name_err').innerHTML = "Please enter a title!"
+	if( document.getElementById('modelsavefrm_name').value.length < 3 ){
+		document.getElementById('modelsavefrm_name_err').innerHTML = "Please enter a title!"
 		return false;
 	}
 	validateCaptcha();
@@ -558,9 +557,9 @@ function saveOnline( secret ){
 			{
 				method:'post',
 				parameters: { dag: Model.dag.toString(),
-						email: $('modelsavefrm_email').value,
-						name: $('modelsavefrm_name').value,
-						desc: $('modelsavefrm_desc').value,
+						email: document.getElementById('modelsavefrm_email').value,
+						name: document.getElementById('modelsavefrm_name').value,
+						desc: document.getElementById('modelsavefrm_desc').value,
 						secret : secret
 				},
 				onFailure: networkFailMsg,
@@ -638,7 +637,7 @@ function loadOnline( url ){
 				}
 				DAGittyControl.getView().closeDialog()
 				if( t.responseText ){
-					$("adj_matrix").value = B64.decode( t.responseText )
+					document.getElementById("adj_matrix").value = B64.decode( t.responseText )
 					Model.uniqid=graphid
 					loadDAGFromTextData()
 				} else {

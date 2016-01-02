@@ -694,15 +694,16 @@ var GraphTransformer = {
 	 * This is used to compute the "atomic directed edges", which
 	 * are directed edges that are essential for the ancestral structure
 	 * of a graph. 
+	 * TODO write unit test
 	 * */
 	transitiveReduction : function( g ) {
 		var gn = g.clone(), en
-		g.edges.each( function( e ){
+		_.each( g.edges, function( e ){
 			en = gn.getEdge( e.v1, e.v2 )
 			if( en ){
 				// delete edge (u,v) if there is at least one mediator between u and v 
-				if( g.descendantsOf( [e.v1] ).
-					intersect( g.ancestorsOf( [e.v2] ) ).length > 2 ){
+				if( _.intersection( g.descendantsOf( [e.v1] ), 
+						g.ancestorsOf( [e.v2] ) ).length > 2 ){
 					gn.deleteEdge( e.v1, e.v2, Graph.Edgetype.Directed )
 				}
 			}
@@ -712,8 +713,8 @@ var GraphTransformer = {
 	
 	transitiveClosure : function( g ){
 		var gn = g.clone()
-		gn.vertices.values().each( function(v){
-			gn.descendantsOf( [v] ).each( function(w){
+		_.each(gn.vertices.values(), function(v){
+			_.each(gn.descendantsOf( [v] ), function(w){
 				if( v != w ) gn.addEdge( v, w )
 			} )
 		} )

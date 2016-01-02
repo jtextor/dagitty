@@ -16,7 +16,25 @@
  *   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA. */
 
 
-var DAGittyGraphView = Class.create({
+var DAGittyGraphView = Class.extend({
+	pointerX : function(e) {
+		var docElement = document.documentElement,
+		 body = document.body || { scrollLeft: 0 };
+
+		return e.pageX || (e.clientX +
+		  (docElement.scrollLeft || body.scrollLeft) -
+		  (docElement.clientLeft || 0));
+	},
+
+	pointerY : function(e) {
+		var docElement = document.documentElement,
+		 body = document.body || { scrollTop: 0 };
+
+		return  e.pageY || (e.clientY +
+		   (docElement.scrollTop || body.scrollTop) -
+		   (docElement.clientTop || 0));
+	},
+
 	setStyle : function( sheetname ){
 		this.impl && this.impl.setStyle( sheetname )
 	},
@@ -168,8 +186,8 @@ var DAGittyGraphView = Class.create({
 		var myself = this;
 		var movehandler = function(e){
 			if( myself.dialogOpen() ){ return; };
-			myself.mouse_x = Event.pointerX(e)-myself.getContainer().offsetLeft;
-			myself.mouse_y = Event.pointerY(e)-myself.getContainer().offsetTop;
+			myself.mouse_x = myself.pointerX(e)-myself.getContainer().offsetLeft;
+			myself.mouse_y = myself.pointerY(e)-myself.getContainer().offsetTop;
 			if (typeof myself.draggingStartX !== "undefined") {
 				if (Math.abs(myself.draggingStartX - myself.mouse_x) + Math.abs(myself.draggingStartY - myself.mouse_y) > 7 )
 					myself.draggingActive = true;
@@ -182,7 +200,7 @@ var DAGittyGraphView = Class.create({
 				vs.x = myself.mouse_x;
 				vs.y = myself.mouse_y;
 				myself.impl.moveVertexShape( vs );
-				vs.adjacent_edges.each(function(es){
+				_.each(vs.adjacent_edges,function(es){
 					myself.impl.anchorEdgeShape( es );
 				});
 				var g_coords = myself.toGraphCoordinate( vs.x, vs.y );
@@ -218,29 +236,31 @@ var DAGittyGraphView = Class.create({
 			}
 		}
 																																																																																																																																																																																																																																																																																									
-		Event.observe( this.getContainer(), 'mousedown', function(e){
-			myself.startDragging(Event.pointerX(e) - myself.getContainer().offsetLeft, Event.pointerY(e) - myself.getContainer().offsetTop);
+		this.getContainer().addEventListener( 'mousedown', function(e){
+			myself.startDragging(myself.pointerX(e) - myself.getContainer().offsetLeft, 
+				myself.pointerY(e) - myself.getContainer().offsetTop);
 		} );
 		
-		Event.observe( this.getContainer(), 'dblclick', function(e){
+		this.getContainer().addEventListener( 'dblclick', function(e){
 			myself.dblclickHandler( e );
 		} );
 		
-		Event.observe( this.getContainer(), 'click', function( e ){
+		this.getContainer().addEventListener( 'click', function( e ){
 			myself.clickHandler( e );
 		} );
 		
-		Event.observe( this.getContainer(), 'mousemove', movehandler );
+		this.getContainer().addEventListener( 'mousemove', movehandler );
 		
-		Event.observe( this.getContainer(), 'mouseup', function(e){
+		this.getContainer().addEventListener( 'mouseup', function(e){
 			if( myself.graph_layout_changed ){
 				myself.getController().graphLayoutChanged();
 				myself.graph_layout_changed = false;
 			}
 			myself.stopDragging();
 		} );
+		
 		if( autofocus ){
-			Event.observe( this.getContainer(), 'mouseenter', function(e){
+			this.getContainer().addEventListener( 'mouseenter', function(e){
 				myself.getContainer().focus();
 			} );
 		}
@@ -260,7 +280,8 @@ var DAGittyGraphView = Class.create({
 			    case 82: //r
 					if(v){
 						myself.renameVertexDialog();
-						Event.stop(e);
+						e.stopPropagation();
+						e.preventDefault();
 					}
 					break;
 				case 85: //u
@@ -275,12 +296,13 @@ var DAGittyGraphView = Class.create({
 					break;
 				case 78: //n
 					myself.newVertexDialog();
-					Event.stop(e);
+					e.stopPropagation();
+					e.preventDefault();
 					break;
 				break;
 			}
 		};
-		Event.observe( this.getContainer(), 'keydown', this.keydownhandler );
+		this.getContainer().addEventListener( 'keydown', this.keydownhandler );
 	},
 	initialize : function( el, graph, controller, obj ){
 		// el -> parent element to hook into
@@ -422,11 +444,11 @@ var DAGittyGraphView = Class.create({
 			this.getContainer().removeChild( this.current_dialog.dom );
 			this.getContainer().focus();
 			if( this.dialogkeydownhandler ){
-				Event.stopObserving(this.getContainer(),'keydown',
+				this.getContainer().removeEventListener('keydown',
 					this.dialogkeydownhandler);
 				delete this.dialogkeydownhandler;
 			}
-			Event.observe(this.getContainer(),'keydown',this.keydownhandler);
+			this.getContainer().addEventListener('keydown',this.keydownhandler);
 		}
 		delete this.current_dialog;
 	},
@@ -465,7 +487,7 @@ var DAGittyGraphView = Class.create({
 			dom : qdiv
 		};
 		// unregister & save previous keydown handler
-		Event.stopObserving(this.getContainer(),'keydown',this.keydownhandler);
+		this.getContainer().removeEventListener('keydown',this.keydownhandler);
 	},
 	openAlertDialog : function(t){
 		this.closeDialog();
@@ -493,9 +515,9 @@ var DAGittyGraphView = Class.create({
 			dom : qdiv
 		};
 		// unregister & save previous keydown handler
-		Event.stopObserving(this.getContainer(),'keydown',this.keydownhandler);
+		this.getContainer().removeEventListener('keydown',this.keydownhandler);
 		this.dialogkeydownhandler = qf.onclick;
-		Event.observe(this.getContainer(),'keydown',this.dialogkeydownhandler);
+		this.getContainer().removeEventListener('keydown',this.dialogkeydownhandler);
 	},
 	// t : text ; v : default value ; f : callback when clicked "OK"
 	openPromptDialog : function(t,v,f){
@@ -553,7 +575,7 @@ var DAGittyGraphView = Class.create({
 			error_message_field : qferr
 		};
 		// unregister & save previous keydown handler
-		Event.stopObserving(this.getContainer(),'keydown',this.keydownhandler);
+		this.getContainer().removeEventListener('keydown',this.keydownhandler);
 		qfin.focus();
 	},
 	dialogOpen : function(){
@@ -646,16 +668,16 @@ var DAGittyGraphView = Class.create({
 		var o_ancestors = g_an.ancestorsOf( g_an.getTargets() );
 		
 		var ean_ids = {};
-		e_ancestors.each(function(v){ean_ids[v.id]=1});
+		_.each(e_ancestors,function(v){ean_ids[v.id]=1});
 		var oan_ids = {};
-		o_ancestors.each(function(v){oan_ids[v.id]=1});
+		_.each(o_ancestors,function(v){oan_ids[v.id]=1});
 
 		for( var i = 0 ; i < vv.length ; i ++ ){
 			var c = this.toScreenCoordinate( vv[i].layout_pos_x, vv[i].layout_pos_y );
 			var vs = { id: vv[i].id, x : c[0], y : c[1], adjacent_edges : [] };
 
-			var e_an = e_ancestors.include( vv[i] );
-			var o_an = e_ancestors.include( vv[i] );
+			var e_an = _.include( e_ancestors, vv[i] );
+			var o_an = _.include( o_ancestors, vv[i] ); // TODO test this line
 
 			var vertex_type = "";			
 			if( g.isSource(vv[i]) ){

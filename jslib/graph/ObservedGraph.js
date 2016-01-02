@@ -44,17 +44,17 @@ var ObservedGraph = Class.extend({
 	initialize : function( graph ){
 		this.graph = graph
 		this.event_listeners = {}
-		Object.keys( this.event_mapping ).each(function(k){
+		_.each(Object.keys( this.event_mapping ),function(k){
 			this.event_listeners[this.event_mapping[k]]=[]
 		},this)
 		for( var k in graph ){
-			if( Object.isFunction(graph[k]) ){
+			if( _.isFunction(graph[k]) ){
 				var f = graph[k]
 				if( this.event_mapping[k] ){
 					this[k] = (function(f,k){
 						return function(){
 							var r = f.apply( graph, arguments )
-							this.event_listeners[this.event_mapping[k]].each(
+							_.each(this.event_listeners[this.event_mapping[k]],
 							function(l){
 								l()
 							})
