@@ -209,9 +209,7 @@ var DAGittyGraphView = Class.extend({
 				
 				v.layout_pos_x = g_coords[0] // changes model
 				v.layout_pos_y = g_coords[1] // changes model
-				
 				myself.graph_layout_changed = true
-				
 				myself.impl.unsuspendRedraw()
 			}
 			var es = myself.isDraggingEdgeShape()
@@ -238,11 +236,14 @@ var DAGittyGraphView = Class.extend({
 				myself.impl.unsuspendRedraw()
 			}
 		}
-																																																																																																																																																																																																																																																																																									
-		this.getContainer().addEventListener( "mousedown", function(e){
+
+		var mdownhandler = function(e){
 			myself.startDragging(myself.pointerX(e) - myself.getContainer().offsetLeft, 
 				myself.pointerY(e) - myself.getContainer().offsetTop)
-		} )
+		}
+		this.getContainer().addEventListener( "mousedown", mdownhandler )
+		this.getContainer().addEventListener( "touchstart",
+			function(e){ mdownhandler(e.changedTouches[0]) } )
 		
 		this.getContainer().addEventListener( "dblclick", function(e){
 			myself.dblclickHandler( e )
@@ -253,19 +254,23 @@ var DAGittyGraphView = Class.extend({
 		} )
 		
 		this.getContainer().addEventListener( "mousemove", movehandler )
+		this.getContainer().addEventListener( "touchmove", 
+			function(e){ movehandler(e.changedTouches[0]) } )
 		
-		this.getContainer().addEventListener( "mouseup", function(){
+		var muphandler = function(){
 			if( myself.graph_layout_changed ){
 				myself.getController().graphLayoutChanged()
 				myself.graph_layout_changed = false
 			}
 			myself.stopDragging()
-		} )
+		}
+		this.getContainer().addEventListener( "mouseup", muphandler )
+		this.getContainer().addEventListener( "touchend", muphandler )
 		
 		if( autofocus ){
-			this.getContainer().addEventListener( "mouseenter", function(){
-				myself.getContainer().focus()
-			} )
+			var f = _.bind( this.getContainer().focus, this )
+			this.getContainer().addEventListener( "mouseenter", f )
+			this.getContainer().addEventListener( "touchenter", f )
 		}
 		
 		this.keydownhandler = function( e ){

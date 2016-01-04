@@ -10,7 +10,7 @@ GRAPH_FILES=$(RJS)/Hash.js $(RJS)/Class.js $(RJS)/Graph.js \
 
 all : install dagitty-alg.js
 
-.PHONY : install
+.PHONY : install force_look
 
 jsmin  : jsmin.c
 	gcc -O2 -o $@ $<
@@ -28,6 +28,10 @@ dagitty-min.js : dagitty.js jsmin
 
 install : dagitty-min.js
 	cp dagitty.js ../gui/js/dagitty.js
+	
+parser/GraphDotParser.js : force_look
+	cd parser ; make
 
 clean:
 	rm -f dagitty.js jsmin.exe jsmin dagitty-min.js
+ 
