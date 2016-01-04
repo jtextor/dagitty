@@ -356,7 +356,16 @@ QUnit.test( "graph transformations", function( assert ) {
 		  
 		 GraphTransformer.transitiveReduction,
 		 "dag G { x -> y -> z <- x }",
-		 "dag G { x -> y -> z }"
+		 "dag G { x -> y -> z }",
+		 
+		 GraphTransformer.dag2DependencyGraph,
+		 "dag G { x -> y -> z <- x }",
+		 "graph G { x -- y -- z -- x }",
+		 "dag G { x -> y -> z }",
+		 "graph G { x -- y -- z -- x }",
+		 "dag G { x -> y <- z }",
+		 "graph G { x -- y -- z }"
+
 	];
 	var i = 0; var transfunc;
 	while (i < transformations.length) {

@@ -235,7 +235,7 @@ var DAGitty = {
 			var y = tanth * x
 			return [cx-x, cy-y]
 		},
-		svgEdgeAnchor : function( el, reverse ){
+		svgEdgeAnchor : function( el, reverse, edgetype ){
 			var v = ["v1","v2"]
 			if( reverse == 1 ){ 
 				v = ["v2","v1"]
@@ -255,7 +255,11 @@ var DAGitty = {
 						(1.-Math.acos( dx / l ) / 2. / Math.PI) * svglength )
 				}
 				var lp = Math.sqrt(svgpoint.x*svgpoint.x+svgpoint.y*svgpoint.y)
-				var elongate = reverse == 0 ? 1 : (lp+5)/lp
+				var elongate = (lp+5) / lp
+				if( edgetype == Graph.Edgetype.Undirected || 
+					( edgetype == Graph.Edgetype.Directed && reverse == 0 ) ){
+					elongate = 1
+				}
 				return [svgpoint.x*elongate+el[v[0]].x,
 					svgpoint.y*elongate+el[v[0]].y]
 			} catch( e ){

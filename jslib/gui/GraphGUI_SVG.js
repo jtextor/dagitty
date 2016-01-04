@@ -79,10 +79,10 @@ var GraphGUI_SVG = Class.extend({
 	},
 	anchorEdgeShape : function( el ){
 		
-		var anchorback = DAGitty.Math.svgEdgeAnchor( el, 0 )
+		var anchorback = DAGitty.Math.svgEdgeAnchor( el, 0, el.directed )
 		el.x1 = anchorback[0]; el.y1 = anchorback[1]
 		
-		var anchorfront = DAGitty.Math.svgEdgeAnchor( el, 1 )
+		var anchorfront = DAGitty.Math.svgEdgeAnchor( el, 1., el.directed )
 		el.x2 = anchorfront[0]; el.y2 = anchorfront[1]
 		
 		if( el.cx ){

@@ -123,7 +123,7 @@ var DAGittyGraphView = Class.extend({
 		} else if( es ){
 			delete es.cx
 			delete es.cy
-				// TODO this presumes at most 1 edge between vertex shapes
+			// TODO this assumes at most 1 edge between vertex shapes
 			var ed = this.graph.getEdge( es.v1.id, es.v2.id )
 			delete ed.layout_pos_x
 			delete ed.layout_pos_y
@@ -140,7 +140,8 @@ var DAGittyGraphView = Class.extend({
 				this.action_on_click.apply( this )
 			}
 		} else if (this.getCurrentEdgeShape() && !this.isDraggingEdgeShape()) {
-			this.getController().toggleEdge( this.getCurrentEdgeShape().v1.id, this.getCurrentEdgeShape().v2.id, true )
+			this.getController().toggleEdge( this.getCurrentEdgeShape().v1.id, 
+			this.getCurrentEdgeShape().v2.id, true )
 		}
 	},
 	setActionOnClick : function( a ){
@@ -219,7 +220,8 @@ var DAGittyGraphView = Class.extend({
 
 				var ed = myself.graph.getEdge( 
 					myself.graph.getVertex( es.v1.id ),
-					myself.graph.getVertex( es.v2.id )
+					myself.graph.getVertex( es.v2.id ),
+					es.directed
 				)
 				
 				g_coords = myself.toGraphCoordinate( myself.mouse_x,
@@ -347,9 +349,6 @@ var DAGittyGraphView = Class.extend({
 		}
 		
 		this.display_mode = "normal"
-		this.vertex_shapes = new Hash()
-		this.edge_shapes = []
-
 		this.drawGraph()
 	},
 	resize : function(){
@@ -658,18 +657,15 @@ var DAGittyGraphView = Class.extend({
 		
 		var vv = g.getVertices()
 		this.impl.suspendRedraw( 50000 )
-		this.impl.removeShapes( this.edge_shapes )
-		this.impl.removeShapes( this.vertex_shapes.values() )
-		this.edge_shapes = []
+		this.edge_shapes && this.impl.removeShapes( this.edge_shapes.values() )
+		this.vertex_shapes && this.impl.removeShapes( this.vertex_shapes.values() )
+		this.edge_shapes = new Hash()
 		this.vertex_shapes = new Hash()
 		
-		var e_ancestors = g_an.ancestorsOf( g_an.getSources() )
-		var o_ancestors = g_an.ancestorsOf( g_an.getTargets() )
-		
 		var ean_ids = {}
-		_.each(e_ancestors,function(v){ean_ids[v.id]=1})
+		_.each(g_an.ancestorsOf( g_an.getSources() ),function(v){ean_ids[v.id]=1})
 		var oan_ids = {}
-		_.each(o_ancestors,function(v){oan_ids[v.id]=1})
+		_.each(g_an.ancestorsOf( g_an.getTargets() ),function(v){oan_ids[v.id]=1})
 
 		for( i = 0 ; i < vv.length ; i ++ ){
 			c = this.toScreenCoordinate( vv[i].layout_pos_x, vv[i].layout_pos_y )
@@ -705,7 +701,8 @@ var DAGittyGraphView = Class.extend({
 			
 			var es = { 
 				v1 : this.vertex_shapes.get( ee[i].v1.id ), 
-				v2 : this.vertex_shapes.get( ee[i].v2.id )
+				v2 : this.vertex_shapes.get( ee[i].v2.id ),
+				directed : ee[i].directed
 			}
 
 			if( ee[i].layout_pos_x ){
@@ -738,11 +735,11 @@ var DAGittyGraphView = Class.extend({
 			}
 			
 			this.impl.createEdgeShape( edgetypes.join(" "), es )
-			this.edge_shapes.push( es )
+			this.edge_shapes.set( ee[i].v1.id+"\0"+ee[i].v2.id+"\0"+ee[i].directed, es )
 			es.v1.adjacent_edges.push( es )
 			es.v2.adjacent_edges.push( es )
 		}
-		this.impl.prependShapes( this.edge_shapes )
+		this.impl.prependShapes( this.edge_shapes.values() )
 		this.impl.unsuspendRedraw()
 
 	}

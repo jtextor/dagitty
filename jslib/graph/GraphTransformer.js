@@ -656,7 +656,7 @@ var GraphTransformer = {
 	 **/
 	vertexCapacityGraph : function( g ) {
 		var gn = new Graph()
-		g.vertices.values().each( function( v ){
+		_.each(g.vertices.values(),function( v ){
 			if( g.getSource() !== v ){
 				gn.addVertex( new Graph.Vertex( { id : "I" + v.id } ) )
 			}
@@ -670,7 +670,7 @@ var GraphTransformer = {
 					v2:gn.getVertex("I"+v.id), v1:gn.getVertex("O"+v.id), capacity: 0, is_backedge : true } ) )
 			}
 		} )
-		g.edges.each( function( e ){
+		_.each(g.edges,function( e ){
 			if( e.v1 !== g.getTarget() && e.v2 !== g.getSource() ){
 				gn.addEdge( new Graph.Edge.Directed( { v1 : gn.getVertex("O"+e.v1.id),
 							v2 : gn.getVertex("I"+e.v2.id) , capacity: 1, is_backedge : false } ) )
@@ -720,20 +720,20 @@ var GraphTransformer = {
 		return gn
 	},
 	
-	/** TODO make this work with undirected edges */
+	/** TODO make this work with undirected edges, add unit test */
 	dependencyGraph : function( g ){
 		var gc = GraphTransformer.canonicalDag( g ).g
 		var gd = GraphTransformer.dag2DependencyGraph( gc )
 		var vn = []
-		g.vertices.values().each( function(v){ vn.push(gd.getVertex(v.id)) } )
+		_.each(g.vertices.values(),function(v){ vn.push(gd.getVertex(v.id)) } )
 		return GraphTransformer.inducedSubgraph( gd, vn )
 	},
 
-	
+
 	dag2DependencyGraph : function( g ){
 		var gn = GraphTransformer.transitiveClosure( g )
 		var gm = GraphTransformer.skeleton( gn )
-		gn.vertices.values().each( function(v){
+		_.each(gn.vertices.values(),function(v){
 			var ch = gn.childrenOf( [v] ), i=0, j=1
 			for( ; i < ch.length ; i ++ ){
 				for( j = i+1 ; j < ch.length ; j ++ ){
@@ -745,12 +745,13 @@ var GraphTransformer = {
 		return gm
 	},
 	
+	/** TODO add unit test */
 	dependencyGraph2CPDAG : function( g ){
 		var gn = new Graph()
 		gn.setType( "pdag" )
 		var vv = g.vertices.values()
-		vv.each( function(v){ gn.addVertex( v.cloneWithoutEdges() ) } )
-		g.edges.each(function(e){
+		_.each(vv,function(v){ gn.addVertex( v.cloneWithoutEdges() ) } )
+		_.each(g.edges,function(e){
 			var n1 = g.neighboursOf( [e.v1] )
 			var n2 = g.neighboursOf( [e.v2] )
 			n1.push(e.v1)

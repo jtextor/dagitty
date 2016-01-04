@@ -11,9 +11,9 @@ var GraphAnalyzer = {
 	equals : function( g, h ){
 		if( g == null ){ return h == null }
 		if( h == null ){ return false }
-		return (g.vertices.keys().sort().join("\0") == h.vertices.keys().sort().join("\0") &&
-			g.getEdges().map(function(e){return e.toString()}).sort().join("\0") == 
-			h.getEdges().map(function(e){return e.toString()}).sort().join("\0"))
+		return (g.vertices.keys().sort().join("\r") == h.vertices.keys().sort().join("\r") &&
+			g.getEdges().map(function(e){return e.toString()}).sort().join("\r") == 
+			h.getEdges().map(function(e){return e.toString()}).sort().join("\r"))
 	},
 	
 	trekRule : function( g, v1, v2, use_ids_as_labels ){
