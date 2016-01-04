@@ -1,9 +1,63 @@
 
 QUnit.test( "parsing and serializing", function( assert ) {
+	assert.equal(
+		GraphDotParser.parse("graph { a -- b; b -- c; a -- c; d -- c; e -- c; e -- a; }").
+			type,"graph")
+
+assert.equal(GraphDotParser.parse(`
+digraph {
+	a -> b[label="0.2",weight="0.2"];
+	a -> c[label="0.4",weight="0.4"];
+	c -> b[label="0.6",weight="0.6"];
+	c -> e[label="0.6",weight="0.6"];
+	e -> e[label="0.1",weight="0.1"];
+	e -> b[label="0.7",weight="0.7"];
+}
+`).type,"digraph") 
+
+assert.equal(GraphDotParser.parse(`
+graph { 
+		a -- b -- d -- c -- f[color=red,penwidth=3.0];
+		b -- c; 
+		d -- e; 
+		e -- f; 
+		a -- d; 
+	}
+`).type,"graph")
+
+
+assert.equal(GraphDotParser.parse(`
+dag {
+ bb = "0,0,1,1" 
+}
+`).type,"dag")
+
+assert.equal(GraphDotParser.parse(`
+	digraph { 
+		subgraph cluster_0 {
+			graph [label = "Subgraph A"]
+			a -> b;
+			b -> c;
+			c -> d;
+		}
+		
+		subgraph cluster_1 {
+			graph [label="Subgraph B";]
+			a -> f;
+			f -> c;
+		}
+	}
+`).type,"digraph")
+
+
+
+
+
+
 	assert.equal( 
-		GraphDotParser.parse("dag{ U -> {a b c d} }"),"dag")
+		GraphDotParser.parse("dag{ U -> {a b c d} }").type,"dag")
 	assert.equal( 
-		GraphDotParser.parse(" dag{ x -> { a b } }"),"dag")
+		GraphDotParser.parse(" dag{ x -> { a b } }").type,"dag")
 	assert.equal( 
 		GraphDotParser.parse(" strict Dag { x y ; z \n q }").type,"dag")
 	assert.equal( 

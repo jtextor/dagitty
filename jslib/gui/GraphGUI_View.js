@@ -268,7 +268,7 @@ var DAGittyGraphView = Class.extend({
 		this.getContainer().addEventListener( "touchend", muphandler )
 		
 		if( autofocus ){
-			var f = _.bind( this.getContainer().focus, this )
+			var f = _.bind( this.getContainer().focus, this.getContainer() )
 			this.getContainer().addEventListener( "mouseenter", f )
 			this.getContainer().addEventListener( "touchenter", f )
 		}
@@ -604,20 +604,25 @@ var DAGittyGraphView = Class.extend({
 		this.coordinate_system_valid = b
 	},
 	initializeCoordinateSystem : function( g ){
-		if( this.isCoordinateSystemValid() ){ return }
-		var min_x = Infinity, max_x = -Infinity, min_y = Infinity, max_y = -Infinity
-		var vv = g.getVertices()
-		for( var i = 0 ; i < vv.length ; i ++ ){
-			min_x = vv[i].layout_pos_x < min_x ? vv[i].layout_pos_x : min_x
-			min_y = vv[i].layout_pos_y < min_y ? vv[i].layout_pos_y : min_y
-			max_x = vv[i].layout_pos_x > max_x ? vv[i].layout_pos_x : max_x
-			max_y = vv[i].layout_pos_y > max_y ? vv[i].layout_pos_y : max_y
+		var bb = g.getBoundingBox()
+		if( bb ){
+			this.bounds = [bb[0],bb[2],bb[1],bb[3]]
+		} else {
+			if( this.isCoordinateSystemValid() ){ return }
+			var min_x = Infinity, max_x = -Infinity, min_y = Infinity, max_y = -Infinity
+			var vv = g.getVertices()
+			for( var i = 0 ; i < vv.length ; i ++ ){
+				min_x = vv[i].layout_pos_x < min_x ? vv[i].layout_pos_x : min_x
+				min_y = vv[i].layout_pos_y < min_y ? vv[i].layout_pos_y : min_y
+				max_x = vv[i].layout_pos_x > max_x ? vv[i].layout_pos_x : max_x
+				max_y = vv[i].layout_pos_y > max_y ? vv[i].layout_pos_y : max_y
+			}
+			if( max_x == min_x ){ max_x = min_x + 1 }
+			if( max_y == min_y ){ max_y = min_y + 1 }
+			var xpad=50/this.width*(max_x-min_x)
+			var ypad=80/this.height*(max_y-min_y)
+			this.bounds = [min_x-xpad,max_x+xpad,min_y-ypad,max_y+ypad]
 		}
-		if( max_x == min_x ){ max_x = min_x + 1 }
-		if( max_y == min_y ){ max_y = min_y + 1 }
-		var xpad=50/this.width*(max_x-min_x)
-		var ypad=80/this.height*(max_y-min_y)
-		this.bounds = [min_x-xpad,max_x+xpad,min_y-ypad,max_y+ypad]
 		this.setCoordinateSystemValid( true )
 	},
 	toScreenCoordinate : function( x, y ){

@@ -32,8 +32,14 @@ var GraphParser = {
 		var g = new Graph()
 		g.setType( ast.type )
 		if( ast.name ){ g.setName( ast.name ) }
-		var v = function(id){ return( g.getVertex( id ) || g.addVertex( id ) ) }
-		var i,j,n,n2,e,pos
+		var v = function(id){ 
+			if( id == "graph" || id == "node" ){
+				throw("Syntax error: variables cannot be named 'graph' or 'node'. "+
+					"Use the 'label' attribute instead.")
+			}
+			return( g.getVertex( id ) || g.addVertex( id ) ) 
+		}
+		var i,j,n,n2,e,pos,bb
 		var positionre = new RegExp( "\\s*(-?[0-9.]+)\\s*,\\s*(-?[0-9.]+)\\s*" )
 		var parse_position = function( s ){
 			var tok = s.match(positionre)
@@ -43,8 +49,25 @@ var GraphParser = {
 			}
 			return {x:parseFloat(tok[1]),y:parseFloat(tok[2])}
 		}
+		var bbre = new RegExp( "\\s*(-?[0-9.]+)\\s*,\\s*(-?[0-9.]+)\\s*,\\s*(-?[0-9.]+)\\s*,\\s*(-?[0-9.]+)\\s*" )
+		var parse_bb = function( s ){
+			var tok = s.match(bbre)
+			tok.shift()
+			if( _.any( tok, function(t){ return typeof t !== "string" } ) ){
+				throw("Syntax error in \"bb\" option!")
+			}
+			return _.map( tok, parseFloat )
+		}
 		_.each( ast.statements, function(s) {
-			if( s.type == 'node' ){
+			if( s.type == 'node' && s.id == 'graph' ){
+				for( i = 0 ; i < s.attributes.length ; i ++ ){
+					switch( s.attributes[i][0] ){
+					case "bb":
+						bb = parse_bb( s.attributes[i][1] )
+						g.setBoundingBox( bb )
+					}
+				}
+			} else if( s.type == 'node' ){
 				n = v(s.id)
 				for( i = 0 ; i < s.attributes.length ; i ++ ){
 					switch( s.attributes[i][0] ){
@@ -71,10 +94,12 @@ var GraphParser = {
 						n.layout_pos_x = parseFloat( pos.x )
 						n.layout_pos_y = parseFloat( pos.y )
 						break
+					case "label":
+						n.label = s.attributes[i][1]
+						break
 					}
 				}
-			}
-			if( s.type == 'edge' ){
+			} else if( s.type == 'edge' ){
 				for( i = 3; i <= s.content.length ; i += 2 ){
 					if( typeof(s.content[i-3]) === "string" ){
 						n = [v(s.content[i-3])]

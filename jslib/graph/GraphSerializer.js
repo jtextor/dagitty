@@ -4,9 +4,11 @@
 var GraphSerializer = {
 
 	toDot : function( g ){
-		var n = g.getName()
-		return g.getType()+" "+(n !== null?n:"")+"{\n" + this.toDotVertexStatements(g)+
-			this.toDotEdgeStatements(g)+"\n}\n"
+		var n = g.getName(), bb = g.getBoundingBox()
+		return (g.getType()+" "+(n == null?"":n)+"{\n" + 
+			(bb == null ? "" : "bb=\""+bb.join(",")+"\"\n") +
+			this.toDotVertexStatements(g)+
+			this.toDotEdgeStatements(g)+"\n}\n")
 	},
 	
 	toDotVertexStatements : function( g ){
@@ -21,6 +23,9 @@ var GraphSerializer = {
 				properties.push( "pos=\"" + 
 					v.layout_pos_x.toFixed(3) + "," + 
 					v.layout_pos_y.toFixed(3) + "\"" )
+			}
+			if( v.label ){
+				properties.push( "label=\""+v.label.replace(/"/g, '\\"')+"\"" )
 			}
 			if( properties.length > 0 ){
 				property_string = " ["+properties.join(",")+"]"

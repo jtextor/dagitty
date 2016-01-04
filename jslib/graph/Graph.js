@@ -17,16 +17,23 @@ var Graph = Class.extend({
 		this.edges = []
 		this.type = "digraph"
 		this.name = null
+		this.bb = null
 		this.managed_vertex_properties = {}
 		_.each(this.managed_vertex_property_names,function(p){
 			this.managed_vertex_properties[p] = new Hash()
 		},this)
 	},
 
+	getBoundingBox : function(){
+		return this.bb
+	},
+	setBoundingBox : function( bb ){
+		this.bb = bb
+	},
+
 	getName : function(){
 		return this.name
 	},
-	
 	setName : function( name ){
 		this.name = name
 	},
@@ -34,7 +41,6 @@ var Graph = Class.extend({
 	getType : function(){
 		return this.type
 	},
-	
 	setType : function( type ){
 		this.type = type
 	},
