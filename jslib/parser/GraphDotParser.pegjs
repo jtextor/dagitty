@@ -70,7 +70,7 @@ ID
  = BAREWORD / STRING
 
 BAREWORD
-  = id:[0-9a-zA-Z_-]+ { return id.join('') }
+  = id:[0-9a-zA-Z_.]+ { return id.join('') }
 
 STRING
   = '"' '"' {return "";}
@@ -80,7 +80,7 @@ chars
   = chars:char+ { return chars.join(""); }
 
 char
-  = [^"\\\0-\x1F\x7f]
+  = [^"\\\0-\x1F\x7F]
   / '\\"' { return '"'; }
   / '\\' [\n\r]+ { return ""; }
   / '\\' { return '\\'; }

@@ -337,16 +337,26 @@ QUnit.test( "graph transformations", function( assert ) {
 		 "pdag { k;l;m;n;t;x;y; l -- m; n -> k; t -> n; x -> y; y -> t }",
 		"pdag { k -- n; l -- m; l -> n; l -> t; l -> y; n -- t; t -- y; x -> y; }",
 		 "pdag { k;l;m;n;t;x;y; l -- m; l -> n; l -> t; l -> y; n -> k; t -> n; x -> y; y -> t }",
-		"pdag { a;b;c;d; a -> b; b -- c; d -> c }",
+		"pdag {a -> b -- c <- d }",
 		 null,
 		"digraph { a -> b; b -- c; c <- d; b -- d }",
-		"digraph { a;b;c;d; a -> b; b -> c; b -> d; d -> c }",
+		"digraph { a -> b; b -> c; b -> d; d -> c }",
 		 
-		function (g){ return GraphTransformer.contractComponents(g, GraphAnalyzer.connectedComponents(g), [Graph.Edgetype.Directed])},
-		"pdag { k -- n; l -- m; n -- t; t -- y; x -> y; }",
-		 "pdag { k,n,t,y;l,m;x; x -> k%2Cn%2Ct%2Cy }",
+		function (g){ return GraphTransformer.contractComponents(g, 
+			GraphAnalyzer.connectedComponents(g), [Graph.Edgetype.Directed])},
+		"pdag { k -- n l -- m n -- t t -- y x -> y }",
+		 'pdag { "l,m" ; x -> "k,n,t,y" }',
 		"digraph { a -- b; b -> c; c -- a }",
-		 "digraph { a,b,c; a%2Cb%2Cc -> a%2Cb%2Cc }",
+		 'digraph { "a,b,c" -> "a,b,c" }',
+		 
+		 GraphTransformer.transitiveClosure,
+		 "dag G { x -> y -> z }",
+		 "dag G { x -> y -> z <- x }",
+		 
+		  
+		 GraphTransformer.transitiveReduction,
+		 "dag G { x -> y -> z <- x }",
+		 "dag G { x -> y -> z }"
 	];
 	var i = 0; var transfunc;
 	while (i < transformations.length) {
@@ -357,12 +367,9 @@ QUnit.test( "graph transformations", function( assert ) {
 		var gin = transformations[i]; i++;
 		if (typeof gin === "string") gin = GraphParser.parseGuess(gin);
 		var gout = transfunc(gin);
-		if (gout != null) 
-			gout = gout.getType()+" { " + 
-			        gout.vertices.keys().sort().join(";") + "; " + 
-			        gout.getEdges().map(function(e){return e.toString()}).sort().join("; ") + " }";			        
 		var gref = transformations[i]; i++;	
-		assert.equal(gout, gref);
+		if( gref != null ){ gref = GraphParser.parseGuess(gref) }
+		assert.equal(GraphAnalyzer.equals(gout, gref),true);
 	}
 });
 

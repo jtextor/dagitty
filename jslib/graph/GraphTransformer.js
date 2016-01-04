@@ -688,13 +688,12 @@ var GraphTransformer = {
 	
 	/***
 	 * The transitive reduction removes all edges from a graph
-	 * that follow transitively from other edges. This transformation
-	 * is uniquely defined.
+	 * that follow transitively from other edges. (The result of this 
+	 * transformation is uniquely defined.)
 	 * 
 	 * This is used to compute the "atomic directed edges", which
-	 * are directed edges that are essential for the ancestral structure
+	 * are the directed edges that are essential for the ancestral structure
 	 * of a graph. 
-	 * TODO write unit test
 	 * */
 	transitiveReduction : function( g ) {
 		var gn = g.clone(), en
