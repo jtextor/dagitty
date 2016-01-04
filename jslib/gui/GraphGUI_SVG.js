@@ -75,8 +75,7 @@ var GraphGUI_SVG = Class.extend({
 		var myself = this
 		
 		el.dom.addEventListener( "mouseover", function(){ myself.element_in_focus=el } )
-		el.dom.addEventListener( "touchstart", function(e){ 
-			console.log( " event on SVG ", e )
+		el.dom.addEventListener( "touchstart", function(){ 
 			myself.element_in_focus=el } )
 		
 		el.dom.addEventListener( "mouseout", function(){ myself.element_in_focus=undefined } )
@@ -185,8 +184,7 @@ var GraphGUI_SVG = Class.extend({
 		var myself = this
 
 		el.dom.addEventListener( "mouseover", function(){ myself.element_in_focus=el } )
-		el.dom.addEventListener( "touchstart", function( e ){ 
-					console.log( " event on SVG ", e )
+		el.dom.addEventListener( "touchstart", function(){ 
 			myself.element_in_focus=el } 
 		)
 		
