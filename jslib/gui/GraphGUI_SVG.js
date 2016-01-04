@@ -1,5 +1,8 @@
 
-var svgns = "http://www.w3.org/2000/svg";
+/* globals DAGitty,Class */
+/* exported GraphGUI_SVG */
+
+var svgns = "http://www.w3.org/2000/svg"
 
 var GraphGUI_SVG = Class.extend({
 	getStyle : function(){
@@ -25,16 +28,16 @@ var GraphGUI_SVG = Class.extend({
 	 * 
 	 */
 	createEdgeShape : function( edge_type, el ){
-		var e = document.createElementNS( svgns, 'path' ), i, j, f, pathclass, classname
+		var e = document.createElementNS( svgns, "path" ), i, j, f, pathclass
 		
-		el.dom = document.createElementNS( svgns, 'g' )
+		el.dom = document.createElementNS( svgns, "g" )
 		el.dom.setAttribute("class", "path")
 
-		var sty = this.getStyle();
+		var sty = this.getStyle()
 		var finalstyle = {}
 		
 		// create edge line
-		var edge_types_a = [""].concat(edge_type.split(" "));
+		var edge_types_a = [""].concat(edge_type.split(" "))
 		for( i = 0 ; i < edge_types_a.length ; i ++ ){
 			pathclass = edge_types_a[i]+"path"
 			for( j in sty.style[pathclass] ){
@@ -54,7 +57,7 @@ var GraphGUI_SVG = Class.extend({
 			if( sty.decoration[pathclass] ){
 				j=0
 				while( sty.decoration[pathclass][j] ){
-					e = document.createElementNS( svgns, 'path' );
+					e = document.createElementNS( svgns, "path" )
 					for( f in finalstyle ){
 						e.setAttribute( f, finalstyle[f] )
 					}
@@ -69,28 +72,28 @@ var GraphGUI_SVG = Class.extend({
 
 		this.anchorEdgeShape( el )
 		el.dom.style.cursor = "move"
-		var myself = this;
+		var myself = this
 		
-		el.dom.addEventListener( 'mouseover', function(e){ myself.element_in_focus=el; } );
-		el.dom.addEventListener( 'mouseout', function(e){ myself.element_in_focus=undefined; } );
+		el.dom.addEventListener( "mouseover", function(){ myself.element_in_focus=el } )
+		el.dom.addEventListener( "mouseout", function(){ myself.element_in_focus=undefined } )
 	},
 	anchorEdgeShape : function( el ){
 		
 		var anchorback = DAGitty.Math.svgEdgeAnchor( el, 0 )
-		el.x1 = anchorback[0]; el.y1 = anchorback[1];
+		el.x1 = anchorback[0]; el.y1 = anchorback[1]
 		
 		var anchorfront = DAGitty.Math.svgEdgeAnchor( el, 1 )
-		el.x2 = anchorfront[0]; el.y2 = anchorfront[1];
+		el.x2 = anchorfront[0]; el.y2 = anchorfront[1]
 		
 		if( el.cx ){
 			// (el.cx, el.cy) are the anchor points of the quadratic spline for bent edges
-			el.dom.firstChild.setAttribute( 'd', 'M'+el.x1.toFixed(2)+','+el.y1.toFixed(2)
-				+'Q'+el.cx.toFixed(2)+','+el.cy.toFixed(2)
-				+' '+el.x2.toFixed(2)+","+el.y2.toFixed(2) );
+			el.dom.firstChild.setAttribute( "d", "M"+el.x1.toFixed(2)+","+el.y1.toFixed(2)
+				+"Q"+el.cx.toFixed(2)+","+el.cy.toFixed(2)
+				+" "+el.x2.toFixed(2)+","+el.y2.toFixed(2) )
 		} else {
 			// otherwise we just draw a straight line
-			el.dom.firstChild.setAttribute( 'd', 'M'+el.x1.toFixed(2)+','+el.y1.toFixed(2)
-				+'L'+el.x2.toFixed(2)+','+el.y2.toFixed(2) );
+			el.dom.firstChild.setAttribute( "d", "M"+el.x1.toFixed(2)+","+el.y1.toFixed(2)
+				+"L"+el.x2.toFixed(2)+","+el.y2.toFixed(2) )
 		}
 		
 		// display front and/or back arrows
@@ -102,69 +105,69 @@ var GraphGUI_SVG = Class.extend({
 				afront = 360*Math.atan( (el.y2-sy)/(el.x2-sx) )/2/Math.PI
 				if( sx<el.x2 ) afront += 180
 				if( sx == el.x2 ) afront = el.y2 > sy ? -90 : 90
-				el.dom.childNodes.item(i).setAttribute( 'transform', 'translate('+el.x2+','+el.y2+') rotate('+afront+')' )
+				el.dom.childNodes.item(i).setAttribute( "transform", "translate("+el.x2+","+el.y2+") rotate("+afront+")" )
 			}
 			if( el.dom.childNodes.item(i).getAttribute("class") == "arrowback" ){
 				sx = el.cx||el.x2; sy = el.cy||el.y2
 				aback = 360*Math.atan( (el.y1-sy)/(el.x1-sx) )/2/Math.PI
 				if( sx<el.x1 ) aback += 180
 				if( sx == el.x1 ) aback = el.y1 > sy ? -90 : 90
-				el.dom.childNodes.item(i).setAttribute( 'transform', 'translate('+el.x1+','+el.y1+') rotate('+aback+')' )
+				el.dom.childNodes.item(i).setAttribute( "transform", "translate("+el.x1+","+el.y1+") rotate("+aback+")" )
 			}
 		}
 	},
 	createVertexShape : function( vertex_type, el ){
-		var e = document.createElementNS( svgns, 'path' ), f, i;
+		var e = document.createElementNS( svgns, "path" ), f, i
 		
-		el.dom = document.createElementNS( svgns, 'g' );
-		e.setAttribute( 'fill-opacity', 0.7 );
-		e.setAttribute( 'stroke-width', 2 );
-		e.setAttribute( 'z-index', 1 );
+		el.dom = document.createElementNS( svgns, "g" )
+		e.setAttribute( "fill-opacity", 0.7 )
+		e.setAttribute( "stroke-width", 2 )
+		e.setAttribute( "z-index", 1 )
 
-		var sty = this.getStyle();
+		var sty = this.getStyle()
 		
 		// First set default node style, then apply more specific settings
 		var iobj = { "" : 0 }; iobj[vertex_type] = 0
 		for( var vtype in iobj ){
 			for( f in sty.style[vtype+"node"] ){
 				if( f == "d" && sty.style[vtype+"node"][f].indexOf("[") !== -1 ){
-					el.pathtemplate = sty.style[vtype+"node"][f];
+					el.pathtemplate = sty.style[vtype+"node"][f]
 				} else {
-					e.setAttribute( f, sty.style[vtype+"node"][f] );
+					e.setAttribute( f, sty.style[vtype+"node"][f] )
 				}
 			}
 		}
-		el.dom.appendChild( e );
+		el.dom.appendChild( e )
 		
-		var rect = document.createElementNS( svgns, 'rect' );
-		rect.setAttribute("class", "textbg" );
+		var rect = document.createElementNS( svgns, "rect" )
+		rect.setAttribute("class", "textbg" )
 		// First set default node style
 		for( f in sty.style["nodelabelbg"] ){
-			rect.setAttribute( f, sty.style["nodelabelbg"][f] );
+			rect.setAttribute( f, sty.style["nodelabelbg"][f] )
 		}
 		// Then apply more specific settings
 		for( f in sty.style[vertex_type+"nodelabelbg"] ){
-			rect.setAttribute( f, sty.style[vertex_type+"nodelabelbg"][f]);
+			rect.setAttribute( f, sty.style[vertex_type+"nodelabelbg"][f])
 		}
-		el.dom.appendChild( rect );
+		el.dom.appendChild( rect )
 		
-		var elabel = document.createElementNS( svgns, 'text' );
+		var elabel = document.createElementNS( svgns, "text" )
 		// First set default node style
-		elabel.setAttribute("class","nodelabel");
+		elabel.setAttribute("class","nodelabel")
 		for( f in sty.style["nodelabel"] ){
-			elabel.setAttribute( f, sty.style["nodelabel"][f] );
+			elabel.setAttribute( f, sty.style["nodelabel"][f] )
 		}
 		// Then apply more specific settings
 		for( f in sty.style[vertex_type+"nodelabel"] ){
-			elabel.setAttribute( f, sty.style[vertex_type+"nodelabel"][f]);
+			elabel.setAttribute( f, sty.style[vertex_type+"nodelabel"][f])
 		}
-		elabel.appendChild( document.createTextNode(el.id, true) );
-		el.dom.appendChild( elabel );
+		elabel.appendChild( document.createTextNode(el.id, true) )
+		el.dom.appendChild( elabel )
 		
 		if( sty.decoration[vertex_type+"node"] ){
 			i=0
 			while(  sty.decoration[vertex_type+"node"][i] ){
-				e = document.createElementNS( svgns, 'path' );
+				e = document.createElementNS( svgns, "path" )
 				for( f in sty.decoration[vertex_type+"node"][i] ){
 					e.setAttribute( f, sty.decoration[vertex_type+"node"][i][f] )
 				}
@@ -173,48 +176,48 @@ var GraphGUI_SVG = Class.extend({
 			}
 		}
 		
-		el.dom.style.cursor = "move";
-		var myself = this;
+		el.dom.style.cursor = "move"
+		var myself = this
 
-		el.dom.addEventListener( 'mouseover', function(e){ myself.element_in_focus=el; } );
-		el.dom.addEventListener( 'mouseout', function(e){ myself.element_in_focus=undefined; } );
+		el.dom.addEventListener( "mouseover", function(){ myself.element_in_focus=el } )
+		el.dom.addEventListener( "mouseout", function(){ myself.element_in_focus=undefined } )
 		
-		this.moveVertexShape( el );
+		this.moveVertexShape( el )
 	},
 	markVertexShape : function( el ){
-		el.dom.firstChild.setAttribute( 'stroke-width', 5 );
+		el.dom.firstChild.setAttribute( "stroke-width", 5 )
 	},
 	unmarkVertexShape : function( el ){
-		el.dom.firstChild.setAttribute( 'stroke-width', 2 );
+		el.dom.firstChild.setAttribute( "stroke-width", 2 )
 	},
 	moveVertexShape : function( el ){
-		el.dom.setAttribute( 'transform', 'translate('+el.x+','+el.y+')' );
+		el.dom.setAttribute( "transform", "translate("+el.x+","+el.y+")" )
 	},
 	prependShapes : function( shape_array ){
-		var frag = document.createDocumentFragment( true );
+		var frag = document.createDocumentFragment( true )
 		for( var i = 0 ; i < shape_array.length ; i ++ ){
-			frag.appendChild( shape_array[i].dom );
+			frag.appendChild( shape_array[i].dom )
 		}
 		if( this.svg.hasChildNodes() ){
-			this.svg.insertBefore( frag, this.svg.firstChild );
+			this.svg.insertBefore( frag, this.svg.firstChild )
 		} else {
-			this.svg.appendChild( frag );
+			this.svg.appendChild( frag )
 		}
 	},
 	appendShapes : function( shape_array ){
-		var frag = document.createDocumentFragment( true );
+		var frag = document.createDocumentFragment( true )
 		for( var i = 0 ; i < shape_array.length ; i ++ ){
-			frag.appendChild( shape_array[i].dom );
+			frag.appendChild( shape_array[i].dom )
 		}
-		this.svg.appendChild( frag );
+		this.svg.appendChild( frag )
 	},
 	appendTextBackgrounds : function( shape_array ){
-		var bb, w, h
+		var bb, min_w, w, h
 		for( var i = 0 ; i < shape_array.length ; i ++ ){
-			var texts = shape_array[i].dom.getElementsByTagNameNS( svgns, "text" );
+			var texts = shape_array[i].dom.getElementsByTagNameNS( svgns, "text" )
 			// tune node size to bounding box of inner text
 			if( shape_array[i].pathtemplate ){
-				bb = texts.item(0).getBBox();
+				bb = texts.item(0).getBBox()
 				w = bb.width + 15
 				h = bb.height + 15
 				min_w = 40.
@@ -227,28 +230,28 @@ var GraphGUI_SVG = Class.extend({
 				delete shape_array[i]["pathtemplate"]
 			}
 			for( var j = 0 ; j < texts.length ; j ++ ){
-				var prevsib = texts.item(j).previousSibling;
+				var prevsib = texts.item(j).previousSibling
 				if( prevsib && prevsib.getAttribute("class") == "textbg" ){
-					bb = texts.item(j).getBBox();
-					prevsib.setAttribute("width", bb.width );
-					prevsib.setAttribute("height", bb.height );
-					prevsib.setAttribute("x", bb.x);
-					prevsib.setAttribute("y", bb.y);
+					bb = texts.item(j).getBBox()
+					prevsib.setAttribute("width", bb.width )
+					prevsib.setAttribute("height", bb.height )
+					prevsib.setAttribute("x", bb.x)
+					prevsib.setAttribute("y", bb.y)
 				}
 			}
 		}
 	},
 	removeShapes : function( els ){
 		for( var i = 0 ; i < els.length ; i ++ ){
-			this.removeShape( els[i] );
+			this.removeShape( els[i] )
 		}
 	},
 	removeShape : function( el ){
 		//el.dom.style.display="none";
-		this.svg.removeChild( el.dom );
+		this.svg.removeChild( el.dom )
 	},
-	suspendRedraw : function( time ){
-		// this is deprecated in SVG2
+	suspendRedraw : function(){
+		// this is deprecated in SVG2, so we do nothing
 		// this.unsuspend_id = this.svg.suspendRedraw( time );
 	},
 	unsuspendRedraw : function(){
@@ -257,22 +260,22 @@ var GraphGUI_SVG = Class.extend({
 	},
 	initialize : function( canvas_element, width, height, style ){
 		if( !style ){
-			style = "default";
+			style = "default"
 		}
 		// create SVG root element
-		var svg = document.createElementNS( svgns, 'svg' ); // don't need to pass in 'true'
-		svg.setAttribute( 'width', width );
-		svg.setAttribute( 'height', height );
-		svg.setAttribute( 'style', 'font-family: Arial, sans-serif;' );
-		canvas_element.appendChild( svg );
-		this.svg = svg;
-		this.setStyle(style);
+		var svg = document.createElementNS( svgns, "svg" ) // don't need to pass in 'true'
+		svg.setAttribute( "width", width )
+		svg.setAttribute( "height", height )
+		svg.setAttribute( "style", "font-family: Arial, sans-serif;" )
+		canvas_element.appendChild( svg )
+		this.svg = svg
+		this.setStyle(style)
 	},
 	resize : function( w, h ){
-		var svg = this.svg;
-		svg.style.width = w+"px";
-		svg.style.height = h+"px";
-		svg.setAttribute("width", w);
-		svg.setAttribute("height", w);
+		var svg = this.svg
+		svg.style.width = w+"px"
+		svg.style.height = h+"px"
+		svg.setAttribute("width", w)
+		svg.setAttribute("height", w)
 	}
-});
+})
