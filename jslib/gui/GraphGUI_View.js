@@ -357,11 +357,15 @@ var DAGittyGraphView = Class.extend({
 		this.drawGraph()
 	},
 	resize : function(){
-		this.setCoordinateSystemValid( false )
-		this.width = this.getContainer().offsetWidth-4 
-		this.height = this.getContainer().offsetHeight-4
-		this.impl.resize( this.width, this.height )
-		this.drawGraph()
+		var newwidth = this.getContainer().offsetWidth-4,
+			newheight = this.getContainer().offsetHeight-4
+		if( this.width != newwidth || this.height != newheight ){
+			this.setCoordinateSystemValid( false )
+			this.width = newwidth
+			this.height = newheight
+			this.impl.resize( this.width, this.height )
+			this.drawGraph()
+		}
 	},
 	markVertex : function( v ){
 		var vs = this.vertex_shapes.get(v.id)

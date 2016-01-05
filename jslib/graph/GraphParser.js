@@ -15,7 +15,7 @@
 */
 
 /* jshint undef: true, unused: true, asi: true */
-/* globals Graph,GraphAnalyzer,GraphDotParser */
+/* globals Graph,GraphAnalyzer,GraphDotParser,_ */
 /* exported GraphParser */
 
 var GraphParser = {
@@ -59,7 +59,7 @@ var GraphParser = {
 			return _.map( tok, parseFloat )
 		}
 		_.each( ast.statements, function(s) {
-			if( s.type == 'node' && s.id == 'graph' ){
+			if( s.type == "node" && s.id == "graph" ){
 				for( i = 0 ; i < s.attributes.length ; i ++ ){
 					switch( s.attributes[i][0] ){
 					case "bb":
@@ -67,7 +67,7 @@ var GraphParser = {
 						g.setBoundingBox( bb )
 					}
 				}
-			} else if( s.type == 'node' ){
+			} else if( s.type == "node" ){
 				n = v(s.id)
 				for( i = 0 ; i < s.attributes.length ; i ++ ){
 					switch( s.attributes[i][0] ){
@@ -99,7 +99,7 @@ var GraphParser = {
 						break
 					}
 				}
-			} else if( s.type == 'edge' ){
+			} else if( s.type == "edge" ){
 				for( i = 3; i <= s.content.length ; i += 2 ){
 					if( typeof(s.content[i-3]) === "string" ){
 						n = [v(s.content[i-3])]
@@ -125,32 +125,32 @@ var GraphParser = {
 					_.each( n, function(n){
 						_.each( n2, function(n2){
 							switch( s.content[i-2] ){
-								case "--" :
-									e = g.addEdge( n, n2, Graph.Edgetype.Undirected )
-									break
-								case "<->" :
-									e = g.addEdge( n, n2, Graph.Edgetype.Bidirected )
-									break
-								case "->" :
-									e = g.addEdge( n, n2, Graph.Edgetype.Directed )
-									break
-								case "<-" :
-									e = g.addEdge( n2, n, Graph.Edgetype.Directed )
-									break
+							case "--" :
+								e = g.addEdge( n, n2, Graph.Edgetype.Undirected )
+								break
+							case "<->" :
+								e = g.addEdge( n, n2, Graph.Edgetype.Bidirected )
+								break
+							case "->" :
+								e = g.addEdge( n, n2, Graph.Edgetype.Directed )
+								break
+							case "<-" :
+								e = g.addEdge( n2, n, Graph.Edgetype.Directed )
+								break
 							}
 						})
 					})
 
 					for( j = 0 ; j < s.attributes.length ; j ++ ){
 						switch( s.attributes[j][0] ){
-							case "pos":
-								pos = parse_position( s.attributes[j][1] )
-								e.layout_pos_x = parseFloat( pos.x )
-								e.layout_pos_y = parseFloat( pos.y )
-								break
-							case "label":
-								e.id = s.attributes[j][1]
-								break
+						case "pos":
+							pos = parse_position( s.attributes[j][1] )
+							e.layout_pos_x = parseFloat( pos.x )
+							e.layout_pos_y = parseFloat( pos.y )
+							break
+						case "label":
+							e.id = s.attributes[j][1]
+							break
 						}
 					}
 				}

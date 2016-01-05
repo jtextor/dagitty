@@ -1,5 +1,5 @@
 
-/* globals ObservedGraph,Class,_,Graph,DAGittyGraphView,GraphParser */
+/* globals ObservedGraph,Class,_,Graph,DAGittyGraphView,GraphParser,GraphLayouter */
 /* exported DAGittyController */
 
 var DAGittyController = Class.extend({
@@ -84,8 +84,13 @@ var DAGittyController = Class.extend({
 				obj.canvas.textContent||obj.canvas.innerText
 			) )
 		}
+		
+		// ... creates a simple graph layout if necessary ...
+		if( !this.getGraph().hasCompleteLayout() ){
+			new GraphLayouter.Spring( this.getGraph() ).layout()
+		}
 
-		// ... creates the view ...
+		// ... and creates the view ...
 		this.view = new DAGittyGraphView( obj.canvas, this.getGraph(), this,
 			{ 
 				autofocus : (obj.autofocus !== undefined) ? obj.autofocus : false,
@@ -93,8 +98,9 @@ var DAGittyController = Class.extend({
 			} 
 			)
 		
-		// ... and wires all the event listening ...
-		
+		window.addEventListener( "resize", 
+			_.debounce( _.bind( this.getView().resize, this.getView() ), 300 ) )
+	
 		// graph change event listeners are wired in the
 		// function "setGraph" (because they might need to be 
 		// changed when a completely new graph is loaded)

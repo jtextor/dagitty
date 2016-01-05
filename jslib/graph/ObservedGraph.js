@@ -22,7 +22,7 @@
 	with the underlying Graph itself (exposed to the outside world via the getGraph()
 	method). */
 	
-/* globals Class  */
+/* globals Class,_  */
 /* exported ObservedGraph */
 
 var ObservedGraph = Class.extend({

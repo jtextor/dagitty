@@ -25,7 +25,7 @@ var GraphSerializer = {
 					v.layout_pos_y.toFixed(3) + "\"" )
 			}
 			if( v.label ){
-				properties.push( "label=\""+v.label.replace(/"/g, '\\"')+"\"" )
+				properties.push( "label=\""+v.label.replace(/"/g, "\\\"")+"\"" )
 			}
 			if( properties.length > 0 ){
 				property_string = " ["+properties.join(",")+"]"
@@ -281,4 +281,4 @@ var GraphSerializer = {
 		}
 		return "\t\""+r_str.join("\\n\"+\n\t\"")+"\""
 	}
-};
+}
