@@ -30,7 +30,7 @@ var GraphSerializer = {
 			if( properties.length > 0 ){
 				property_string = " ["+properties.join(",")+"]"
 			}
-			return encodeURIComponent(v.id) + property_string
+			return GraphSerializer.dotQuoteVid( v.id ) + property_string
 		}
 		var r = ""
 		var ra = []
@@ -42,10 +42,20 @@ var GraphSerializer = {
 		return r + ra.join("")
 	},
 	
+	dotBarewordRe : new RegExp( "^[0-9a-zA-Z_.]+$" ),
+	
+	dotQuoteVid : function( vid ){
+		if( !vid.match( this.dotBarewordRe ) ){
+			return "\"" + vid.replace(/"/g, "\\\"") + "\""
+		}
+		return vid
+	},
+	
 	toDotEdgeStatements : function( g ){
-		var edgestat = [], es, eop
+		var edgestat = [], es, eop, 
+			barewordre = 
 		_.each(g.edges,function(e){
-			es = e.toString()
+			es = e.toString( barewordre )
 			eop = []
 			if( e.layout_pos_x ){
 				eop.push("pos=\"" + 
@@ -79,7 +89,7 @@ var GraphSerializer = {
 		visited = {}
 		v = g.getSources()[0]
 		visited[v.id] = 1
-		r = v.id
+		r = this.dotQuoteVid(v.id)
 		arrows = ["->","<-","--","<->"]
 		while( v ){
 			vn = {
@@ -100,7 +110,7 @@ var GraphSerializer = {
 				v = null
 			} else { 
 				v = vn[arrows[j]][i]
-				r += " "+arrows[j]+" "+encodeURIComponent(v.id)
+				r += " "+arrows[j]+" "+this.dotQuoteVid(v.id)
 				visited[v.id]=1
 			}
 		}
@@ -281,4 +291,5 @@ var GraphSerializer = {
 		}
 		return "\t\""+r_str.join("\\n\"+\n\t\"")+"\""
 	}
-}
+}; // eslint-disable-line 
+

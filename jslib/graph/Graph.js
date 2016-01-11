@@ -760,14 +760,14 @@ Graph.Edge = Class.extend( {
 		this.layout_pos_x = spec.layout_pos_x
 		this.layout_pos_y = spec.layout_pos_y
 	},
-	toString : function(){
+	toString : function( ){
 		var edge_join = "->"
 		switch( this.directed ){
-		case 0: edge_join = "--"; break
-		case 2: edge_join = "<->"; break
+		case Graph.Edgetype.Undirected: edge_join = "--"; break
+		case Graph.Edgetype.Bidirected: edge_join = "<->"; break
 		}
-		var v1id = this.v1.id
-		var v2id = this.v2.id
+		var v1id = GraphSerializer.dotQuoteVid(this.v1.id)
+		var v2id = GraphSerializer.dotQuoteVid(this.v2.id)
 		
 		if( this.directed != 1 && (v1id.localeCompare( v2id ) > 0) ){
 			var tmp = v1id
@@ -775,8 +775,7 @@ Graph.Edge = Class.extend( {
 			v2id = tmp
 		}
 		
-		return encodeURIComponent(v1id).replace(edge_join,"["+edge_join+"]")+
-			" "+edge_join+" "+encodeURIComponent(v2id).replace(edge_join,"["+edge_join+"]")
+		return v1id + " " + edge_join + " " + v2id
 	}
 } )
 

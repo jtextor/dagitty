@@ -2,8 +2,8 @@ GraphParser.VALIDATE_GRAPH_STRUCTURE = true;
 
 QUnit.test( "parsing and serializing", function( assert ) {
 	assert.equal( GraphSerializer.toDotVertexStatements( GraphParser.parseGuess( 
-		"digraph G { x [label=\"ᚠᛇᚻ᛫ᛒᛦᚦ᛫ᚠᚱᚩᚠᚢᚱ᛫ᚠᛁᚱᚪ᛫ᚷᛖᚻᚹᛦᛚᚳᚢᛗ\"] }" ) ).trim(), 
-			"x [label=\"ᚠᛇᚻ᛫ᛒᛦᚦ᛫ᚠᚱᚩᚠᚢᚱ᛫ᚠᛁᚱᚪ᛫ᚷᛖᚻᚹᛦᛚᚳᚢᛗ\"]" )
+		"digraph G { \"ᚠᛇᚻ᛫ᛒᛦᚦ᛫ᚠᚱᚩᚠᚢᚱ᛫ᚠᛁᚱᚪ᛫ᚷᛖᚻᚹᛦᛚᚳᚢᛗ\" }" ) ).trim(), 
+			"\"ᚠᛇᚻ᛫ᛒᛦᚦ᛫ᚠᚱᚩᚠᚢᚱ᛫ᚠᛁᚱᚪ᛫ᚷᛖᚻᚹᛦᛚᚳᚢᛗ\"" )
 
 	assert.equal( GraphSerializer.toDotVertexStatements( GraphParser.parseGuess( 
 		"digraph G { x [label=\"από το Άξιον Εστί\"] }" ) ).trim(), 
@@ -11,7 +11,7 @@ QUnit.test( "parsing and serializing", function( assert ) {
 
 	assert.equal( GraphSerializer.toDot( GraphParser.parseGuess( 
 		"digraph G { graph [bb=\"0,0,100,100\"] }" ) ).trim(), 
-			"digraph G{\nbb=\"0,0,100,100\"\n}" )
+			"digraph G{\nbb=\"0,0,100,100\"\n\n}" )
 
 	assert.equal( TestGraphs.small1().oldToString(), "A 1\nS E\nT O\n\nA S\nS T" )
 
