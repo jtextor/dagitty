@@ -420,7 +420,7 @@ function newModel(){
 }
 function newModel2(ename){
 	if( ename === null ){ return false; }
-	ename = (""+ename).strip()
+	ename = (""+ename).trim()
 	if( ename == "" ){ return false; }
 	DAGittyControl.getView().openPromptDialog(
 		"Please enter name of outcome variable","",function(s){ 
@@ -429,7 +429,7 @@ function newModel2(ename){
 }
 function newModel3(ename,oname){
 	if( oname == null ){ return false; }
-	oname = (""+oname).strip()
+	oname = (""+oname).trim()
 	if( oname == "" || ename == oname ){ return false; }
 	document.getElementById("adj_matrix").value = ename+" E @0,0\n"+oname+" O @1,1\n\n"+ename+" "+oname
 	loadDAGFromTextData()
