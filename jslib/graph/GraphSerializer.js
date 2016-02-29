@@ -268,7 +268,7 @@ var GraphSerializer = {
 				r_str.push( "c(\""+
 				imp[i][0]+"\",\""+imp[i][1]+"\""+
 				( imp[i][2][j].length > 0 ?
-					",\""+imp[i][2][j].pluck("id").join("\",\"")+"\""
+					",\""+_.pluck(imp[i][2][j],"id").join("\",\"")+"\""
 					: "" ) +
 				")" )
 			}

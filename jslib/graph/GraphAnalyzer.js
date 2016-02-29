@@ -110,7 +110,7 @@ var GraphAnalyzer = {
 		return [trek_monomials,parameters]
 	},
 	
-	vanishingTetrads : function( g, nr_limit ){
+	vanishingTetrads : function( g, nr_limit, type ){
 		var r = []
 		g = GraphTransformer.canonicalDag(g).g
 		var gtrek = GraphTransformer.trekGraph( g, "up_", "dw_" )		
@@ -121,20 +121,43 @@ var GraphAnalyzer = {
 			i1, i2, i3, i4, iside, jside
 		
 		function examineQuadruple( i1, i2, j1, j2 ){
+			var pi, pj
 			iside = [ gtrek.getVertex( "up_"+i1 ),
 				gtrek.getVertex( "up_"+i2 ) ]
 			jside = [ gtrek.getVertex( "dw_"+j1 ),
 				gtrek.getVertex( "dw_"+j2 ) ]
+			if( type == "between" || type == "epistemic" ){
+				pi = _.pluck(g.parentsOf( g.getVertex([i1,i2]) ),"id")
+				pj = _.pluck(g.parentsOf( g.getVertex([j1,j2]) ),"id")
+				if( type == "between" && ( pi.length != 1 || pj.length != 1 || pi[0] == pj[0] ) ){
+					return
+				}
+				if( type == "epistemic" && 
+					!( ( pi.length == 1 && pj.length == 2 ) || 
+						( pi.length == 2 && pj.length == 1 ) ) ){
+					return
+				}
+			}
 			if( GraphAnalyzer.minVertexCut( gtrek, iside, jside ) <= 1 ){
 				r.push( [i1, j1, j2, i2] ) // lisrel convention
 			}
 		}
 
-		
+		var p1, p2, p3, p4	
 		for( i1 = 0 ; i1 < vv.length ; i1 ++ ){
+			p1 = _.pluck(g.getVertex(vv[i1]).getParents(),"id")
+			if( type && ( p1.length != 1 ) ) continue
 			for( i2 = i1+1 ; i2 < vv.length ; i2 ++ ){
+				p2 = _.pluck(g.getVertex(vv[i2]).getParents(),"id")
+				if( type && ( p2.length != 1 ) ) continue
 				for( i3 = i2+1 ; i3 < vv.length ; i3 ++ ){
+					p3 = _.pluck(g.getVertex(vv[i3]).getParents(),"id")
+					if( type && ( p3.length != 1 ) ) continue
 					for( i4 = i3+1 ; i4 < vv.length ; i4 ++ ){
+						p4 = _.pluck(g.getVertex(vv[i4]).getParents(),"id")
+						if( type && ( p4.length != 1 ) ) continue
+						if( type == "within" && 
+							_.intersection(p1,p2,p3,p4).length == 0 ) continue
 						examineQuadruple( vv[i1], vv[i2], vv[i3], vv[i4] )
 						examineQuadruple( vv[i1], vv[i3], vv[i2], vv[i4] )
 						examineQuadruple( vv[i1], vv[i4], vv[i2], vv[i3] )

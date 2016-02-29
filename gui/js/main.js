@@ -362,6 +362,17 @@ function exportImplicationTests(){
 	)
 }
 
+function exportTikzCode(){
+	DAGittyControl.getView().openHTMLDialog( 
+		"<textarea style=\"width:80%\" rows=\"10\">"+
+		"% This code uses the tikz package\n"+
+		"\\begin{tikzpicture}\n"+
+		 GraphSerializer.toTikz( Model.dag, 3 ) +
+		"\\end{tikzpicture}"+
+		"</textarea>", "OK"
+	)
+}
+
 /** updates the "summary" component */ 
 function displayGeneralInfo(){
 	var cycle = GraphAnalyzer.containsCycle( Model.dag );
@@ -500,18 +511,54 @@ function getModelIdFromURL( url ){
 }
 
 
+DAGitty.Ajax = {
+	XMLHttpRequest : function(){
+		var request = new(XMLHttpRequest || ActiveXObject)('MSXML2.XMLHTTP.3.0')
+		return request;
+	},
+	Request : function( url, ops ){
+		var xhr = this.XMLHttpRequest()
+		xhr.onreadystatechange = function(){
+			if( xhr.readyState == 4 ){
+				if( xhr.status == 200 ){
+					ops.onSuccess( xhr )
+				} else {
+					if( ops.onFailure ){
+						ops.onFailure( xhr )
+					}
+				}
+				return
+			}
+		}
+		xhr.open( ops.method, url, false )
+		if( ops.method == "POST" && ops.parameters ){
+			var pars = []
+			var parnames = Object.keys(ops.parameters)
+			var i
+			for( i in parnames ){
+				pars.push( encodeURIComponent( parnames[i] )+"="+
+					encodeURIComponent( ops.parameters[parnames[i]] ) )
+			}
+			pars = pars.join("&").replace(/%20/g, '+')
+			xhr.setRequestHeader("Content-type", "application/x-www-form-urlencoded")
+			//xhr.setRequestHeader("Content-length", pars.length)
+			//xhr.setRequestHeader("Connection", "close")
+			xhr.send(pars)
+		} else {
+			xhr.send()
+		}
+	}
+}
+
 function saveOnlineForm(){
 	if( typeof grecaptcha === "undefined" ){
 		networkFailMsg(); return
 	}
-	new Ajax.Request("http://"+hostName()+"/dags/save-form.php",
+	DAGitty.Ajax.Request("http://"+hostName()+"/dags/save-form.php",
 		{
-			method:'post',
+			method:'POST',
 			onFailure: networkFailMsg,
 			onSuccess: function( t ) { 
-				if( t.readyState==4 && t.status == 0 ){
-					networkFailMsg(); return
-				}
 				DAGittyControl.getView().openHTMLDialog( t.responseText )
 				GUI.recaptchaid = grecaptcha.render( "recaptcha",
 					{ sitekey : "6LdFd_sSAAAAAGyO4FTNjvok0sKA9Bm_sShVsU9F",
@@ -525,7 +572,7 @@ function saveOnlineForm(){
 
 function validateCaptcha()
 {
-	new Ajax.Request("http://"+hostName()+"/dags/recaptcha-validate-v2.php",{
+	DAGitty.Ajax.Request("http://"+hostName()+"/dags/recaptcha-validate-v2.php",{
 		method: "POST",
 		parameters: { 
 			"g-recaptcha-response" : grecaptcha.getResponse(),
@@ -553,10 +600,10 @@ function saveOnlineValidate(){
 }
 
 function saveOnline( secret ){
-	new Ajax.Request("http://"+hostName()+"/dags/save.php",
+	DAGitty.Ajax.Request("http://"+hostName()+"/dags/save.php",
 			{
-				method:'post',
-				parameters: { dag: Model.dag.toString(),
+				method:'POST',
+				parameters: { dag: Model.dag.oldToString(), // TODO change to new syntax after 3.0 release
 						email: document.getElementById('modelsavefrm_email').value,
 						name: document.getElementById('modelsavefrm_name').value,
 						desc: document.getElementById('modelsavefrm_desc').value,
@@ -572,10 +619,12 @@ function saveOnline( secret ){
 }
 
 function updateOnline( id, pw ){
-	new Ajax.Request("http://"+hostName()+"/dags/update.php",
+	DAGitty.Ajax.Request("http://"+hostName()+"/dags/update.php",
 		{
-			method:'post',
-			parameters: { id:id, pw:pw, dag:Model.dag.toString() },
+			method:'POST',
+			parameters: { id:id, pw:pw, 
+				dag:Model.dag.oldToString(), // TODO change to new syntax after 3.0 release
+			 },
 			onFailure: networkFailMsg,
 			onSuccess: function( t ) {
 				if( t.readyState==4 && t.status == 0 ){
@@ -599,9 +648,9 @@ function updateOnlineForm(){
 }
 
 function deleteOnline( id, pw ){
-	new Ajax.Request("http://"+hostName()+"/dags/delete.php",
+	DAGitty.Ajax.Request("http://"+hostName()+"/dags/delete.php",
 		{
-			method:'post',
+			method:'POST',
 			parameters: { id:id, pw:pw },
 			onFailure: networkFailMsg,
 			onSuccess: function( t ) {
@@ -626,9 +675,9 @@ function deleteOnlineForm( id, pw ){
 
 function loadOnline( url ){
 	var graphid = getModelIdFromURL( url )
-	new Ajax.Request("http://"+hostName()+"/dags/load.php",
+	DAGitty.Ajax.Request("http://"+hostName()+"/dags/load.php",
 		{
-			method:'post',
+			method:'POST',
 			parameters: { id:graphid },
 			onFailure: networkFailMsg,
 			onSuccess: function( t ) { 
