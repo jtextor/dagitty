@@ -1027,7 +1027,8 @@ var GraphAnalyzer = {
 	 * Returns the block tree given a pre-computed list of 
 	 * biconnected components of graph g. The pre-computation of 
 	 * biconnected components is assumed to have left the Boolean
-	 * property "is_articulation_point" on every vertex object.
+	 * property "is_articulation_point" on every vertex object
+	 * and the integer "component_index" on every edge.
 	 * 
 	 * If the second argument is not given, then the biconnected
 	 * components are re-computed from scratch.
@@ -1045,7 +1046,8 @@ var GraphAnalyzer = {
 				bt.addVertex( new Graph.Vertex( { id : "A"+v.id } ) )
 				var vn = bt.getVertex("A"+v.id)
 				vn.is_articulation_point = true
-				_.each( v.adjacentUndirectedEdges, function( e ){
+				_.each( v.getNeighbours(), function( n ){
+					var e = g.getEdge( v, n, Graph.Edgetype.Undirected )
 					bt.addEdge( vn, bt.getVertex("C"+e.component_index),
 						Graph.Edgetype.Undirected ) 
 				} )
@@ -1072,7 +1074,8 @@ var GraphAnalyzer = {
 			v.traversal_info.dtime = ++time
 			v.traversal_info.lowlink = time
 			var children_of_root = 0
-			_.each( v.adjacentUndirectedEdges, function(e){
+			_.each( v.getNeighbours(), function(n){
+				var e = g.getEdge( v, n, Graph.Edgetype.Undirected )
 				var w = (e.v1 == v ? e.v2 : e.v1)
 				if( w.traversal_info.dtime == 0 ){
 					q.push(e)
@@ -1312,6 +1315,44 @@ var GraphAnalyzer = {
 		return GraphAnalyzer.containsCycle( GraphTransformer.contractComponents(g, 
 			GraphAnalyzer.connectedComponents(g), [Graph.Edgetype.Directed])
 			)
-	}
+	},
+
+	/* Check whether the directed edge e is stronlgy protected */
+        isEdgeStronglyProtected: function( g, e ) {
+		var a = e.v1
+		var b = e.v2
+
+		// test m -> a -> b (turning generates new v structure)
+		var adp = a.getParents();
+		for (var i=0;i<adp.length;i++){
+			if (adp[i].id != b.id && ! g.areAdjacent(adp[i],b)){
+				return true
+			}
+		}
+
+		// test a -> b <- m  or a -> b <- m <- a
+		var bdp = b.getParents();
+		for (var i=0;i<bdp.length;i++){
+			if (bdp[i].id != a.id) {
+				if ( !g.areAdjacent(bdp[i],a) || g.getEdge(a,bdp[i],Graph.Edgetype.Directed) ){
+					return true
+				}
+			}
+		}
+
+
+
+		for (var i=0;i<bdp.length;i++){ 
+			for (var j=0;j<bdp.length;j++){
+				if( i != j && bdp[i].id != a.id && bdp[j].id != a.id
+				  && !g.areAdjacent(bdp[i],bdp[j])
+				  && g.getEdge(bdp[i],a,Graph.Edgetype.Undirected)
+				  && g.getEdge(bdp[j],a,Graph.Edgetype.Undirected) ){
+				 	return true
+				}
+			}
+		}
+		return false
+        }
 }
 

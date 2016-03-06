@@ -1,5 +1,46 @@
 GraphParser.VALIDATE_GRAPH_STRUCTURE = true;
 
+QUnit.test( "graph manipulation", function( assert ) {
+
+	var g = GraphParser.parseGuess( "dag G { x <-> x }" )
+	assert.equal( g.areAdjacent("x","x"), true )
+
+	g = GraphParser.parseGuess( "dag G { x <-> y }" )
+	assert.equal( g.areAdjacent("x","y"), true )
+	assert.equal( g.areAdjacent("y","x"), true )
+	g.changeEdge( g.getEdge("x","y",Graph.Edgetype.Bidirected), Graph.Edgetype.Directed )
+	assert.equal( GraphSerializer.toDotEdgeStatements( g ), "x -> y" )
+	assert.equal( g.areAdjacent("x","y"), true )
+	assert.equal( g.areAdjacent("y","x"), true )
+
+	g = GraphParser.parseGuess( "digraph G { x -> y }" )
+	assert.equal( g.areAdjacent("x","y"), true )
+	g.changeEdge( g.getEdge("x","y"), Graph.Edgetype.Undirected )
+	assert.equal( GraphSerializer.toDotEdgeStatements( g ), "x -- y" )
+	assert.equal( g.areAdjacent("x","y"), true )
+
+
+	g = GraphParser.parseGuess( "digraph G { x -> y }" )
+	assert.equal( g.areAdjacent("x","y"), true )
+	g.reverseEdge( g.getEdge("x","y"), Graph.Edgetype.Undirected )
+	assert.equal( GraphSerializer.toDotEdgeStatements( g ), "y -> x" )
+	assert.equal( g.areAdjacent("x","y"), true )
+
+
+	g = GraphParser.parseGuess( "digraph G { x -- y }" )
+	assert.equal( g.areAdjacent("x","y"), true )
+	g.changeEdge( g.getEdge("y","x",Graph.Edgetype.Undirected), Graph.Edgetype.Directed )
+	assert.equal( GraphSerializer.toDotEdgeStatements( g ), "x -> y" )
+	assert.equal( g.areAdjacent("x","y"), true )
+
+
+	g = GraphParser.parseGuess( "digraph G { x -- y }" )
+	g.changeEdge( g.getEdge("y","x",Graph.Edgetype.Undirected), Graph.Edgetype.Directed, "y" )
+	assert.equal( GraphSerializer.toDotEdgeStatements( g ), "y -> x" )
+
+
+} )
+
 QUnit.test( "parsing and serializing", function( assert ) {
 	assert.equal( GraphSerializer.toDotVertexStatements( GraphParser.parseGuess( 
 		"digraph G { \"ᚠᛇᚻ᛫ᛒᛦᚦ᛫ᚠᚱᚩᚠᚢᚱ᛫ᚠᛁᚱᚪ᛫ᚷᛖᚻᚹᛦᛚᚳᚢᛗ\" }" ) ).trim(), 
@@ -219,6 +260,20 @@ QUnit.test( "separators", function( assert ) {
 } )
 
 QUnit.test( "graph analysis", function( assert ) {
+	var g = GraphParser.parseGuess("dag{x->y}")
+	assert.equal(GraphAnalyzer.isEdgeStronglyProtected(g,g.getEdge("x","y")),false)
+	g = GraphParser.parseGuess("dag{x->y<-z}")
+	assert.equal(GraphAnalyzer.isEdgeStronglyProtected(g,g.getEdge("x","y")),true)
+	g = GraphParser.parseGuess("dag{x->y<-z->x}")
+	assert.equal(GraphAnalyzer.isEdgeStronglyProtected(g,g.getEdge("x","y")),false)
+	g = GraphParser.parseGuess("dag{{a b}->x->y}")
+	assert.equal(GraphAnalyzer.isEdgeStronglyProtected(g,g.getEdge("x","y")),true)
+
+	g = GraphParser.parseGuess("dag{x<-z3<-z1->x}")
+	assert.equal(GraphAnalyzer.isEdgeStronglyProtected(g,g.getEdge("z1","x")),true)
+	assert.equal(GraphAnalyzer.isEdgeStronglyProtected(g,g.getEdge("z3","x")),false)
+	assert.equal(GraphAnalyzer.isEdgeStronglyProtected(g,g.getEdge("z1","z3")),false)
+
 	assert.equal( 
 		GraphAnalyzer.containsCycle( TestGraphs.cyclic_graph() ), "A&rarr;B&rarr;C&rarr;A" ) 
 	assert.equal(
@@ -343,7 +398,19 @@ QUnit.test( "graph transformations", function( assert ) {
 				GraphTransformer.backDoorGraph(TestGraphs.m_bias_graph())) ).oldToString()
 	})(), "A E\nB O\nU1 1\nU2 1\n\nA U1\nB U2\nU1 A\nU2 B" )
 	
+	assert.equal((function(){
+		var g = GraphParser.parseGuess("dag{x<-z3<-z1->x}")
+		return GraphTransformer.markovEquivalentDags(g).length
+	})(),6)
+
 	var transformations = [
+		GraphTransformer.dagToCpdag,
+		"dag{x->y}", "pdag { x -- y }",
+		"dag{x->y<-z}", "pdag { x -> y <- z }",
+		"dag{x->y<-z->x}", "pdag { x -- y -- z -- x }",
+		"dag{z1->{x z3} z2->{z3 y} z3->{x y} x->w->y}",
+			"pdag {x <- z1 z1->z3 z2->z3 y<-z2 x<-z3 z3->y x->w->y}",
+
 		GraphTransformer.cgToRcg,
 		"pdag { k -- n; l -- m; n -- t; t -- y; x -> y; }",
 		 "pdag { k;l;m;n;t;x;y; l -- m; n -> k; t -> n; x -> y; y -> t }",
@@ -353,7 +420,7 @@ QUnit.test( "graph transformations", function( assert ) {
 		 null,
 		"digraph { a -> b; b -- c; c <- d; b -- d }",
 		"digraph { a -> b; b -> c; b -> d; d -> c }",
-		 
+
 		function (g){ return GraphTransformer.contractComponents(g, 
 			GraphAnalyzer.connectedComponents(g), [Graph.Edgetype.Directed])},
 		"pdag { k -- n l -- m n -- t t -- y x -> y }",
@@ -364,7 +431,6 @@ QUnit.test( "graph transformations", function( assert ) {
 		 GraphTransformer.transitiveClosure,
 		 "dag G { x -> y -> z }",
 		 "dag G { x -> y -> z <- x }",
-		 
 		  
 		 GraphTransformer.transitiveReduction,
 		 "dag G { x -> y -> z <- x }",
@@ -376,7 +442,7 @@ QUnit.test( "graph transformations", function( assert ) {
 		 "dag G { x -> y -> z }",
 		 "graph G { x -- y -- z -- x }",
 		 "dag G { x -> y <- z }",
-		 "graph G { x -- y -- z }"
+		 "graph G { x -- y -- z }",
 
 	];
 	var i = 0; var transfunc;

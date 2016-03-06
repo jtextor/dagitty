@@ -719,7 +719,27 @@ var GraphTransformer = {
 		} )
 		return gn
 	},
-	
+
+	dagToCpdag : function( g ){
+		var r = g.clone()
+
+		var changed = true
+		var es = r.getEdges()
+	   
+		while( changed ){
+			changed = false
+			for( var i=0; i<es.length; i++ ){
+				if( es[i].directed == Graph.Edgetype.Directed &&
+					!GraphAnalyzer.isEdgeStronglyProtected(r, es[i])) {
+					r.changeEdge(es[i], Graph.Edgetype.Undirected)
+					changed = true
+				}
+			}
+		}
+	  	r.setType("pdag")
+		return r
+	},
+		
 	/** TODO make this work with undirected edges, add unit test */
 	dependencyGraph : function( g ){
 		var gc = GraphTransformer.canonicalDag( g ).g
@@ -908,5 +928,38 @@ var GraphTransformer = {
 			} )
 		} ) )
 		return gn
-	}
+	},
+
+	
+	markovEquivalentDags : function(g){
+	  var c = this.dagToCpdag(g)
+	  var g = c.clone()
+	  var result = []
+	  
+	  function enumerate() {
+	    if (GraphAnalyzer.containsCycle(g)) return; 
+	    var es = g.getEdges()
+	    for (var i=0;i<es.length;i++)
+	       if (es[i].directed == Graph.Edgetype.Undirected) {
+		 g.changeEdge(es[i],Graph.Edgetype.Directed)
+		 enumerate()
+
+		 g.reverseEdge(es[i])
+		 enumerate();
+		 
+		g.reverseEdge(es[i])
+		 g.changeEdge(es[i], Graph.Edgetype.Undirected)         
+		 return;
+	       }
+	    	var d = GraphTransformer.dagToCpdag(g)
+	    	if (GraphAnalyzer.equals(c,d)){
+			var gr = g.clone()
+			gr.setType("dag")
+	    		result.push(gr)
+		}
+	  }
+	  
+	  enumerate()
+	  return result
+	}  
 }
