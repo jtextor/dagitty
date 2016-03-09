@@ -80,7 +80,7 @@ var Graph = Class.extend({
 		return vv && this.managed_vertex_properties[p].contains( vv.id )
 	},
 	
-	/** Copies all properties of every vertex of this graph to the same 
+	/** Copies all properties of every vertex and edge of this graph to the same 
 	    vertex in g2 and sets the type of g2 to the type of this graph. */
 	copyAllPropertiesTo : function( g2 ){
 		var g = this
@@ -89,6 +89,14 @@ var Graph = Class.extend({
 				g2.addVertexProperty( v, p ) 
 			} )
 		} ) )
+		_.each( g.getEdges(), function(e){
+			var e2 = g2.getEdge( e.v1, e.v2, e.directed )
+			if( e2 ){
+				e2.layout_pos_x = e.layout_pos_x
+				e2.layout_pos_y = e.layout_pos_y
+				e2.style = e.style
+			}
+		} )
 		g2.setType( this.getType() )
 	},
 	

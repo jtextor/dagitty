@@ -30,13 +30,26 @@ var GraphParser = {
 		"use strict"
 		var ast = GraphDotParser.parse( code )
 		var g = new Graph()
+		this.parseDotStatementArray( ast.statements, g )
 		g.setType( ast.type )
-		if( ast.name ){ g.setName( ast.name ) }
+		if( ast.name ){ g.setName( ast.name ) }	
+		if( this.VALIDATE_GRAPH_STRUCTURE ){
+			if( !GraphAnalyzer.validate( g ) ){
+				throw("invalid graph : ",g.toString() )
+			}
+		}
+		return g	
+	},
+
+	parseDotStatementArray : function( statements, g ){
+		var vsub = new Graph() // holds the vertices of this subgraph
+
 		var v = function(id){ 
 			if( id == "graph" || id == "node" ){
 				throw("Syntax error: variables cannot be named 'graph' or 'node'. "+
 					"Use the 'label' attribute instead.")
 			}
+			vsub.getVertex( id ) || vsub.addVertex( id )
 			return( g.getVertex( id ) || g.addVertex( id ) ) 
 		}
 		var i,j,n,n2,e,pos,bb
@@ -58,7 +71,14 @@ var GraphParser = {
 			}
 			return _.map( tok, parseFloat )
 		}
-		_.each( ast.statements, function(s) {
+		var recurse = function( sa ){
+			var vsubnew = GraphParser.parseDotStatementArray( sa, g )
+			_.each( vsubnew, function(v){
+				vsub.getVertex(v.id) || vsub.addVertex( v.id )
+			})
+			return vsubnew
+		}
+		_.each( statements, function(s) {
 			if( s.type == "node" && s.id == "graph" ){
 				for( i = 0 ; i < s.attributes.length ; i ++ ){
 					switch( s.attributes[i][0] ){
@@ -104,22 +124,12 @@ var GraphParser = {
 					if( typeof(s.content[i-3]) === "string" ){
 						n = [v(s.content[i-3])]
 					} else {
-						n = []
-						_.each( s.content[i-3].statements, function(s){
-							if( s.type == "node" ){
-								n.push(v(s.id))
-							}
-						})
+						n = recurse(s.content[i-3].statements)
 					}
 					if( typeof(s.content[i-1]) === "string" ){
 						n2 = [v(s.content[i-1])]
 					} else {
-						n2 = []
-						_.each( s.content[i-1].statements, function(s){
-							if( s.type == "node" ){
-								n2.push(v(s.id))
-							}
-						})
+						n2 = recurse(s.content[i-1].statements)
 					}
 
 					_.each( n, function(n){
@@ -156,12 +166,7 @@ var GraphParser = {
 				}
 			}
 		} )
-		if( this.VALIDATE_GRAPH_STRUCTURE ){
-			if( !GraphAnalyzer.validate( g ) ){
-				throw("invalid graph : ",g.toString() )
-			}
-		}
-		return g
+		return _.map( vsub.getVertices(), function(v){ return g.getVertex( v ) } )
 	},
 	
 	parseVertexLabelsAndWeights : function( vertexLabelsAndWeights ){

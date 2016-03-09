@@ -290,11 +290,26 @@ var GraphAnalyzer = {
 		}
 		return i
 	},
+
+	isAdjustmentSet : function( g, Z ){
+		var gtype = g.getType()
+		Z = _.map( Z, g.getVertex, g )
+		if( gtype != "dag" ){
+			throw( "Cannot compute adjustment sets for graph of type "+gtype )
+		}
+		if( g.getSources().length == 0 || g.getTargets().length == 0 ){
+			return false
+		}
+		if( _.intersection( this.dpcp(g), Z ).length > 0 ){
+			return false
+		}		var gbd = GraphTransformer.backDoorGraph(g)
+		return !this.dConnected( gbd, gbd.getSources(), gbd.getTargets(), Z )
+	},
 	
 	listMsasTotalEffect : function( g, must, must_not ){
 		var gtype = g.getType()
 		if( gtype != "dag" && gtype != "pdag" ){
-			throw( "Don't know how to compute adjustment sets for graphs of type "+gtype )
+			throw( "Cannot compute adjustment sets for graph of type "+gtype )
 		}
 		if( gtype == "pdag" ){
 			g = GraphTransformer.cgToRcg( g )
@@ -358,6 +373,22 @@ var GraphAnalyzer = {
 			latent_nodes = latent_nodes.concat( must_not )
 
 		return this.listMinimalSeparators( gam, adjusted_nodes, latent_nodes, max_nr )
+	},
+
+	listBasisImplications : function( g ){
+		var r = []
+		var vv = g.vertices.values()
+		var i
+		_.each( vv, function(v){
+			var nondescendants = _.difference( vv, g.descendantsOf( [v] ) )
+			var parents = g.parentsOf( [v] )
+			var sepnodes = _.difference( nondescendants, parents )
+			if( sepnodes.length > 0 ){
+				r.push( [v.id, _.pluck(sepnodes,"id"),
+					[parents]] )
+			}
+		} )
+		return r
 	},
 	
 	listMinimalImplications : function( g, max_nr ){
@@ -1318,12 +1349,12 @@ var GraphAnalyzer = {
 	},
 
 	/* Check whether the directed edge e is stronlgy protected */
-        isEdgeStronglyProtected: function( g, e ) {
+	isEdgeStronglyProtected: function( g, e ) {
 		var a = e.v1
 		var b = e.v2
 
 		// test m -> a -> b (turning generates new v structure)
-		var adp = a.getParents();
+		var adp = a.getParents()
 		for (var i=0;i<adp.length;i++){
 			if (adp[i].id != b.id && ! g.areAdjacent(adp[i],b)){
 				return true
@@ -1331,8 +1362,8 @@ var GraphAnalyzer = {
 		}
 
 		// test a -> b <- m  or a -> b <- m <- a
-		var bdp = b.getParents();
-		for (var i=0;i<bdp.length;i++){
+		var bdp = b.getParents()
+		for ( i=0;i<bdp.length;i++){
 			if (bdp[i].id != a.id) {
 				if ( !g.areAdjacent(bdp[i],a) || g.getEdge(a,bdp[i],Graph.Edgetype.Directed) ){
 					return true
@@ -1342,17 +1373,17 @@ var GraphAnalyzer = {
 
 
 
-		for (var i=0;i<bdp.length;i++){ 
+		for ( i=0;i<bdp.length;i++){ 
 			for (var j=0;j<bdp.length;j++){
 				if( i != j && bdp[i].id != a.id && bdp[j].id != a.id
-				  && !g.areAdjacent(bdp[i],bdp[j])
-				  && g.getEdge(bdp[i],a,Graph.Edgetype.Undirected)
-				  && g.getEdge(bdp[j],a,Graph.Edgetype.Undirected) ){
-				 	return true
+					&& !g.areAdjacent(bdp[i],bdp[j])
+					&& g.getEdge(bdp[i],a,Graph.Edgetype.Undirected)
+					&& g.getEdge(bdp[j],a,Graph.Edgetype.Undirected) ){
+					return true
 				}
 			}
 		}
 		return false
-        }
+	}
 }
 

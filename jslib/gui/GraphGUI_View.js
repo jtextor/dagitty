@@ -647,7 +647,7 @@ var DAGittyGraphView = Class.extend({
 				GraphTransformer.backDoorGraph(
 					this.getGraph() ) )
 
-		switch( this.view_mode ){
+		switch( this.getViewMode() ){
 		case "moral" : 
 			if( this.graph.getSources().length > 0 && this.graph.getTargets().length > 0 ){
 				g = GraphTransformer.moralGraph( g_an )
@@ -657,6 +657,9 @@ var DAGittyGraphView = Class.extend({
 			break
 		case "dependency" : 
 			g = GraphTransformer.dependencyGraph( this.getGraph() )
+			break
+		case "equivalence" :
+			g = GraphTransformer.dagToCpdag( this.getGraph() )
 			break
 		default:
 			g = this.getGraph()

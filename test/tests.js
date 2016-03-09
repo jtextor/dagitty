@@ -33,7 +33,6 @@ QUnit.test( "graph manipulation", function( assert ) {
 	assert.equal( GraphSerializer.toDotEdgeStatements( g ), "x -> y" )
 	assert.equal( g.areAdjacent("x","y"), true )
 
-
 	g = GraphParser.parseGuess( "digraph G { x -- y }" )
 	g.changeEdge( g.getEdge("y","x",Graph.Edgetype.Undirected), Graph.Edgetype.Directed, "y" )
 	assert.equal( GraphSerializer.toDotEdgeStatements( g ), "y -> x" )
@@ -42,6 +41,13 @@ QUnit.test( "graph manipulation", function( assert ) {
 } )
 
 QUnit.test( "parsing and serializing", function( assert ) {
+
+	assert.equal( GraphParser.parseGuess( "dag{x->{a b}}" ).edges.length, 2 )
+
+	assert.equal( GraphParser.parseGuess( "dag{x->{a->b}}" ).edges.length, 3 )
+
+	assert.equal( GraphParser.parseGuess( "dag{a->{b->{c->{d->e}}}}" ).edges.length, 10 )
+
 	assert.equal( GraphSerializer.toDotVertexStatements( GraphParser.parseGuess( 
 		"digraph G { \"ᚠᛇᚻ᛫ᛒᛦᚦ᛫ᚠᚱᚩᚠᚢᚱ᛫ᚠᛁᚱᚪ᛫ᚷᛖᚻᚹᛦᛚᚳᚢᛗ\" }" ) ).trim(), 
 			"\"ᚠᛇᚻ᛫ᛒᛦᚦ᛫ᚠᚱᚩᚠᚢᚱ᛫ᚠᛁᚱᚪ᛫ᚷᛖᚻᚹᛦᛚᚳᚢᛗ\"" )
@@ -461,6 +467,16 @@ QUnit.test( "graph transformations", function( assert ) {
 });
 
 QUnit.test( "adjustment in DAGs", function( assert ) {
+	assert.equal((function(){
+		var g = GraphParser.parseGuess("dag{x[e] y[o] x<-z->y}")
+		return GraphAnalyzer.isAdjustmentSet(g,["z"])
+	})(), true)
+
+	assert.equal((function(){
+		var g = GraphParser.parseGuess("dag{x[e] y[o] x<->m<->y x->y}")
+		return GraphAnalyzer.isAdjustmentSet(g,["m"])
+	})(), false)
+
 	assert.equal(
 		sep_2_str( GraphAnalyzer.listMsasTotalEffect( TestGraphs.findExample("Polzer") ) ),
 		"{Age, Alcohol, Diabetes, Obesity, Psychosocial, Sex, Smoking, Sport}\n"+
@@ -510,6 +526,11 @@ QUnit.test( "adjustment in chain graphs", function( assert ) {
 });
 
 QUnit.test( "testable implications", function( assert ) {
+	assert.equal((function(){
+		var g = TestGraphs.findExample( "mediat" );
+		return imp_2_str( GraphAnalyzer.listBasisImplications( g ) );
+	})(), "Y _||_ Z | I, X" )	
+
 	assert.equal((function(){
 		var g = TestGraphs.findExample( "mediat" );
 		return imp_2_str( GraphAnalyzer.listMinimalImplications( g ) );

@@ -124,7 +124,7 @@ var GraphSerializer = {
 		_.each( ee, function(e){
 			edgetype = ""
 			var reverse = true
-			if( e instanceof Graph.Edge.Directed ){
+			if( e.directed == Graph.Edgetype.Directed ){
 				if( g.isLatentNode( e.v1 ) ){
 					if( g.isLatentNode( e.v2 ) ){
 						edgetype = "~"
@@ -135,10 +135,10 @@ var GraphSerializer = {
 				} else {
 					edgetype = "~"
 				}
-			} else if( e instanceof Graph.Edge.Bidirected ){
+			} else if( e.directed == Graph.Edgetype.Bidirected ){
 				edgetype = " ~~ "
 			} else {
-				throw( "Unsupported edge for lavaan conversion : ", e.toString() )
+				throw( "Unsupported edge for lavaan conversion : " + e.toString() )
 			}
 			if( reverse ){
 				r += e.v2.id + edgetype + e.v1.id+ "\n"
@@ -168,10 +168,10 @@ var GraphSerializer = {
 		}
 		for( i = 0 ; i < ee.length ; i ++ ){
 			edgetype = ""
-			if( ee[i] instanceof Graph.Edge.Directed ){
+			if( ee[i].directed == Graph.Edgetype.Directed ){
 				edgetype = "[->] "
 			}
-			if( ee[i] instanceof Graph.Edge.Bidirected ){
+			if( ee[i].directed == Graph.Edgetype.Bidirected ){
 				edgetype = "[->,<-] "
 			}
 			if( ee[i].layout_pos_x ){
