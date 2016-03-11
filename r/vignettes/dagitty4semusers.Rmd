@@ -1,0 +1,112 @@
+---
+title: "A SEM user's guide to dagitty for R"
+author: "Johannes Textor"
+date: "`r Sys.Date()`"
+vignette: >
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteIndexEntry{A SEM user's guide to dagitty for R}
+  \usepackage[utf8]{inputenc} 
+output:
+  knitr:::html_vignette:
+    toc: yes
+---
+
+```{r, echo = FALSE, message = FALSE}
+knitr::opts_chunk$set(comment = "")
+library(dagitty)
+```
+
+## What is dagitty
+
+Dagitty is a software to analyze causal diagrams, also known as directed acyclic graphs 
+(DAGs). Structural equation models (SEMs) can be viewed as a parametric form of DAGs,
+which encode linear functions instead of arbitrary nonlinear functions.
+
+Because every SEM is a DAG, much of the methodology developed for DAGs is of potentially
+great interest for SEM users as well. In this vignette, I am going to show some
+possibilities. This follows the structure of Kyono's "Commentator" program, and thereby
+also shows how the tasks implemented in that program can be solved using the dagitty
+package.
+
+```{r}
+g1 <- dagitty( "dag {
+	W1 -> Z1 -> X -> Y
+	Z1 <- V -> Z2
+	W2 -> Z2 -> Y
+	X <-> W1 <-> W2 <-> Y
+}")
+
+g2 <- dagitty( "dag {
+	Y <- X <- Z1 <- V -> Z2 -> Y
+	Z1 <- W1 <-> W2 -> Z2
+	X <- W1 -> Y
+	X <- W2 -> Y
+}")
+
+plot(graphLayout(g1))
+```
+
+## List testable implications of a structural equation model
+```{r} 
+print( impliedConditionalIndependencies( g1 ) )
+```
+
+## List adjustment sets for specific path coefficients 
+
+```{r}
+print( adjustmentSets( g1, "Z1", "X", effect="direct" ) )
+```
+
+```{r}
+print( adjustmentSets( g2, "X", "Y", effect="direct" ) )
+```
+
+## List path coefficients that are identifiable by regression
+```{r}
+for( n in names(g1) ){
+	for( m in children(g1,n) ){
+		a <- adjustmentSets( g1, n, m, "direct" )
+		if( length(a) > 0 ){
+			cat("The coefficient on ",n,"->",m,
+				" is identifiable controlling for:\n",sep="")
+			print( a, prefix=" * " )
+		}
+	}
+}
+```
+
+## List adjustment sets for specific total effects
+
+```{r}
+print( adjustmentSets( g1, "X", "Y" ) )
+```
+
+```{r}
+print( adjustmentSets( g2, "X", "Y" ) )
+```
+
+## List total effects that are identifiable by regression
+```{r}
+for( n in names(g1) ){
+	for( m in setdiff( descendants( g1, n ), n ) ){
+		a <- adjustmentSets( g1, n, m )
+		if( length(a) > 0 ){
+			cat("The total effect of ",n," on ",m,
+				" is identifiable controlling for:\n",sep="")
+			print( a, prefix=" * " )
+		}
+	}
+}
+```
+
+## List path coefficients that are identifiable through instrumental variables
+```{r}
+for( n in names(g1) ){
+	for( m in children(g1,n) ){
+		iv <- instrumentalVariables( g1, n, m )
+		if( length( iv ) > 0 ){
+			cat( n, m, "\n" )
+			print( iv , prefix=" * " )
+		}
+	}
+}

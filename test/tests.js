@@ -215,6 +215,21 @@ QUnit.test( "parsing and serializing", function( assert ) {
 			"dag{ U -> {a b c d} }" )), "U -> a\nU -> b\nU -> c\nU -> d" )
 });
 
+QUnit.test( "ancestry", function( assert ) {
+	var shrier = TestGraphs.findExample("Shrier")
+	assert.equal(
+		(_.pluck(shrier.ancestorsOf(
+			shrier.getVertex(["PreGameProprioception"])),"id")).sort().join(",")
+		, "Coach,FitnessLevel,Genetics,PreGameProprioception" )
+
+	assert.equal((function(){
+	    var g = GraphParser.parseGuess( 
+			"digraph G {a -- b }" )
+		return g.getVertex("a").getNeighbours().length
+	})(), 1 )
+
+});
+
 QUnit.test( "separators", function( assert ) {
 	assert.equal(
 			sep_2_str( GraphAnalyzer.listMinimalSeparators(
@@ -467,6 +482,41 @@ QUnit.test( "graph transformations", function( assert ) {
 });
 
 QUnit.test( "adjustment in DAGs", function( assert ) {
+
+	
+assert.equal((function(){
+		// our non-X-ancestor MSAS example from the UAI paper w/ causal edge
+		var g = GraphParser.parseGuess("X1 E\nX2 E\nY O\nM1 1\nM2 1\n\nX1 Y M1\nY M2\nM1 M2\nM2 X2")
+		return sep_2_str( GraphAnalyzer.listMsasDirectEffect( g ) )
+	})(), "" )
+
+	assert.equal((function(){
+		// our non-X-ancestor MSAS example from the UAI paper w/o causal edge
+		var g = GraphParser.parseGuess("X1 E\nX2 E\nY O\nM1 1\nM2 1\n\nX1 M1\nY M2\nM1 M2\nM2 X2")
+		return sep_2_str( GraphAnalyzer.listMsasDirectEffect( g ) )
+	})(), "{M1, M2}" )
+
+	assert.equal((function(){
+		var g = TestGraphs.findExample( "Thoemmes" )
+		return sep_2_str( GraphAnalyzer.listMsasTotalEffect( g ) )
+	})(), "" )
+
+	assert.equal((function(){
+		var g = TestGraphs.findExample( "Thoemmes" )
+		g.removeAdjustedNode("s2")
+		return sep_2_str( GraphAnalyzer.listMsasTotalEffect( g ) )
+	})(), "{}" )
+
+	assert.equal((function(){
+		var g = TestGraphs.findExample( "Thoemmes" )
+		return sep_2_str( GraphAnalyzer.listMsasDirectEffect( g ) )
+	})(), "{e2, s2}\n{s1, s2}" )
+
+	assert.equal((function(){
+		var g = TestGraphs.findExample( "mediat" )
+		return sep_2_str( GraphAnalyzer.listMsasDirectEffect( g ) )
+	})(), "{I}" )
+
 	assert.equal((function(){
 		var g = GraphParser.parseGuess("dag{x[e] y[o] x<-z->y}")
 		return GraphAnalyzer.isAdjustmentSet(g,["z"])
@@ -526,6 +576,35 @@ QUnit.test( "adjustment in chain graphs", function( assert ) {
 });
 
 QUnit.test( "testable implications", function( assert ) {
+	assert.equal((function(){
+		var g = TestGraphs.findExample("Shrier")
+		var ii = GraphAnalyzer.listMinimalImplications( g )
+		var all_good=true
+		for( var i = 0 ; i < ii.length ; i ++ ){
+			for( var j = 0 ; j < ii[i][2].length ; j ++ ){
+				if( ii[i][2][j].length > 0 ){
+					all_good = all_good && GraphAnalyzer.dConnected( g, 
+						[g.getVertex(ii[i][0])], [g.getVertex(ii[i][1])], 
+						ii[i][2][j].slice(1) )
+				}
+			}
+		}
+		return all_good
+	})(), true )
+
+	assert.equal((function(){
+		var g = TestGraphs.findExample("Shrier")
+		var ii = GraphAnalyzer.listMinimalImplications( g )
+		var all_good=true
+		for( var i = 0 ; i < ii.length ; i ++ ){		
+			for( var j = 0 ; j < ii[i][2].length ; j ++ ){
+				all_good = all_good && !GraphAnalyzer.dConnected( g, 
+					[g.getVertex(ii[i][0])], [g.getVertex(ii[i][1])], ii[i][2][j] )
+			}
+		}
+		return all_good
+	})(), true )
+
 	assert.equal((function(){
 		var g = TestGraphs.findExample( "mediat" );
 		return imp_2_str( GraphAnalyzer.listBasisImplications( g ) );
@@ -702,6 +781,86 @@ QUnit.test( "graph types", function( assert ) {
 		});
 	});
 
+});
+
+QUnit.test( "dseparation", function( assert ) {
+	assert.equal((function(){
+		var g = GraphParser.parseGuess( "digraph G { x -> m -> y }" )
+		return !GraphAnalyzer.dConnected( g, [g.getVertex("x")], [g.getVertex("y")], 
+			[g.getVertex("m")] )
+	})(), true )
+
+	assert.equal((function(){
+		var g = GraphParser.parseGuess( "digraph G { x -> m -> y }" )
+		return !GraphAnalyzer.dConnected( g, [g.getVertex("x")], [g.getVertex("y")], [] )
+	})(), false )
+
+	assert.equal((function(){
+		var g = GraphParser.parseGuess("dag{R->S->T<-U}")
+		g = GraphAnalyzer.listPaths( g, false, 1, [g.getVertex("R")], [g.getVertex("U")] )[0]
+		return GraphAnalyzer.dConnected( g, [g.getVertex("R")], [g.getVertex("U")], 
+			g.getVertex(["T"]) )
+	})(), true )
+
+	assert.equal((function(){	
+		var g = GraphParser.parseGuess("dag{ a->x->m<-y m->p }")
+		return GraphAnalyzer.dConnected( g, [g.getVertex("a")], [g.getVertex("y")], 
+			g.getVertex(["m"]) )
+	})(), true )
+
+	assert.equal((function(){	
+		var g = GraphParser.parseGuess("dag{ a->x->m<-y m->p }")
+		return GraphAnalyzer.dConnected( g, g.getVertex(["x"]), [g.getVertex("y")], 
+			g.getVertex(["m"]), g.getVertices(["x"]) )
+	})(), true )
+
+	assert.equal((function(){	
+		var g = GraphParser.parseGuess("dag{ x->m<-y m->p }")
+		return GraphAnalyzer.dConnected( g, [g.getVertex("x")], [g.getVertex("y")], 
+			[g.getVertex("m")] )
+	})(), true )
+
+	assert.equal((function(){	
+		var g = GraphParser.parseGuess("dag{ x->m<-y m->p }")
+		return GraphAnalyzer.dConnected( g, [g.getVertex("x")], [g.getVertex("y")], 
+			g.getVertex(["p"]), g.getVertex(["m","p"])  )
+	})(), true )
+
+	assert.equal((function(){	
+		var g = GraphParser.parseGuess("dag{ x[e] y[o] x->m<-y m->p }")
+		return GraphAnalyzer.dConnected( g, [g.getVertex("x")], [g.getVertex("y")], 
+			g.getVertex([]), [] )
+	})(), false )
+
+	assert.equal((function(){	
+		var g = GraphParser.parseGuess("dag{ x[e] y[o] x->m<-y m->p }")
+		return GraphAnalyzer.dConnected( g, [g.getVertex("x")], [g.getVertex("y")], 
+			g.getVertex([]), g.getVertex(["m","p"]) )
+	})(), true )
+
+	assert.equal((function(){	
+		var g = GraphParser.parseGuess("dag{ x->m<-y m->p }")
+		return GraphAnalyzer.dConnected( g, [g.getVertex("x")], [g.getVertex("y")], 
+			[g.getVertex("m")] )
+	})(), true )
+
+	assert.equal((function(){	
+		var g = GraphParser.parseGuess("dag{ x->m<-y m->p }")
+		return GraphAnalyzer.dConnected( g, [g.getVertex("x")], [g.getVertex("y")], 
+			[g.getVertex("p")] )
+	})(), true )
+
+	assert.equal((function(){	
+		var g = GraphParser.parseGuess("dag{ x->m<-y m->p }")
+		return GraphAnalyzer.dConnected( g, [g.getVertex("x")], [g.getVertex("y")], 
+			[] )
+	})(), false )
+
+	assert.equal((function(){	
+		var g = TestGraphs.findExample("onfound")
+		return GraphAnalyzer.dConnected( g, [g.getVertex("E")], [g.getVertex("B")], 
+			[g.getVertex("Z")] )
+	})(), true )
 });
 
 QUnit.test( "uncategorized tests", function( assert ) {
@@ -1185,29 +1344,6 @@ assert.equal((function(){
 			"id").sort().join(",")
 })(), "Y1,Y2" )
 
-assert.equal((function(){
-	// our non-X-ancestor MSAS example from the UAI paper w/ causal edge
-	var g = GraphParser.parseGuess("X1 E\nX2 E\nY O\nM1 1\nM2 1\n\nX1 Y M1\nY M2\nM1 M2\nM2 X2")
-	return sep_2_str( GraphAnalyzer.listMsasDirectEffect( g ) )
-})(), "" )
-
-assert.equal((function(){
-	// our non-X-ancestor MSAS example from the UAI paper w/o causal edge
-	var g = GraphParser.parseGuess("X1 E\nX2 E\nY O\nM1 1\nM2 1\n\nX1 M1\nY M2\nM1 M2\nM2 X2")
-	return sep_2_str( GraphAnalyzer.listMsasDirectEffect( g ) )
-})(), "{M1, M2}" )
-
-assert.equal((function(){
-	// our non-X-ancestor MSAS example from the UAI paper w/ causal edge
-	var g = GraphParser.parseGuess("X1 E\nX2 E\nY O\nM1 1\nM2 1\n\nX1 Y M1\nY M2\nM1 M2\nM2 X2")
-	return sep_2_str( GraphAnalyzer.listMsasTotalEffect( g ) )
-})(), "" )
-
-assert.equal((function(){
-	// our non-X-ancestor MSAS example from the UAI paper w/o causal edge
-	var g = GraphParser.parseGuess("X1 E\nX2 E\nY O\nM1 1\nM2 1\n\nX1 M1\nY M2\nM1 M2\nM2 X2")
-	return sep_2_str( GraphAnalyzer.listMsasTotalEffect( g ) )
-})(), "{M1, M2}" )
 
 assert.equal((function(){
     // X -> I -> Y,  I -> A, adjust I  = no bias
@@ -1282,27 +1418,6 @@ assert.equal((function(){
 	var g = GraphParser.parseGuess("X1 E\nY1 O\nY2 O\nM 1\n\nY1 M\nM Y2")
 	return GraphTransformer.activeBiasGraph(g).toAdjacencyList()
 })(), "" )
-
-assert.equal((function(){
-	var g = TestGraphs.findExample( "Thoemmes" )
-	return sep_2_str( GraphAnalyzer.listMsasTotalEffect( g ) )
-})(), "" )
-
-assert.equal((function(){
-	var g = TestGraphs.findExample( "Thoemmes" )
-	g.removeAdjustedNode("s2")
-	return sep_2_str( GraphAnalyzer.listMsasTotalEffect( g ) )
-})(), "{}" )
-
-assert.equal((function(){
-	var g = TestGraphs.findExample( "Thoemmes" )
-	return sep_2_str( GraphAnalyzer.listMsasDirectEffect( g ) )
-})(), "{e2, s2}\n{s1, s2}" )
-
-assert.equal((function(){
-	var g = TestGraphs.findExample( "mediat" )
-	return sep_2_str( GraphAnalyzer.listMsasDirectEffect( g ) )
-})(), "{I}" )
 
 assert.equal((function(){
 	var g = GraphParser.parseGuess("X1 E\nX2 E\nY1 O\nY2 O\nU1 1\nU2 1\n\nX1 U1\nU1 X2\nY1 U2\nU2 Y2")
@@ -1385,12 +1500,6 @@ assert.equal((function(){
 
 assert.equal((function(){
     var g = GraphParser.parseGuess( 
-		"digraph G {a -- b }" )
- 	return g.getVertex("a").getNeighbours().length
-})(), 1 )
-
-assert.equal((function(){
-    var g = GraphParser.parseGuess( 
 		"digraph G {a [exposure]\nb [outcome]\nc [adjusted]\na -> c\nb -> c }" )
  	return GraphSerializer.toDotEdgeStatements(GraphTransformer.activeBiasGraph(g))
 })(), "a -> c\nb -> c" )
@@ -1433,50 +1542,6 @@ assert.equal((function(){
 	return GraphSerializer.toDotEdgeStatements(GraphTransformer.activeBiasGraph(g))
 })(), "" )
 
-assert.equal((function(){	
-	var g = TestGraphs.findExample("onfound")
-	return !GraphAnalyzer.dConnected( g, [g.getVertex("E")], [g.getVertex("B")], 
-		[g.getVertex("Z")] )
-})(), false )
-
-assert.equal((function(){
-	var g = TestGraphs.findExample("Shrier")
-	var ii = GraphAnalyzer.listMinimalImplications( g )
-	var all_good=true
-	for( var i = 0 ; i < ii.length ; i ++ ){
-		for( var j = 0 ; j < ii[i][2].length ; j ++ ){
-			if( ii[i][2][j].length > 0 ){
-				all_good = all_good && GraphAnalyzer.dConnected( g, 
-					[g.getVertex(ii[i][0])], [g.getVertex(ii[i][1])], ii[i][2][j].slice(1) )
-			}
-		}
-	}
-	return all_good
-})(), true )
-
-assert.equal((function(){
-	var g = TestGraphs.findExample("Shrier")
-	var ii = GraphAnalyzer.listMinimalImplications( g )
-	var all_good=true
-	for( var i = 0 ; i < ii.length ; i ++ ){		
-		for( var j = 0 ; j < ii[i][2].length ; j ++ ){
-			all_good = all_good && !GraphAnalyzer.dConnected( g, 
-				[g.getVertex(ii[i][0])], [g.getVertex(ii[i][1])], ii[i][2][j] )
-		}
-	}
-	return all_good
-})(), true )
-
-assert.equal((function(){
-	var g = GraphParser.parseGuess( "digraph G { x -> m -> y }" )
-	return !GraphAnalyzer.dConnected( g, [g.getVertex("x")], [g.getVertex("y")], 
-		[g.getVertex("m")] )
-})(), true )
-
-assert.equal((function(){
-	var g = GraphParser.parseGuess( "digraph G { x -> m -> y }" )
-	return !GraphAnalyzer.dConnected( g, [g.getVertex("x")], [g.getVertex("y")], [] )
-})(), false )
 
 assert.equal( _.pluck(GraphAnalyzer.dpcp(
 	GraphParser.parseGuess( "digraph{ x [exposure]\n y [outcome]\n x -> y -- z }" ) ),"id").

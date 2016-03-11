@@ -408,6 +408,9 @@ var GraphAnalyzer = {
 					g2.removeAllTargets().addTarget( g2.getVertex( vv[j].id ) )
 					var seps = GraphAnalyzer.listDseparators( g2, [], [], max_nr-n )
 					if( seps.length > 0 ){
+						seps = _.map( seps, function(s){
+							return g.getVertex( _.pluck(s,"id") )
+						})
 						r.push( [vv[i].id, vv[j].id, seps] )
 						n += seps.length
 						if( n >= max_nr ){
@@ -563,7 +566,7 @@ var GraphAnalyzer = {
 		if( arguments.length < 3 ){
 			limit=100
 		}
-		if( arguments.length < 6 ){
+		if( arguments.length < 5 ){
 			X = g.getSources(); Y = g.getTargets()
 		}
 		if( X.length == 0 || Y.length == 0 ){
@@ -679,34 +682,42 @@ var GraphAnalyzer = {
 	 * If Y is empty ([]), return the set of vertices that are d-connected 
 	 * to X given Z.
 	 */
-	dConnected : function( g, X, Y, Z ){
+	dConnected : function( g, X, Y, Z, AnZ ){
 		var forward_queue = []
 		var backward_queue = []
 		var forward_visited ={}
 		var backward_visited = {}
-		var i, Y_ids = {}, Z_ids = {}, v, vv
+		var i, Y_ids = {}, Z_ids = {}, AnZ_ids = {}, v, vv
+		if( typeof AnZ == "undefined" ){	
+			AnZ = g.ancestorsOf( Z )
+		}
 		for( i = 0 ; i < X.length ; i ++ ){
 			backward_queue.push( X[i] )
 		}
 		for( i = 0 ; i < Y.length ; i ++ ){
 			Y_ids[Y[i].id] = 1
 		}
+		for( i = 0 ; i < AnZ.length ; i ++ ){
+			AnZ_ids[AnZ[i].id] = 1
+		}
 		for( i = 0 ; i < Z.length ; i ++ ){
 			Z_ids[Z[i].id] = 1
 		}
+
 		while( forward_queue.length + backward_queue.length > 0 ){
 			if( forward_queue.length > 0 ){
 				v = forward_queue.pop()
 				forward_visited[v.id]=1
 				if( Y_ids[v.id] ) return true
-				if( Z_ids[v.id] ){
+				if( AnZ_ids[v.id] ){
 					vv = _.union( v.getParents(), v.getSpouses() )
 					for( i = 0 ; i < vv.length ; i ++ ){
 						if( !backward_visited[vv[i].id] ){
 							backward_queue.push( vv[i] )
 						}
 					}
-				} else {
+				} 
+				if( !Z_ids[v.id] ){
 					vv = _.union( v.getChildren(), v.getNeighbours() )
 					for( i = 0 ; i < vv.length ; i ++ ){
 						if( !forward_visited[vv[i].id] ){
