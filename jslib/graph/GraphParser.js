@@ -87,6 +87,8 @@ var GraphParser = {
 						g.setBoundingBox( bb )
 					}
 				}
+			} else if( s.type == "subgraph" ){
+				recurse(s.statements)
 			} else if( s.type == "node" ){
 				n = v(s.id)
 				for( i = 0 ; i < s.attributes.length ; i ++ ){
@@ -135,18 +137,41 @@ var GraphParser = {
 					_.each( n, function(n){
 						_.each( n2, function(n2){
 							switch( s.content[i-2] ){
+
+							case "@-@" :
+								e = g.addEdge( n, n2, Graph.Edgetype.Unspecified )
+								break
+
 							case "--" :
 								e = g.addEdge( n, n2, Graph.Edgetype.Undirected )
 								break
+
 							case "<->" :
 								e = g.addEdge( n, n2, Graph.Edgetype.Bidirected )
 								break
+
 							case "->" :
 								e = g.addEdge( n, n2, Graph.Edgetype.Directed )
 								break
 							case "<-" :
 								e = g.addEdge( n2, n, Graph.Edgetype.Directed )
 								break
+
+							case "@->" : 
+								e = g.addEdge( n, n2, Graph.Edgetype.PartDirected )
+								break
+							case "<-@" : 
+								e = g.addEdge( n2, n, Graph.Edgetype.PartDirected )
+								break
+
+							case "@--" : 
+								e = g.addEdge( n, n2, Graph.Edgetype.PartUndirected )
+								break
+							case "--@" : 
+								e = g.addEdge( n2, n, Graph.Edgetype.PartUndirected )
+								break
+
+
 							}
 						})
 					})
@@ -320,7 +345,7 @@ var GraphParser = {
 			return this.parseAdjacencyMatrix( adjacencyListOrMatrix, vertexLabelsAndWeights )
 		} else {
 			// [\s\S] is like . but also matches newline!
-			var isdot = firstarg.trim().match(  /^(digraph|graph|dag|pdag|mag)(\s+\w+)?\s*\{([\s\S]+)\}$/m )
+			var isdot = firstarg.trim().match(  /^(digraph|graph|dag|pdag|mag|pag)(\s+\w+)?\s*\{([\s\S]+)\}$/mi )
 			if( isdot && isdot.length > 1 ){
 				return this.parseDot( firstarg )
 			} else {

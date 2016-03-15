@@ -35,12 +35,22 @@ QUnit.test( "graph manipulation", function( assert ) {
 
 	g = GraphParser.parseGuess( "digraph G { x -- y }" )
 	g.changeEdge( g.getEdge("y","x",Graph.Edgetype.Undirected), Graph.Edgetype.Directed, "y" )
-	assert.equal( GraphSerializer.toDotEdgeStatements( g ), "y -> x" )
+	assert.equal( GraphSerializer.toDotEdgeStatements( g ), "y -> x", "edge change" )
 
+	g = GraphParser.parseGuess( "digraph G { y <- x <-> m -- y }")
+	g.deleteVertex("m")
+	assert.equal( GraphSerializer.toDotEdgeStatements( g ), "x -> y", "vertex deletion"  )
 
 } )
 
 QUnit.test( "parsing and serializing", function( assert ) {
+	// GraphParser.VALIDATE_GRAPH_STRUCTURE = false;
+	assert.equal( GraphParser.parseGuess( "dag{{x->{a b}}}" ).edges.length, 2 )
+
+
+	assert.equal( GraphParser.parseGuess( "pag{a @-> {b --@ {c @-@ d} }}" ).edges.length, 6 )
+	assert.equal( _.pluck(GraphParser.parseGuess( "pag{a @->b<-@c}" ).getVertices(),"id").sort().join(","), "a,b,c" )
+	assert.equal( _.pluck(GraphParser.parseGuess( "pag{a @->b<-@c @-@d}" ).getVertices(),"id").sort().join(","), "a,b,c,d" )
 
 	assert.equal( GraphParser.parseGuess( "dag{x->{a b}}" ).edges.length, 2 )
 
@@ -282,6 +292,26 @@ QUnit.test( "separators", function( assert ) {
 
 QUnit.test( "graph analysis", function( assert ) {
 	var g = GraphParser.parseGuess("dag{x->y}")
+	assert.equal(GraphAnalyzer.isEdgeVisible(g,g.getEdge("x","y")),true)
+	g = GraphParser.parseGuess("mag{x->y}")
+	assert.equal(GraphAnalyzer.isEdgeVisible(g,g.getEdge("x","y")),false)
+	g = GraphParser.parseGuess("mag{z<->x->y}")
+	assert.equal(GraphAnalyzer.isEdgeVisible(g,g.getEdge("x","y")),true)
+	g = GraphParser.parseGuess("mag{z->x->y}")
+	assert.equal(GraphAnalyzer.isEdgeVisible(g,g.getEdge("x","y")),true)
+	g = GraphParser.parseGuess("mag{z--x->y}")
+	assert.equal(GraphAnalyzer.isEdgeVisible(g,g.getEdge("x","y")),false)
+	g = GraphParser.parseGuess("mag{c<->a {a<->b<->x}->y}")
+	assert.equal(GraphAnalyzer.isEdgeVisible(g,g.getEdge("x","y")),true)
+	g = GraphParser.parseGuess("mag{c->a {a<->b<->x}->y}")
+	assert.equal(GraphAnalyzer.isEdgeVisible(g,g.getEdge("x","y")),true)
+	g = GraphParser.parseGuess("mag{c->{a b x}->y}")
+	assert.equal(GraphAnalyzer.isEdgeVisible(g,g.getEdge("x","y")),true)
+
+
+
+
+	g = GraphParser.parseGuess("dag{x->y}")
 	assert.equal(GraphAnalyzer.isEdgeStronglyProtected(g,g.getEdge("x","y")),false)
 	g = GraphParser.parseGuess("dag{x->y<-z}")
 	assert.equal(GraphAnalyzer.isEdgeStronglyProtected(g,g.getEdge("x","y")),true)
@@ -425,6 +455,9 @@ QUnit.test( "graph transformations", function( assert ) {
 	})(),6)
 
 	var transformations = [
+		GraphTransformer.pagToPdag,
+		"pag{x@-@y@->z}","pdag{x--y->z}",
+
 		GraphTransformer.dagToCpdag,
 		"dag{x->y}", "pdag { x -- y }",
 		"dag{x->y<-z}", "pdag { x -> y <- z }",
@@ -566,13 +599,22 @@ assert.equal((function(){
 		"{C}\n{m, m2}")
 });
 
-QUnit.test( "adjustment in chain graphs", function( assert ) {
+QUnit.test( "adjustment in other graphs", function( assert ) {
 	assert.equal( sep_2_str(GraphAnalyzer.listMsasTotalEffect(
 		GraphParser.parseGuess("pdag { X [exposure]\n"+
 		"Y [outcome]\n"+
 		"X -> W -> Y ; F -> W -- Z ; X <- F -> Z }") 
 			 ) ), 
 		"{F}" )
+
+	assert.equal( sep_2_str(GraphAnalyzer.listMsasTotalEffect(
+		GraphParser.parseGuess("mag { X [e] Y[o] X->Y }") 
+			 ) ), "" )
+
+	assert.equal( sep_2_str(GraphAnalyzer.listMsasTotalEffect(
+		GraphParser.parseGuess("mag { X [e] Y[o] I->X->Y }") 
+			 ) ), "{}" )
+
 });
 
 QUnit.test( "testable implications", function( assert ) {

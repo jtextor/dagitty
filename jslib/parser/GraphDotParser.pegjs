@@ -66,10 +66,10 @@ a_list
   }
 
 EDGE
-  = e:( '->' / '--' / '<->' / '<-' ) _ { return e }
+  = e:( '@->' / '<-@' / '->' / '--@' / '--' / '<->' / '<-' / '@-@' / '@--' ) _ { return e }
   
 GRAPHTYPE
-  = t:( 'graph'i / 'digraph'i  / 'dag'i  / 'mag'i / 'pdag'i ) _ { return t }
+  = t:( 'graph'i / 'digraph'i  / 'dag'i  / 'mag'i / 'pdag'i / 'pag'i ) _ { return t }
 
 id
  = BAREWORD / STRING

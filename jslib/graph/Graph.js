@@ -143,17 +143,7 @@ var Graph = Class.extend({
 	deleteVertex : function( v ){
 		// first remove all edges adjacent to v 
 		v = this.getVertex( v )
-		_.each( ["adjacentUndirectedEdges", "adjacentBidirectedEdges"],
-			function( edgelist ){
-				_.each( v[edgelist], function( e ) {
-					if( e.v1 === v ){
-						e.v2[edgelist] = _.without(e.v2[edgelist], e )
-					} else {
-						e.v1[edgelist] = _.without(e.v1[edgelist], e )
-					}
-				} )
-			} )
-		
+	
 		_.each( v.outgoingEdges, function( e ) {
 			e.v2.incomingEdges = _.without(e.v2.incomingEdges, e )
 		} )
@@ -162,10 +152,8 @@ var Graph = Class.extend({
 		} )
 		this.edges = _.filter(this.edges, 
 		function( e ){ return ! ( 
-		_.contains( v.adjacentBidirectedEdges, e ) ||
-		_.contains( v.adjacentUndirectedEdges, e ) ||
-		_.contains( v.incomingEdges, e ) || 
-		_.contains( v.outgoingEdges, e ) ) } )
+			_.contains( v.incomingEdges, e ) || 
+			_.contains( v.outgoingEdges, e ) ) } )
 		
 		// remove the vertex from all property lists
 		_.each( this.managed_vertex_property_names, function(p){
@@ -250,6 +238,11 @@ var Graph = Class.extend({
 		return r
 	},
 	
+	districtOf : function( vertex_array, clear_visited_function ){
+		return this.transitiveClosureOf( vertex_array, "getSpouses",
+			clear_visited_function )
+	},
+
 	ancestorsOf : function( vertex_array, clear_visited_function ){
 		return this.transitiveClosureOf( vertex_array, "getParents",
 			clear_visited_function )
@@ -759,6 +752,10 @@ Graph.Edge = Class.extend( {
 		switch( this.directed ){
 		case Graph.Edgetype.Undirected: edge_join = "--"; break
 		case Graph.Edgetype.Bidirected: edge_join = "<->"; break
+		case Graph.Edgetype.PartDirected: edge_join = "@->"; break
+		case Graph.Edgetype.PartUndirected: edge_join = "@--"; break
+		case Graph.Edgetype.Unspecified: edge_join = "@-@"; break
+
 		}
 		var v1id = GraphSerializer.dotQuoteVid(this.v1.id)
 		var v2id = GraphSerializer.dotQuoteVid(this.v2.id)
@@ -777,10 +774,16 @@ Graph.Edgetype = {
 	Undirected : 0,
 	Directed : 1,
 	Bidirected : 2,
+	Unspecified : 3,
+	PartDirected : 4,
+	PartUndirected : 5,
 	Symmetric : {
 		0 : true,
 		1 : false,
-		2 : true
+		2 : true,
+		3 : true,
+		4 : false,
+		5 : false
 	}
 }
 

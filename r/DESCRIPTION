@@ -1,15 +1,16 @@
 Package: dagitty
 Type: Package
 Title: Graphical Analysis of Structural Causal Models
-Version: 0.1-7
-Date: 2015-01-11
+Version: 0.1-8
+Date: 2015-03-15
 Author: Johannes Textor, Benito van der Zander
 Maintainer: Johannes Textor <johannes.textor@gmx.de>
-Description: This is a port of the web-based DAGitty software for analyzing
+Description: A port of the web-based DAGitty software for analyzing
     structural causal models (also known as directed acyclic graphs or DAGs).
-    Important functions include computation of adjustment sets for estimating causal
-    effects, identification of instrumental variables, and enumeration of testable
-    implications (d-separation and vanishing tetrads).
+    The package computes covariate adjustment sets for estimating causal
+    effects, enumerates instrumental variables, derives testable
+    implications (d-separation and vanishing tetrads), generates equivalent
+    models, and includes a simple facility for data simulation. 
 VignetteBuilder: knitr
 Encoding: UTF-8
 LazyData: true

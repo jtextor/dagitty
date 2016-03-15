@@ -139,7 +139,8 @@ var GraphTransformer = {
 		_.each( X, function(s){
 			visit( s )
 			_.each( s.getChildren(), function( c ){
-				if( c.traversal_info.reaches_target ){
+				if( c.traversal_info.reaches_target && 
+					GraphAnalyzer.isEdgeVisible(g,g.getEdge(s.id,c.id)) ){
 					gback.deleteEdge( s, c, Graph.Edgetype.Directed )
 				}
 			})
@@ -824,10 +825,10 @@ var GraphTransformer = {
 			for( i = 0 ; i < e.v2.topological_index-1; i ++ ){
 				gp.quickAddDirectedEdge( 
 				gp.getVertex( topo_sort[i]+":"+e.v1.id ),
-										gp.getVertex( topo_sort[i] +":"+e.v2.id ) )
+					gp.getVertex( topo_sort[i] +":"+e.v2.id ) )
 				gp.quickAddDirectedEdge( 
 				gp.getVertex( e.v1.id+":"+topo_sort[i] ),
-										gp.getVertex( e.v2.id+":"+topo_sort[i] ) )
+					gp.getVertex( e.v2.id+":"+topo_sort[i] ) )
 			}
 		}
 		
@@ -962,5 +963,27 @@ var GraphTransformer = {
 
 		enumerate()
 		return result
-	}  
+	},
+
+	pagToPdag : function(g) {
+		if( g.getType() != "pag" ){
+			return undefined
+		}
+		g = g.clone()
+		var es = g.getEdges()
+		for( var i = 0 ; i < es.length ; i ++ ){
+			if( es[i].directed == Graph.Edgetype.Unspecified ){
+				g.changeEdge(es[i], Graph.Edgetype.Undirected)
+			}
+			if( es[i].directed == Graph.Edgetype.PartDirected ){
+				g.changeEdge(es[i], Graph.Edgetype.Directed)
+			}
+			if( es[i].directed == Graph.Edgetype.PartUndirected ){
+				g.changeEdge(es[i], Graph.Edgetype.Undirected)
+			}
+
+		}
+		g.setType("pdag")
+		return g
+	}
 }

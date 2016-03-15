@@ -27,7 +27,7 @@ dagitty-min.js : dagitty.js jsmin
 	./jsmin < dagitty.js > $@
 
 install : dagitty-min.js
-	cp dagitty.js ../gui/js/dagitty.js
+	cp dagitty.js ../gui/js/dagitty.js ; cp dagitty-alg.js ../r/inst/js/
 	
 parser/GraphDotParser.js : force_look
 	cd parser ; make

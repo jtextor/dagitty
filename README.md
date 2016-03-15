@@ -6,7 +6,8 @@ the R package (in subfolder `r/`).
 
 ## Preparation
 
-After checkout, first the jslib directory, and run "make". This will generate the dagitty js-libraries from the individual source files.
+After checkout, first the jslib directory, and run "make". This will generate
+the dagitty js-libraries from the individual source files.
 
 ## Running the web interface
 

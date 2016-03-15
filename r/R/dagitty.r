@@ -720,7 +720,11 @@ plot.dagitty <- function( x, ... ){
 	text( coords$x, -coords$y[labels], labels )
 }
 
-#' Find Adjustment Sets to Estimate Causal Effects
+#' Covariate Adjustment Sets
+#'
+#' Enumerates sets of covariates that (asymptotically) allow unbiased estimation of causal
+#' effects from observational data, assuming that the input causal graph is correct.  
+#'
 #' @param x the input graph.
 #' @param exposure name(s) of the exposure variable(s). If not given (default), then the 
 #'  exposure variables are supposed to be defined in the graph itself.
@@ -732,6 +736,20 @@ plot.dagitty <- function( x, ... ){
 #' \code{effect="direct"}, then the average direct effect is to be identified, and Pearl's
 #' single-door criterion is used (Pearl, 2009). In a structural equation model (Gaussian
 #' graphical model), direct effects are simply the path coefficients.
+#' @examples
+#' # The M-bias graph showing that adjustment for 
+#' # pre-treatment covariates is not always valid
+#' g <- dagitty( "dag{ x -> y ; x <-> m <-> y }" )
+#' adjustmentSets( g, "x", "y" ) # empty set
+#' # Generate data where true effect (=path coefficient) is .5
+#' set.seed( 123 ); d <- simulateSEM( g, .5, .5 )
+#' confint( lm( y ~ x, d ) )["x",] # includes .5
+#' confint( lm( y ~ x + m, d ) )["x",] # does not include .5
+#'
+#' # Adjustment sets can also sometimes be computed for graphs in which not all 
+#' # edge directions are known
+#' g <- dagitty("pdag { x[e] y[o] a -- {i z b}; {a z i} -> x -> y <- {z b} }")
+#' adjustmentSets( g )
 #' @export
 adjustmentSets <- function( x, exposure=NULL, outcome=NULL, effect="total" ){
 	x <- as.dagitty( x )
@@ -741,6 +759,10 @@ adjustmentSets <- function( x, exposure=NULL, outcome=NULL, effect="total" ){
 	}
 	if( !is.null( outcome ) ){
 		outcomes(x) <- outcome
+	}
+
+	if( length(exposures(x)) == 0 || length(outcomes(x)) == 0 ){
+		stop("Both exposure(s) and outcome(s) need to be set!")
 	}
 
 	xv <- .getJSVar()
@@ -759,6 +781,44 @@ adjustmentSets <- function( x, exposure=NULL, outcome=NULL, effect="total" ){
 
 	r
 }
+
+#' Adjustment Criterion
+#' 
+#' Test whether a set fulfills the adjustment criterion, that means,
+#' it removes all confounding bias when estimating a *total* effect.
+#' This is an extension of Pearl's 
+#' Back-door criterion which is complete in the sense that either a set
+#' fulfills this criterion, or it does not remove all confounding bias.
+#'
+#' @param x the input graph.
+#' @param exposure name(s) of the exposure variable(s). If not given (default), then the 
+#'  exposure variables are supposed to be defined in the graph itself.
+#' @param outcome name(s) of the outcome variable(s), also taken from the graph if 
+#' not given.
+#' @param Z vector of variable names.
+#'
+#' @export
+isAdjustmentSet <- function( x, Z, exposure=NULL, outcome=NULL ){
+	xv <- .getJSVar()
+	Zv <- .getJSVar()
+	if( !is.null( exposure ) ){
+		exposures(x) <- exposure
+	}
+	if( !is.null( outcome ) ){
+		outcomes(x) <- outcome
+	}
+	tryCatch({
+		.jsassigngraph( xv, x )
+		.jsassign( Zv, as.list(Z) )
+		.jsassign( xv, .jsp("GraphAnalyzer.isAdjustmentSet(",xv,",",Zv,")") )
+		r <- .jsget(xv)
+	},finally={
+		.deleteJSVar(xv)
+		.deleteJSVar(Zv)
+	})
+	r
+}
+
 
 #' List Conditional Indpendencies Implied by Graphical Model
 #' @param x the input graph.
@@ -1149,43 +1209,6 @@ paths <- function(x,from=exposures(x),to=outcomes(x),Z=list(),limit=100,directed
 			xv,")" ) )
 		r <- .jsget(xv)
 	},finally={.deleteJSVar(xv);.deleteJSVar(xv2)})
-	r
-}
-
-#' Adjustment Criterion
-#' 
-#' Test whether a set fulfills the adjustment criterion, that means,
-#' it removes all confounding bias when estimating a *total* effect.
-#' This is an extension of Pearl's 
-#' Back-door criterion which is complete in the sense that either a set
-#' fulfills this criterion, or it does not remove all confounding bias.
-#'
-#' @param x the input graph.
-#' @param exposure name(s) of the exposure variable(s). If not given (default), then the 
-#'  exposure variables are supposed to be defined in the graph itself.
-#' @param outcome name(s) of the outcome variable(s), also taken from the graph if 
-#' not given.
-#' @param Z vector of variable names.
-#'
-#' @export
-isAdjustmentSet <- function( x, Z, exposure=NULL, outcome=NULL ){
-	xv <- .getJSVar()
-	Zv <- .getJSVar()
-	if( !is.null( exposure ) ){
-		exposures(x) <- exposure
-	}
-	if( !is.null( outcome ) ){
-		outcomes(x) <- outcome
-	}
-	tryCatch({
-		.jsassigngraph( xv, x )
-		.jsassign( Zv, as.list(Z) )
-		.jsassign( xv, .jsp("GraphAnalyzer.isAdjustmentSet(",xv,",",Zv,")") )
-		r <- .jsget(xv)
-	},finally={
-		.deleteJSVar(xv)
-		.deleteJSVar(Zv)
-	})
 	r
 }
 

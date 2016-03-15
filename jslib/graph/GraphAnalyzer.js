@@ -308,8 +308,12 @@ var GraphAnalyzer = {
 	
 	listMsasTotalEffect : function( g, must, must_not ){
 		var gtype = g.getType()
-		if( gtype != "dag" && gtype != "pdag" ){
-			throw( "Cannot compute adjustment sets for graph of type "+gtype )
+		if( gtype != "dag" && gtype != "pdag" && gtype != "mag" && gtype != "pag" ){
+			throw( "Cannot compute total affect adjustment sets for graph of type "+gtype )
+		}
+		if( gtype == "pag" ){
+			g = GraphTransformer.pagToPdag( g )
+			g.setType("pag")
 		}
 		if( gtype == "pdag" ){
 			g = GraphTransformer.cgToRcg( g )
@@ -334,8 +338,8 @@ var GraphAnalyzer = {
 	
 	listMsasDirectEffect : function( g, must, must_not ){
 		var gtype = g.getType()
-		if( gtype != "dag" && gtype != "pdag" ){
-			throw( "Don't know how to compute adjustment sets for graphs of type "+gtype )
+		if( gtype != "dag" ){
+			throw( "Cannot comute direct-effect adjustment sets for graphs of type "+gtype )
 		}
 		if( gtype == "pdag" ){
 			g = GraphTransformer.cgToRcg( g )
@@ -1290,12 +1294,26 @@ var GraphAnalyzer = {
 				return false
 			}
 			return true
+
 		case "mag":
 			// TODO implement proper MAG validation
+			if( !_.every(g.getEdges(),function(e){ return e.directed ==
+				Graph.Edgetype.Directed || e.directed == Graph.Edgetype.Bidirected || 
+					e.directed == Graph.Edgetype.Undirected }) ){
+				return false
+			}
 			if( GraphAnalyzer.containsSemiCycle( g ) ){
 				return false
 			}
 			return true
+
+		case "pag":
+			// TODO implement proper PAG validation
+			if( GraphAnalyzer.containsSemiCycle( g ) ){
+				return false
+			}
+			return true
+
 		case "graph":
 			return _.every(g.getEdges(),function(e){ return e.directed ==
 				Graph.Edgetype.Undirected })
@@ -1394,6 +1412,37 @@ var GraphAnalyzer = {
 				}
 			}
 		}
+		return false
+	},
+
+	isEdgeVisible : function( g, e ) {
+		var t = g.getType()
+		if( t == "dag" || t == "pdag" || t == "digraph" ){
+			return true
+		}
+		if( e.directed != Graph.Edgetype.Directed ){
+			return undefined
+		}
+		if( t != "pag" && t != "mag" ){
+			throw("Cannot test edge visibility for graph of type : "+t)
+		}
+
+		// check case i o-> x -> y
+		if( _.difference( _.union(e.v1.getParents(),e.v1.getSpouses()), 
+			e.v2.getAdjacentNodes() ).length > 0 ){
+			return true
+		}
+
+		// check case i o-> a ; { a <-> b } -> x -> y
+		var vpar = GraphTransformer.inducedSubgraph( g, 
+			_.union([e.v2],e.v2.getParents()) )
+		vpar = g.getVertex(_.pluck(vpar.districtOf( [vpar.getVertex(e.v1.id)] ),"id"))	
+	
+		if( _.difference( _.union(g.parentsOf(vpar),g.spousesOf(vpar)), 
+			e.v2.getAdjacentNodes() ).length > 0 ){
+			return true
+		}
+
 		return false
 	}
 }

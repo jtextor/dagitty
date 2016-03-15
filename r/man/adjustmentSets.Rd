@@ -2,7 +2,7 @@
 % Please edit documentation in R/dagitty.r
 \name{adjustmentSets}
 \alias{adjustmentSets}
-\title{Find Adjustment Sets to Estimate Causal Effects}
+\title{Covariate Adjustment Sets}
 \usage{
 adjustmentSets(x, exposure = NULL, outcome = NULL, effect = "total")
 }
@@ -23,6 +23,18 @@ single-door criterion is used (Pearl, 2009). In a structural equation model (Gau
 graphical model), direct effects are simply the path coefficients.}
 }
 \description{
-Find Adjustment Sets to Estimate Causal Effects
+Enumerates sets of covariates that (asymptotically) allow unbiased estimation of causal
+effects from observational data, assuming that the input causal graph is correct.
+}
+\examples{
+# The M-bias graph showing that adjustment for 
+# pre-treatment covariates is not always valid
+g <- dagitty( "dag{ x -> y ; x <-> m <-> y }" )
+adjustmentSets( g, "x", "y" ) # empty set
+# Generate data where true effect (=path coefficient) is .5
+set.seed( 123 ); d <- simulateSEM( g, .5, .5 )
+confint( lm( y ~ x, d ) )["x",] # includes .5
+confint( lm( y ~ x + m, d ) )["x",] # does not include .5
+
 }
 
