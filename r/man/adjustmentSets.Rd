@@ -7,7 +7,7 @@
 adjustmentSets(x, exposure = NULL, outcome = NULL, effect = "total")
 }
 \arguments{
-\item{x}{the input graph.}
+\item{x}{the input graph, a DAG, MAG, PDAG, or PAG.}
 
 \item{exposure}{name(s) of the exposure variable(s). If not given (default), then the 
 exposure variables are supposed to be defined in the graph itself.}
@@ -16,8 +16,8 @@ exposure variables are supposed to be defined in the graph itself.}
 not given.}
 
 \item{effect}{which effect is to be identified. If \code{effect="total"}, then the
-total effect is to be identified, and the adjustment criterion by van der Zander et 
-al (2014), an extension of Pearl's back-door criterion, is used. Otherwise, if 
+total effect is to be identified, and the adjustment criterion by Perkovic et 
+al (2015), an extension of Pearl's back-door criterion, is used. Otherwise, if 
 \code{effect="direct"}, then the average direct effect is to be identified, and Pearl's
 single-door criterion is used (Pearl, 2009). In a structural equation model (Gaussian
 graphical model), direct effects are simply the path coefficients.}
@@ -25,6 +25,10 @@ graphical model), direct effects are simply the path coefficients.}
 \description{
 Enumerates sets of covariates that (asymptotically) allow unbiased estimation of causal
 effects from observational data, assuming that the input causal graph is correct.
+}
+\details{
+If the input graph is a MAG or PAG, then it must not contain any undirected
+edges (=hidden selection variables).
 }
 \examples{
 # The M-bias graph showing that adjustment for 
@@ -36,5 +40,9 @@ set.seed( 123 ); d <- simulateSEM( g, .5, .5 )
 confint( lm( y ~ x, d ) )["x",] # includes .5
 confint( lm( y ~ x + m, d ) )["x",] # does not include .5
 
+# Adjustment sets can also sometimes be computed for graphs in which not all 
+# edge directions are known
+g <- dagitty("pdag { x[e] y[o] a -- {i z b}; {a z i} -> x -> y <- {z b} }")
+adjustmentSets( g )
 }
 

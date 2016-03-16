@@ -14,4 +14,7 @@ Orients as many edges as possible in a  partially directed acyclic graph (PDAG)
  by converting induced subgraphs
 X -> Y -- Z to X -> Y -> Z.
 }
+\examples{
+orientPDAG( "pdag { x -> y -- z }" )
+}
 

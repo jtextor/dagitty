@@ -11,6 +11,13 @@
 	list(x=mx+delta*omx,y=my+delta*omy)
 }
 
+.supportsTypes <- function( x, y ){
+	gt <- graphType( x )
+	if( !(gt %in% y) ){
+		stop("Graph type not supported : ",gt)
+	}
+}
+
 .arc <- function( x1, y1, x2, y2, xm, ym, col="gray", length=0.1, code=3 ){
 	x <- c(x1,xm,x2)
 	y <- c(y1,ym,y2)

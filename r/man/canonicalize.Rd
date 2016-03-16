@@ -7,7 +7,7 @@
 canonicalize(x)
 }
 \arguments{
-\item{x}{the input graph.}
+\item{x}{the input graph, a DAG or MAG.}
 }
 \value{
 A list containing the following components:
@@ -23,5 +23,8 @@ edges) and converts it to a DAG by replacing every bidirected edge x <-> y with 
 substructure x <- L -> y, where L is a latent variable, and every undirected edge
 x -- y with a substructure x -> S <- y, where S is a selection variable. This function
 does not check whether the input is actually an ancestral graph.
+}
+\examples{
+canonicalize("mag{x<->y--z}") # introduces two new variables
 }
 

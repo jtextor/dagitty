@@ -2,13 +2,13 @@
 % Please edit documentation in R/dagitty.r
 \name{paths}
 \alias{paths}
-\title{Show paths}
+\title{Show Paths}
 \usage{
 paths(x, from = exposures(x), to = outcomes(x), Z = list(), limit = 100,
   directed = FALSE)
 }
 \arguments{
-\item{x}{the input graph.}
+\item{x}{the input graph, a DAG, PDAG, or MAG.}
 
 \item{from}{name(s) of first variable(s).}
 
@@ -28,5 +28,9 @@ be shown?}
 Returns a list with two compontents: \code{path} gives the actual
 paths, and \code{open} shows whether each path is open (d-connected)
 or closed (d-separated).
+}
+\examples{
+sum( paths(backDoorGraph(getExample("Shrier")))$open ) # Any open Back-Door paths?
+
 }
 

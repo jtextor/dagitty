@@ -876,7 +876,7 @@ Graph.Edge = Class.extend( {
 		var v1id = GraphSerializer.dotQuoteVid(this.v1.id)
 		var v2id = GraphSerializer.dotQuoteVid(this.v2.id)
 		
-		if( this.directed != Graph.Edgetype.Directed && (v1id.localeCompare( v2id ) > 0) ){
+		if( Graph.Edgetype.Symmetric[this.directed] && (v1id.localeCompare( v2id ) > 0) ){
 			var tmp = v1id
 			v1id = v2id
 			v2id = tmp
@@ -1219,15 +1219,17 @@ var GraphAnalyzer = {
 	isAdjustmentSet : function( g, Z ){
 		var gtype = g.getType()
 		Z = _.map( Z, g.getVertex, g )
-		if( gtype != "dag" ){
+		if( gtype != "dag" && gtype != "pdag" && gtype != "mag" && gtype != "pag" ){
 			throw( "Cannot compute adjustment sets for graph of type "+gtype )
 		}
 		if( g.getSources().length == 0 || g.getTargets().length == 0 ){
 			return false
 		}
+
 		if( _.intersection( this.dpcp(g), Z ).length > 0 ){
 			return false
-		}		var gbd = GraphTransformer.backDoorGraph(g)
+		}
+		var gbd = GraphTransformer.backDoorGraph(g)
 		return !this.dConnected( gbd, gbd.getSources(), gbd.getTargets(), Z )
 	},
 	
@@ -1235,10 +1237,6 @@ var GraphAnalyzer = {
 		var gtype = g.getType()
 		if( gtype != "dag" && gtype != "pdag" && gtype != "mag" && gtype != "pag" ){
 			throw( "Cannot compute total affect adjustment sets for graph of type "+gtype )
-		}
-		if( gtype == "pag" ){
-			g = GraphTransformer.pagToPdag( g )
-			g.setType("pag")
 		}
 		if( gtype == "pdag" ){
 			g = GraphTransformer.cgToRcg( g )
@@ -1422,45 +1420,45 @@ var GraphAnalyzer = {
 		for( i = 0 ; i < X.length ; i ++ ){
 			in_X[ X[i].id ] = 1
 		}
-		for( i = 0 ; i < Y.length ; i ++ ){
-			in_Y[ Y[i].id ] = 1
-		}		
 		var visit = function( v ){
 			if( !visited[v.id] ){
 				visited[v.id] = true
-				if( in_Y[v.id] ){
-					r.push(v)
-					reaches_target[v.id] = true
-				} else {
-					var children = _.reject(v.getChildren(),function(v){return in_X[v.id]})
+				r.push(v)
+				if( !in_X[v.id] ){
+					var parents = v.getParents()
 					if( possible ){
-						children = children.concat( 
-							_.reject(v.getNeighbours(),function(v){return in_X[v.id]}) )
+						parents = _.union( parents, v.getNeighbours() )
 					}
-					if( _.any( children.map( visit ) ) ){
-						r.push(v)
-						reaches_target[v.id] = true
-					} else {
-						reaches_target[v.id] = false
-					}
+					_.each( parents, visit )	
 				}
 			}
-			return reaches_target[v.id]
 		}
-		_.each( X, visit )
-		return r
+		_.each( Y, visit )
+		return _.intersection(r,g.posteriorsOf(X))
 	},
 	
 	/*
-		descendants of nodes on proper causal paths, except X.
+		Possible descendants of nodes on proper causal paths, except X.
 	 */
 	dpcp : function( g, X, Y ){
-		if( arguments.length == 1 ){
+		if( arguments.length < 2 ){
 			X = g.getSources()
+		}
+		if( arguments.length < 3 ){
 			Y = g.getTargets()
 		}
-		return g.posteriorsOf( _.difference( this.properPossibleCausalPaths( g, X, Y ), 
-			g.getSources() ) )
+		var gn
+		if( g.getType() == "pag" ){
+			gn = GraphTransformer.pagToPdag( g )
+			gn.setType("pag")
+		} else {
+			gn = g
+		}
+		X = gn.getVertex(_.pluck(X,"id"))
+		Y = gn.getVertex(_.pluck(Y,"id"))
+
+		return g.getVertex( _.pluck(gn.posteriorsOf( _.difference( this.properPossibleCausalPaths( gn, X, Y ), 
+			X ) ), "id" ) )
 	},
 	
 	nodesThatViolateAdjustmentCriterion : function( g ){
@@ -2246,7 +2244,8 @@ var GraphAnalyzer = {
 			return true
 		case "pdag":
 			if( !_.every(g.getEdges(),function(e){ return e.directed ==
-				Graph.Edgetype.Directed || e.directed == Graph.Edgetype.Undirected }) ){
+				Graph.Edgetype.Directed || e.directed == Graph.Edgetype.Undirected
+				|| e.directed == Graph.Edgetype.Bidirected  }) ){
 				return false
 			}
 			if( GraphAnalyzer.containsSemiCycle( g ) ){
@@ -2887,7 +2886,7 @@ var GraphParser = {
 			return this.parseAdjacencyMatrix( adjacencyListOrMatrix, vertexLabelsAndWeights )
 		} else {
 			// [\s\S] is like . but also matches newline!
-			var isdot = firstarg.trim().match(  /^(digraph|graph|dag|pdag|mag|pag)(\s+\w+)?\s*\{([\s\S]+)\}$/mi )
+			var isdot = firstarg.trim().match(  /^(digraph|graph|dag|pdag|mag|pag)(\s+\w+)?\s*\{([\s\S]*)\}$/mi )
 			if( isdot && isdot.length > 1 ){
 				return this.parseDot( firstarg )
 			} else {
@@ -2998,47 +2997,31 @@ var GraphTransformer = {
 	 *		Parameters X and Y are source and target vertex sets, respectively,
 	 *		and are optional.
 	 *		
-	 *		Moreover, all edges between
-	 *		two sources are deleted. --- THIS DOES NOT SEEM TO BE NECESSARY
+	 *
 	 **/
 	backDoorGraph : function( g, X, Y ){
-		var gback = g.clone(), i, in_X = [], in_Y = []
-		if( arguments.length == 1 ){
+		var gback, dpcp
+		if( g.getType() == "pag" ){
+			gback = GraphTransformer.pagToPdag( g )
+			gback.setType("pag")
+		} else {
+			gback = g.clone()
+		}
+		if( typeof X == "undefined" ){
 			X = g.getSources()
+		}
+		if( typeof Y == "undefined" ){
 			Y = g.getTargets()
 		}
 		if( X.length == 0 || Y.length == 0 ){
 			return gback
 		}
-		for( i = 0 ; i < X.length ; i ++ ){
-			in_X[ X[i].id ] = 1
-		}
-		for( i = 0 ; i < Y.length ; i ++ ){
-			in_Y[ Y[i].id ] = 1
-		}
-		g.clearTraversalInfo()
-		
-		var visit = function( v ){
-			if( !v.traversal_info.visited ){
-				v.traversal_info.visited = true
-				if( in_Y[ v.id ] ){
-					v.traversal_info.reaches_target = true
-				} else {
-					var children = _.reject(v.getChildren(),function(v){return in_X[v.id]})
-					_.each( children, visit )
-					v.traversal_info.reaches_target = _.chain(children)
-						.pluck("traversal_info")
-						.pluck("reaches_target")
-						.some().value()
-				}
-			}
-		}
-		
+		X = gback.getVertex(_.pluck(X,"id"))
+		Y = gback.getVertex(_.pluck(Y,"id"))
+		dpcp = GraphAnalyzer.properPossibleCausalPaths( gback, X, Y )
 		_.each( X, function(s){
-			visit( s )
-			_.each( s.getChildren(), function( c ){
-				if( c.traversal_info.reaches_target && 
-					GraphAnalyzer.isEdgeVisible(g,g.getEdge(s.id,c.id)) ){
+			_.each( _.intersection( dpcp, s.getChildren() ), function( c ){
+				if( GraphAnalyzer.isEdgeVisible( gback, gback.getEdge(s.id,c.id)) ){
 					gback.deleteEdge( s, c, Graph.Edgetype.Directed )
 				}
 			})

@@ -7,7 +7,7 @@
 isAdjustmentSet(x, Z, exposure = NULL, outcome = NULL)
 }
 \arguments{
-\item{x}{the input graph.}
+\item{x}{the input graph, a DAG, MAG, PDAG, or PAG.}
 
 \item{Z}{vector of variable names.}
 

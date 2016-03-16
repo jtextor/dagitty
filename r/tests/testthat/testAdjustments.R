@@ -11,3 +11,8 @@ test_that("M bias graph", {
 	expect_equal(a2s(adjustmentSets( mbg.z )),c("A,Z","B,Z"))
 })
 
+test_that("CGs", {
+	expect_equal(length(children(backDoorGraph(
+		"pdag{ {i j} -> x -> {a -- b -- c -- a } a -> z b -> y x[e] y[o] }"),"x")),0)
+})
+

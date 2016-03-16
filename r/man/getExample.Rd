@@ -25,6 +25,11 @@ getExample(x)
 \description{
 Provides access to the builtin examples of the dagitty website.
 }
+\examples{
+g <- getExample("Shrier")
+plot(g)
+
+}
 \references{
 Sabine Schipf, Robin Haring, Nele Friedrich, Matthias Nauck, Katharina Lau,
 Dietrich Alte, Andreas Stang, Henry Voelzke, and Henri Wallaschofski (2011),

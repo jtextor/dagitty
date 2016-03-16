@@ -760,7 +760,7 @@ Graph.Edge = Class.extend( {
 		var v1id = GraphSerializer.dotQuoteVid(this.v1.id)
 		var v2id = GraphSerializer.dotQuoteVid(this.v2.id)
 		
-		if( this.directed != Graph.Edgetype.Directed && (v1id.localeCompare( v2id ) > 0) ){
+		if( Graph.Edgetype.Symmetric[this.directed] && (v1id.localeCompare( v2id ) > 0) ){
 			var tmp = v1id
 			v1id = v2id
 			v2id = tmp

@@ -2,12 +2,12 @@
 % Please edit documentation in R/dagitty.r
 \name{vanishingTetrads}
 \alias{vanishingTetrads}
-\title{List Vanishing Tetrads Implied by Gaussian Graphical Model}
+\title{List Implied Vanishing Tetrads}
 \usage{
 vanishingTetrads(x, type = NA)
 }
 \arguments{
-\item{x}{the input graph.}
+\item{x}{the input graph, a DAG.}
 
 \item{type}{restrict output to one level of Kenny's tetrad typology.
 Possible values are "within" (homogeneity within constructs; all four
@@ -22,6 +22,19 @@ i,j,k,l means that the tetrad Cov(i,j)Cov(k,l) - Cov(i,k)Cov(j,l) vanishes
 (is equal to 0) according to the model.
 }
 \description{
-List Vanishing Tetrads Implied by Gaussian Graphical Model
+Interpret the given graph as a structural equation model and list all the
+vanishing tetrads that it implies.
+}
+\examples{
+# Specify two-factor model with 4 indicators each
+g <- dagitty("dag{{x1 x2 x3 x4} <- x <-> y -> {y1 y2 y3 y4}}")
+latents(g) <- c("x","y")
+
+# Check how many tetrads are implied
+nrow(vanishingTetrads(g))
+# Check how these distribute across the typology
+nrow(vanishingTetrads(g,"within"))
+nrow(vanishingTetrads(g,"between"))
+nrow(vanishingTetrads(g,"epistemic"))
 }
 

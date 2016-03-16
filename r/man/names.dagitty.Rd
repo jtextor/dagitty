@@ -10,7 +10,8 @@
 \item{x}{the input graph.}
 }
 \description{
-Names of Variables in Graph
+Extracts the variable names from an input graph. Useful for iterating
+over all variables.
 }
 \examples{
 ## A "DAG" with Greek and Portuguese variable names. These can be

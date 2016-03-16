@@ -2,18 +2,18 @@
 % Please edit documentation in R/dagitty.r
 \name{localTests}
 \alias{localTests}
-\title{Perform Local Tests of Structural Equation Model}
+\title{Test Graph against Data}
 \usage{
 localTests(x, data = NULL, type = "tetrads", sample.cov = NULL,
   sample.nobs = NULL, conf.level = 0.95, R = NULL)
 }
 \arguments{
-\item{x}{the model.}
+\item{x}{the input graph.}
 
 \item{data}{matrix or data frame containing the data.}
 
 \item{type}{character indicating which kind of local
-test to perform. Supported values are \code{"cis"},
+test to perform. Supported values are \code{"cis"} (conditional independencies),
 \code{"tetrads"} and \code{"tetrads.type"}, where "type" is one of the items of the 
 tetrad typology, e.g. \code{"tetrads.within"} (see \code{\link{vanishingTetrads}}).}
 
@@ -31,6 +31,25 @@ approximation. For tetrads, the normal approximation is only valid in
 large samples even if the data are normally distributed.}
 }
 \description{
-Perform Local Tests of Structural Equation Model
+Derives testable implications from the given graphical model and tests them against
+the given dataset.
+}
+\details{
+Tetrad implications can only be derived if a Gaussian model (i.e., a linear
+structural equation model) is postulated. Conditional independence implications (CI)
+do not require this assumption. However, both Tetrad and CI implications are tested
+parametrically: for Tetrads, Wishart's confidence interval formula is used, whereas
+for CIs, a Z test of zero conditional covariance is performed (if the covariance
+matrix is given) or a test of regressional independence (it the raw data is given).
+Tetrad tests also support bootstrapping instead of estimating parametric confidence
+intervals.
+}
+\examples{
+# Simulate full mediation model with measurement error of M1
+d <- simulateSEM("dag{X->{U1 M2}->Y U1->M1}",.6,.6)
+
+# Postulate and test full mediation model without measurement error
+plotLocalTestResults(localTests( "dag{ X -> {M1 M2} -> Y }", d, "cis" ))
+
 }
 

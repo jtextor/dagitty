@@ -53,4 +53,11 @@ that had it, and then gives it to the given variables.
 For instance, if  \code{status="exposure"}  and \code{value="X"} are given, then
 \code{X} will be the only exposure in the resulting graph.
 }
+\examples{
+g <- dagitty("dag{ x<->m<->y<-x }") # m-bias graph
+exposures(g) <- "x"
+outcomes(g) <- "y"
+adjustmentSets(g)
+
+}
 

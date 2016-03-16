@@ -100,47 +100,31 @@ var GraphTransformer = {
 	 *		Parameters X and Y are source and target vertex sets, respectively,
 	 *		and are optional.
 	 *		
-	 *		Moreover, all edges between
-	 *		two sources are deleted. --- THIS DOES NOT SEEM TO BE NECESSARY
+	 *
 	 **/
 	backDoorGraph : function( g, X, Y ){
-		var gback = g.clone(), i, in_X = [], in_Y = []
-		if( arguments.length == 1 ){
+		var gback, dpcp
+		if( g.getType() == "pag" ){
+			gback = GraphTransformer.pagToPdag( g )
+			gback.setType("pag")
+		} else {
+			gback = g.clone()
+		}
+		if( typeof X == "undefined" ){
 			X = g.getSources()
+		}
+		if( typeof Y == "undefined" ){
 			Y = g.getTargets()
 		}
 		if( X.length == 0 || Y.length == 0 ){
 			return gback
 		}
-		for( i = 0 ; i < X.length ; i ++ ){
-			in_X[ X[i].id ] = 1
-		}
-		for( i = 0 ; i < Y.length ; i ++ ){
-			in_Y[ Y[i].id ] = 1
-		}
-		g.clearTraversalInfo()
-		
-		var visit = function( v ){
-			if( !v.traversal_info.visited ){
-				v.traversal_info.visited = true
-				if( in_Y[ v.id ] ){
-					v.traversal_info.reaches_target = true
-				} else {
-					var children = _.reject(v.getChildren(),function(v){return in_X[v.id]})
-					_.each( children, visit )
-					v.traversal_info.reaches_target = _.chain(children)
-						.pluck("traversal_info")
-						.pluck("reaches_target")
-						.some().value()
-				}
-			}
-		}
-		
+		X = gback.getVertex(_.pluck(X,"id"))
+		Y = gback.getVertex(_.pluck(Y,"id"))
+		dpcp = GraphAnalyzer.properPossibleCausalPaths( gback, X, Y )
 		_.each( X, function(s){
-			visit( s )
-			_.each( s.getChildren(), function( c ){
-				if( c.traversal_info.reaches_target && 
-					GraphAnalyzer.isEdgeVisible(g,g.getEdge(s.id,c.id)) ){
+			_.each( _.intersection( dpcp, s.getChildren() ), function( c ){
+				if( GraphAnalyzer.isEdgeVisible( gback, gback.getEdge(s.id,c.id)) ){
 					gback.deleteEdge( s, c, Graph.Edgetype.Directed )
 				}
 			})

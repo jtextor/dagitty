@@ -7,9 +7,22 @@
 backDoorGraph(x)
 }
 \arguments{
-\item{x}{the input graph.}
+\item{x}{the input graph, a DAG, MAG, or PDAG.}
 }
 \description{
-Back-Door Graph
+Removes every first edge on a proper causal path from \code{x}.
+If \code{x} is a MAG or PAG, then only \dQuote{visible} directed
+edges are removed.
+}
+\examples{
+g <- dagitty( "dag { x <-> m <-> y <- x }" )
+backDoorGraph( g ) # x->y edge is removed
+
+g <- dagitty( "mag { x <-> m <-> y <- x }" )
+backDoorGraph( g ) # x->y edge is not removed
+
+g <- dagitty( "mag { x <-> m <-> y <- x <- i }" )
+backDoorGraph( g ) # x->y edge is removed
+
 }
 

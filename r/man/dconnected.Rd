@@ -10,15 +10,36 @@ dconnected(x, X, Y = list(), Z = list())
 dseparated(x, X, Y = list(), Z = list())
 }
 \arguments{
-\item{x}{the input graph.}
+\item{x}{the input graph, a DAG, PDAG, or MAG.}
 
 \item{X}{vector of variable names.}
 
 \item{Y}{vector of variable names.}
 
-\item{Z}{vector of variable names.}
+\item{Z}{vector of variable names.
+
+\code{dseparated(x,X,Y,Z)} checks if all paths between X and Y are 
+d-separated by Z.
+
+\code{dconnected(x,X,Y,Z)} checks if at least one path between X and Y
+is not d-separated by Z.}
 }
 \description{
-d-Separation
+A set Z d-separates a path p if (1) Z contains a non-collider
+on p, e.g. x->m->y with \code{Z=c("m")}; or (2) some collider on p is not
+on Z, e.g. x->m<-y with \code{Z=c()}.
+}
+\details{
+The functions also work for mixed graphs with directed, undirected,
+and bidirected edges. The definition of a collider in such graphs
+is: a node where two arrowheads collide, e.g. x<->m<-y but not
+x->m--y.
+}
+\examples{
+dconnected( "dag{x->m->y}", "x", "y", c() ) # TRUE
+dconnected( "dag{x->m->y}", "x", "y", c("m") ) # FALSE
+dseparated( "dag{x->m->y}", "x", "y", c() ) # TRUE
+dseparated( "dag{x->m->y}", "x", "y", c("m") ) # FALSE
+
 }
 

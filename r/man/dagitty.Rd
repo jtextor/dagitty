@@ -2,12 +2,15 @@
 % Please edit documentation in R/dagitty.r
 \name{dagitty}
 \alias{dagitty}
-\title{Parse Dagitty Graph}
+\title{Parse DAGitty Graph}
 \usage{
-dagitty(x)
+dagitty(x, layout = FALSE)
 }
 \arguments{
 \item{x}{character, string describing a graphical model in dagitty syntax.}
+
+\item{layout}{logical, whether to automatically generate layout coordinates for each
+variable (see \code{\link{graphLayout}}).}
 }
 \description{
 Constructs a \code{dagitty} graph object from a textual description.

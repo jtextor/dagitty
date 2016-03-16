@@ -26,4 +26,14 @@ or a new v-structure (a sugraph a -> m <- b, where a and b are not adjacent).
 \code{equivalentDAGs(x,n)} enumerates at most \code{n} DAGs that are Markov equivalent
 to \code{x}.
 }
+\examples{
+# How many equivalent DAGs are there for the sports DAG example?
+g <- getExample("Shrier")
+length(equivalentDAGs(g))
+# Plot all equivalent DAGs
+par( mfrow=c(2,3) )
+lapply( equivalentDAGs(g), plot )
+# How many edges can be reversed without changing the equivalence class?
+sum(edges(equivalenceClass(g))$e == "--")
+}
 

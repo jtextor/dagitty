@@ -4,18 +4,28 @@
 \alias{simulateSEM}
 \title{Simulate Data from Structural Equation Model}
 \usage{
-simulateSEM(x, b.lower = -0.6, b.upper = 0.6, eps = 1, N = 500)
+simulateSEM(x, b.lower = -0.6, b.upper = 0.6, eps = 1, N = 500,
+  standardized = TRUE)
 }
 \arguments{
-\item{x}{the input graph, which may contain directed and bidirected edges.}
+\item{x}{the input graph, a DAG (which may contain bidirected edges).}
 
 \item{b.lower}{lower bound for path coefficients.}
 
 \item{b.upper}{upper bound for path coefficients.}
 
-\item{eps}{residual variance.}
+\item{eps}{residual variance (only meaningful if \code{standardized=FALSE}).}
 
 \item{N}{number of samples to generate.}
+
+\item{standardized}{whether a standardized output is desired (all variables have variance 1).
+
+If \code{standardized=TRUE}, all path coefficients are interpreted as standardized coefficients.
+But not all standardized coefficients are compatible with all graph structures.
+For instance, the graph structure z <- x -> y -> z is incompatible with standardized
+coefficients of 0.9, since this would imply that the variance of z must be larger than
+1. For large graphs with many parallel paths, it can be very difficult to find coefficients 
+that work.}
 }
 \value{
 Returns a data frame containing \code{N} values for each variable in \code{x}.
@@ -41,11 +51,10 @@ residual variances are set to \code{eps}.
 }
 \examples{
 ## Simulate data with pre-defined path coefficients of -.6
-if( require(lavaan) ){
-  g <- dagitty('dag{z <-> x -> y}')
-  x <- simulateSEM( g, -.6, -.6 )
-  coef(sem(toString(g,"lavaan"),x,fixed.x=FALSE))
-}
+g <- dagitty('dag{z -> x <- y}')
+x <- simulateSEM( g, .707, .707 ) # sqrt(2)/2 is largest possible
+cov(x)
+
 
 }
 

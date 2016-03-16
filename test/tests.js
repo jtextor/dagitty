@@ -1,11 +1,13 @@
 GraphParser.VALIDATE_GRAPH_STRUCTURE = true;
 
+var $p = function(s){ return GraphParser.parseGuess(s) }
+
 QUnit.test( "graph manipulation", function( assert ) {
 
-	var g = GraphParser.parseGuess( "dag G { x <-> x }" )
+	var g = $p( "dag G { x <-> x }" )
 	assert.equal( g.areAdjacent("x","x"), true )
 
-	g = GraphParser.parseGuess( "dag G { x <-> y }" )
+	g = $p( "dag G { x <-> y }" )
 	assert.equal( g.areAdjacent("x","y"), true )
 	assert.equal( g.areAdjacent("y","x"), true )
 	g.changeEdge( g.getEdge("x","y",Graph.Edgetype.Bidirected), Graph.Edgetype.Directed )
@@ -516,8 +518,23 @@ QUnit.test( "graph transformations", function( assert ) {
 
 QUnit.test( "adjustment in DAGs", function( assert ) {
 
-	
-assert.equal((function(){
+	assert.equal((function(){
+		var g = $p("pdag{ x -> {a -- b -- c -- a } b -> y x[e] y[o] }")
+		return _.pluck(GraphAnalyzer.properPossibleCausalPaths(g),"id").sort().join(" ")
+	})(), "a b c x y" )
+
+	assert.equal((function(){
+		var g = $p("pdag{ x -> a -- b -> y x[e] y[o] }")
+		return _.pluck(GraphAnalyzer.properPossibleCausalPaths(g),"id").sort().join(" ")
+	})(), "a b x y" )
+
+	assert.equal((function(){
+		var g = $p("pdag{ x -> a -- b -- c -> y x[e] y[o] }")
+		return _.pluck(GraphAnalyzer.properPossibleCausalPaths(g),"id").sort().join(" ")
+	})(), "a b c x y" )
+
+
+	assert.equal((function(){
 		// our non-X-ancestor MSAS example from the UAI paper w/ causal edge
 		var g = GraphParser.parseGuess("X1 E\nX2 E\nY O\nM1 1\nM2 1\n\nX1 Y M1\nY M2\nM1 M2\nM2 X2")
 		return sep_2_str( GraphAnalyzer.listMsasDirectEffect( g ) )
@@ -614,6 +631,30 @@ QUnit.test( "adjustment in other graphs", function( assert ) {
 	assert.equal( sep_2_str(GraphAnalyzer.listMsasTotalEffect(
 		GraphParser.parseGuess("mag { X [e] Y[o] I->X->Y }") 
 			 ) ), "{}" )
+
+	assert.equal( GraphAnalyzer.listMsasTotalEffect($p($p("pag{i<-@x->y x[e] y[o]}").toString()) ).length,
+		0 )
+
+});
+
+QUnit.test( "PAGs", function( assert ) {
+	assert.equal(
+		GraphTransformer.backDoorGraph(
+			$p("pag{ {V2 V1} @-> X -> {V4 @-> Y} <- V3 @-> X X[e] Y[o]}")).
+			getVertex("X").getChildren().length, 0 )
+
+	assert.equal(
+		GraphTransformer.backDoorGraph(
+			$p("pag{ {V2 V1} -> X -> {V4 -> Y} <- V3 -> X X[e] Y[o]}")).
+			getVertex("X").getChildren().length, 0 )
+
+	assert.equal(
+		GraphTransformer.backDoorGraph(
+			$p("pdag{ {V2 V1} -> X -> {V4 -> Y} <- V3 -> X X[e] Y[o]}")).
+			getVertex("X").getChildren().length, 0 )
+
+	assert.equal(
+		GraphAnalyzer.dpcp($p("pag{ {V2 V1} -> X -> V4 -> Y <- V3 <-> {X V4} X[e] Y[o]}")).length, 2 )
 
 });
 
