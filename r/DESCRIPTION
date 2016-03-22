@@ -15,7 +15,7 @@ VignetteBuilder: knitr
 Encoding: UTF-8
 LazyData: true
 License: GPL-2
-URL: http://www.dagitty.net, https://github.com/jtextor/dagitty/r
+URL: http://www.dagitty.net, https://github.com/jtextor/dagitty
 BugReports: https://github.com/jtextor/dagitty/issues
 Depends:
     R (>= 3.0.0)
