@@ -1,6 +1,11 @@
 #' @import V8 jsonlite
 #' @importFrom boot boot
 #' @importFrom MASS ginv
+#' @importFrom grDevices dev.size
+#' @importFrom methods is
+#' @importFrom utils tail
+#' @importFrom stats as.formula coef confint cov lm pnorm qnorm quantile runif
+#' @importFrom graphics abline arrows axis lines par plot plot.new segments strheight strwidth text xspline
 NULL
 
 #' Get Graph Type

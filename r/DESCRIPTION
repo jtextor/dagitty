@@ -23,7 +23,12 @@ Imports:
     V8,
     jsonlite,
     boot,
-    MASS
+    MASS,
+    methods,
+    grDevices,
+    stats,
+    utils,
+    graphics
 Suggests:
     knitr,
     base64enc (>= 0.1-3),

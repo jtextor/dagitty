@@ -1,6 +1,6 @@
 ## Test environments
-* local OS X 10.10.5, R 3.2.2
-* local ubuntu precise, R 3.2.2
+* local OS X 10.10.5, R 3.2.4
+* local ubuntu precise, R 3.2.4
 * win-builder (devel and release)
 * R-forge (linux and windows builds)
 
