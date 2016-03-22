@@ -4,18 +4,20 @@
 \alias{localTests}
 \title{Test Graph against Data}
 \usage{
-localTests(x, data = NULL, type = "tetrads", sample.cov = NULL,
+localTests(x, data = NULL, type = c("cis", "tetrads", "tetrads.within",
+  "tetrads.between", "tetrads.epistemic"), sample.cov = NULL,
   sample.nobs = NULL, conf.level = 0.95, R = NULL)
 }
 \arguments{
-\item{x}{the input graph.}
+\item{x}{the input graph, a DAG, MAG, or PDAG.}
 
 \item{data}{matrix or data frame containing the data.}
 
 \item{type}{character indicating which kind of local
 test to perform. Supported values are \code{"cis"} (conditional independencies),
 \code{"tetrads"} and \code{"tetrads.type"}, where "type" is one of the items of the 
-tetrad typology, e.g. \code{"tetrads.within"} (see \code{\link{vanishingTetrads}}).}
+tetrad typology, e.g. \code{"tetrads.within"} (see \code{\link{vanishingTetrads}}).
+Tetrad testing is only implemented for DAGs.}
 
 \item{sample.cov}{the sample covariance matrix; ignored if \code{data} is supplied.
 Either \code{data} or \code{sample.cov} and \code{sample.nobs} must be supplied.}
@@ -39,8 +41,9 @@ Tetrad implications can only be derived if a Gaussian model (i.e., a linear
 structural equation model) is postulated. Conditional independence implications (CI)
 do not require this assumption. However, both Tetrad and CI implications are tested
 parametrically: for Tetrads, Wishart's confidence interval formula is used, whereas
-for CIs, a Z test of zero conditional covariance is performed (if the covariance
-matrix is given) or a test of regressional independence (it the raw data is given).
+for CIs, a Z test of zero conditional covariance (if the covariance
+matrix is given) or a test of regressional independence (it the raw data is given)
+is performed.
 Tetrad tests also support bootstrapping instead of estimating parametric confidence
 intervals.
 }

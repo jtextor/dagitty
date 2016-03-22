@@ -10,9 +10,133 @@ dagitty(x, layout = FALSE)
 \item{x}{character, string describing a graphical model in dagitty syntax.}
 
 \item{layout}{logical, whether to automatically generate layout coordinates for each
-variable (see \code{\link{graphLayout}}).}
+variable (see \code{\link{graphLayout}})}
 }
 \description{
 Constructs a \code{dagitty} graph object from a textual description.
+}
+\details{
+The textual syntax for DAGitty graph is based on the dot language of the 
+graphviz software (\url{http://www.graphviz.org/content/dot-language}). This is a
+fairly intuitive syntax -- use the examples below and in the other functions to
+get you started. An important difference to graphviz is that the DAGitty language
+supports several types of graphs, which have different semantics. However, many users
+will mainly focus on DAGs.
+
+A DAGitty graph description has the following form:
+
+\code{[graph type] '{' [statements] '}'}
+
+where \code{[graph type]} is one of 'dag', 'mag', 'pdag', or 'pag' and \code{[statements]}
+is a list of variables statements and edge statements, which may (optionally) be
+separated by semicolons. Whitespace, including newlines, has no semantic role.
+
+Variable statments look like
+
+\code{[variable id] '[' [properties] ']'}
+
+For example, the statement
+
+\code{x [exposure,pos="1,0"]}
+
+declares a variable with ID x that is an exposure variable and has a layout position
+of 1,0.
+
+The edge statement
+
+\code{x -> y}
+
+declares a directed edge from variable x to variable y. Explicit variable statements
+are not required for the variables involved in edge statements, unless attributes 
+such as position or exposure/outcome status need to be set.
+
+DAGs (directed acyclic graphs) can contain the following edges: \code{->}, \code{<->}. 
+Bidirected edges in DAGs are simply shorthands for substructures \code{<- U ->}, 
+where U is an unobserved variable.
+
+MAGs (maximal ancestral graphs) can contain the following edges: \code{->},
+\code{<->}, \code{--}. 
+The bidirected and directed edges of MAGs can represent latent confounders, and 
+the undirected edges represent latent selection variables. 
+For details, see Richardson and Spirtes (2002).
+
+PDAGs (partially directed acyclic graphs) can contain the following edges: \code{->},
+\code{<->}, \code{--}. 
+The bidirected edges mean the same thing as in DAGs. The undirected edges represent
+edges whose direction is not known. Thus, PDAGs are used to represent equivalence
+classes of DAGs (see also the function \code{\link{equivalenceClass}}).
+
+PAGs (partial ancestral graphs) are to MAGs what PDAGs are to DAGs: they represent
+equivalence classes of MAGs. MAGs can contain the following edges: \code{@-@}, 
+\code{->}, \code{@->}, \code{--}, \code{@--}
+(the @ symbols are written as circle marks in most of the literature). For
+details on PAGs, see Zhang et al (2008). For now, only a few DAGitty functions
+support PAGs (for instance, \code{\link{adjustmentSets}}.
+
+The DAGitty parser does not perform semantic validation. That is, 
+it will not check whether a DAG is actually acyclic, or whether all chain components
+in a PAG are actually chordal. This is not done because it can be computationally
+rather expensive.
+}
+\examples{
+# Specify a simple DAG containing one path
+g <- dagitty("dag{ 
+  a -> b ;
+  b -> c ;
+  d -> c
+ }")
+# Newlines and semicolons are optional
+g <- dagitty("dag{ 
+  a -> b b -> c c -> d
+ }")
+# Paths can be specified in one go; the semicolon below is
+# optional
+g <- dagitty("dag{ 
+  a -> b ->c ; c -> d
+ }")
+# Edges can be written in reverse notation
+g <- dagitty("dag{ 
+  a -> b -> c <- d
+ }")
+# Spaces are optional as well
+g <- dagitty("dag{a->b->c<-d}")
+# Variable attributes can be set in square brackets
+# Example: DAG with one exposure, one outcome, and one unobserved variable
+g <- dagitty("dag{
+  x -> y ; x <- z -> y
+  x [exposure]
+  y [outcome]
+  z [unobserved]
+}") 
+# The same graph as above
+g <- dagitty("dag{x[e]y[o]z[u]x<-z->y<-x}")
+# A two-factor latent variable model
+g <- dagitty("dag {
+  X <-> Y
+  X -> a X -> b X -> c X -> d
+  Y -> a Y -> b Y -> c Y -> d
+}")
+# Curly braces can be used to "group" variables and 
+# specify edges to whole groups of variables
+# The same two-factor model
+g <- dagitty("dag{ {X<->Y} -> {a b c d} }")
+# A MAG
+g <- dagitty("mag{ a -- x -> y <-> z }")
+# A PDAG
+g <- dagitty("pdag{ x -- y -- z }")
+# A PAG
+g <- dagitty("pag{ x @-@ y @-@ z }")  
+}
+\references{
+Richardson, Thomas; Spirtes, Peter (2002), Ancestral graph Markov models.
+\emph{The Annals of Statistics} 30(4): 962–1030.
+
+J. Zhang (2008), Causal Reasoning with Ancestral Graphs. 
+\emph{Journal of Machine Learning Research} 9: 1437-1474.
+
+B. van der Zander and M. Liskiewicz (2016), 
+Separators and Adjustment Sets in Markov Equivalent DAGs.
+In \emph{Proceedings of the Thirtieth AAAI Conference on Artificial Intelligence (AAAI'16)}, 
+Phoenix, Arizona, USA.
 }
 

@@ -10,7 +10,7 @@ coordinates(x)
 coordinates(x) <- value
 }
 \arguments{
-\item{x}{the input graph.}
+\item{x}{the input graph, of any type.}
 
 \item{value}{a list with components \code{x} and \code{y}, 
 giving relative coordinates for each variable. This format is suitable 
@@ -27,7 +27,7 @@ needs to compute the bounding box before plotting the graph.
 plot( coordinates( getExample("Shrier") ) )
 
 ## Define a graph and set coordinates afterwards
-x <- dagitty('graph{
+x <- dagitty('dag{
     G <-> H <-> I <-> G
     D <- B -> C -> I <- F <- B <- A
     H <- E <- C -> G <- D

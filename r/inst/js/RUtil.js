@@ -42,6 +42,10 @@ var DagittyR = {
 		} )
 		return r
 	},
+
+	canonicalAdjustment : function( g ){
+		return this.adj2r( GraphAnalyzer.canonicalAdjustmentSet( g ) )
+	},
 	
 	edge2r : function( g ){
 		'use strict'
@@ -51,14 +55,7 @@ var DagittyR = {
 			r.w.push( e.v2.id )
 			r.x.push( e.layout_pos_x )
 			r.y.push( e.layout_pos_y )
-			switch( e.directed ){
-			case Graph.Edgetype.Directed :
-				r.e.push("->"); break
-			case Graph.Edgetype.Undirected :
-				r.e.push("--"); break
-			case Graph.Edgetype.Bidirected :
-				r.e.push("<->"); break
-			}
+			r.e.push( Graph.Edgetype.Symbol[e.directed] )
 		} )
 		return r
 	},

@@ -16,3 +16,7 @@ test_that("CGs", {
 		"pdag{ {i j} -> x -> {a -- b -- c -- a } a -> z b -> y x[e] y[o] }"),"x")),0)
 })
 
+test_that("pags", {
+	expect_equal(length(adjustmentSets("dag{ X1->V1->X2->Y ; V1 -> X3 }",
+		c("X1","X2","X3"),"Y",type="all")),2)
+})

@@ -4,7 +4,8 @@
 \alias{adjustmentSets}
 \title{Covariate Adjustment Sets}
 \usage{
-adjustmentSets(x, exposure = NULL, outcome = NULL, effect = "total")
+adjustmentSets(x, exposure = NULL, outcome = NULL, type = c("minimal",
+  "canonical", "all"), effect = c("total", "direct"))
 }
 \arguments{
 \item{x}{the input graph, a DAG, MAG, PDAG, or PAG.}
@@ -15,9 +16,18 @@ exposure variables are supposed to be defined in the graph itself.}
 \item{outcome}{name(s) of the outcome variable(s), also taken from the graph if 
 not given.}
 
+\item{type}{which type of adjustment set(s) to compute. If \code{type="minimal"},
+then only minimal sufficient adjustment sets are returned (default). For 
+\code{type="all"}, all valid adjustment sets are returned. For \code{type="canonical"},
+a single adjustment set is returned that consists of all (possible) ancestors
+of exposures and outcomes, minus (possible) descendants of nodes on proper causal
+paths. This canonical adjustment set is always valid if any valid set exists
+at all.}
+
 \item{effect}{which effect is to be identified. If \code{effect="total"}, then the
 total effect is to be identified, and the adjustment criterion by Perkovic et 
-al (2015), an extension of Pearl's back-door criterion, is used. Otherwise, if 
+al (2015; see also van der Zander et al., 2014), 
+an extension of Pearl's back-door criterion, is used. Otherwise, if 
 \code{effect="direct"}, then the average direct effect is to be identified, and Pearl's
 single-door criterion is used (Pearl, 2009). In a structural equation model (Gaussian
 graphical model), direct effects are simply the path coefficients.}
@@ -44,5 +54,17 @@ confint( lm( y ~ x + m, d ) )["x",] # does not include .5
 # edge directions are known
 g <- dagitty("pdag { x[e] y[o] a -- {i z b}; {a z i} -> x -> y <- {z b} }")
 adjustmentSets( g )
+}
+\references{
+J. Pearl (2009), Causality: Models, Reasoning and Inference. 
+Cambridge University Press.
+
+B. van der Zander, M. Liskiewicz and J. Textor (2014),
+Constructing separators and adjustment sets in ancestral graphs.
+In \emph{Proceedings of UAI 2014.}
+
+E. Perkovic, J. Textor, M. Kalisch and M. H. Maathuis (2015), A
+Complete Generalized Adjustment Criterion. In \emph{Proceedings of UAI
+2015.}
 }
 

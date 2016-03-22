@@ -36,5 +36,9 @@ nrow(vanishingTetrads(g))
 nrow(vanishingTetrads(g,"within"))
 nrow(vanishingTetrads(g,"between"))
 nrow(vanishingTetrads(g,"epistemic"))
+
+}
+\references{
+Kenny, D. A. (1979), Correlation and Causality. Wiley, New York.
 }
 

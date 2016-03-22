@@ -29,7 +29,7 @@ adjacentNodes(x, v)
 markovBlanket(x, v)
 }
 \arguments{
-\item{x}{the input graph.}
+\item{x}{the input graph, of any type.}
 
 \item{v}{name(s) of variable(s).
 

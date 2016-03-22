@@ -7,7 +7,7 @@
 \method{plot}{dagitty}(x, ...)
 }
 \arguments{
-\item{x}{the input graph.}
+\item{x}{the input graph, a DAG, MAG, or PDAG.}
 
 \item{...}{not used.}
 }

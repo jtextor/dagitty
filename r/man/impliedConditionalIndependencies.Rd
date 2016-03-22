@@ -2,13 +2,13 @@
 % Please edit documentation in R/dagitty.r
 \name{impliedConditionalIndependencies}
 \alias{impliedConditionalIndependencies}
-\title{List Conditional Indpendencies Implied by Graphical Model}
+\title{List Implied Conditional Independencies}
 \usage{
 impliedConditionalIndependencies(x, type = "missing.edge",
   max.results = 100)
 }
 \arguments{
-\item{x}{the input graph.}
+\item{x}{the input graph, a DAG, MAG, or PDAG.}
 
 \item{type}{can be one of "missing.edge" or "basis.set". With the former, one testable 
 implication is returned per missing edge of the graph. With the latter, one testable
@@ -21,6 +21,13 @@ this many results have been found. Use \code{Inf} to generate them all. This app
 only when \code{type="missing.edge"}.}
 }
 \description{
-List Conditional Indpendencies Implied by Graphical Model
+Generates a list of conditional independence statements that must hold in every
+probability distribution compatible with the given model.
+}
+\examples{
+g <- dagitty( "dag{ x -> m -> y }" )
+impliedConditionalIndependencies( g ) # one
+latents( g ) <- c("m")
+impliedConditionalIndependencies( g ) # none
 }
 

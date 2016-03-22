@@ -21,7 +21,22 @@ not given.}
 Test whether a set fulfills the adjustment criterion, that means,
 it removes all confounding bias when estimating a *total* effect.
 This is an extension of Pearl's 
-Back-door criterion which is complete in the sense that either a set
+Back-door criterion (Shpitser et al, 2010; van der Zander et al, 
+2014; Perkovic et al, 2015) 
+which is complete in the sense that either a set
 fulfills this criterion, or it does not remove all confounding bias.
+}
+\details{
+If the input graph is a MAG or PAG, then it must not contain any undirected
+edges (=hidden selection variables).
+}
+\references{
+E. Perkovic, J. Textor, M. Kalisch and M. H. Maathuis (2015), A
+Complete Generalized Adjustment Criterion. In \emph{Proceedings of UAI
+2015.}
+
+I. Shpitser, T. VanderWeele and J. M. Robins (2010), On the
+validity of covariate adjustment for estimating causal effects. In
+\emph{Proceedings of UAI 2010.}
 }
 

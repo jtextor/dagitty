@@ -7,7 +7,7 @@
 edges(x)
 }
 \arguments{
-\item{x}{the input graph.}
+\item{x}{the input graph, of any type.}
 }
 \value{
 a data frame with the following variables:

@@ -15,7 +15,7 @@ plotLocalTestResults(x, xlab = "test statistic (95\% CI)", xlim = c(min(x[,
 
 \item{xlim}{numerical vector with 2 elements; range of X axis.}
 
-\item{...}{further arguments ot be passed on to \code{\link{plot}}.}
+\item{...}{further arguments to be passed on to \code{\link{plot}}.}
 }
 \description{
 Generates a summary plot of the results of local tests

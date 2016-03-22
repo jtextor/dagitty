@@ -24,7 +24,8 @@ which encode linear functions instead of arbitrary nonlinear functions.
 
 Because every SEM is a DAG, much of the methodology developed for DAGs is of potentially
 great interest for SEM users as well. In this vignette, I am going to show some
-possibilities. This follows the structure of Kyono's "Commentator" program, and thereby
+possibilities. This follows the structure of Kyono's "Commentator" program 
+(http://ftp.cs.ucla.edu/pub/stat_ser/r364.pdf), and thereby
 also shows how the tasks implemented in that program can be solved using the dagitty
 package.
 
@@ -65,7 +66,7 @@ print( adjustmentSets( g2, "X", "Y", effect="direct" ) )
 ```{r}
 for( n in names(g1) ){
 	for( m in children(g1,n) ){
-		a <- adjustmentSets( g1, n, m, "direct" )
+		a <- adjustmentSets( g1, n, m, effect="direct" )
 		if( length(a) > 0 ){
 			cat("The coefficient on ",n,"->",m,
 				" is identifiable controlling for:\n",sep="")

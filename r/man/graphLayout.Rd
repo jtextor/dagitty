@@ -7,7 +7,7 @@
 graphLayout(x, method = "spring")
 }
 \arguments{
-\item{x}{the input graph.}
+\item{x}{the input graph, of any type.}
 
 \item{method}{the layout method; currently, only \code{"spring"} is supported.}
 }
@@ -23,7 +23,7 @@ a decent layout).
 }
 \examples{
 ## Generate a layout for the M-bias graph and plot it
-plot( graphLayout( dagitty( "graph { X <- U1 -> M <- U2 -> Y } " ) ) )
+plot( graphLayout( dagitty( "dag { X <- U1 -> M <- U2 -> Y } " ) ) )
 
 }
 

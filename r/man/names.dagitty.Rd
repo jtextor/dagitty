@@ -7,14 +7,14 @@
 \method{names}{dagitty}(x)
 }
 \arguments{
-\item{x}{the input graph.}
+\item{x}{the input graph, of any type.}
 }
 \description{
 Extracts the variable names from an input graph. Useful for iterating
 over all variables.
 }
 \examples{
-## A "DAG" with Greek and Portuguese variable names. These can be
+## A "DAG" with Romanian and Portuguese variable names. These can be
 ## input using quotes to overcome the limitations on unquoted identifiers.
 g <- dagitty( 'digraph {
   "coração" [pos="0.297,0.502"]

@@ -180,7 +180,7 @@ simulateSEM <- function( x, b.lower=-.6, b.upper=.6, eps=1, N=500, standardized=
 #' Retrieve the names of all variables in a given graph that are in the specified 
 #' ancestral relationship to the input variable \code{v}.
 #'
-#' @param x the input graph.
+#' @param x the input graph, of any type.
 #' @param v name(s) of variable(s).
 #'
 #' \code{descendants(x,v)} retrieves variables that are are reachable from \code{v} via 
@@ -355,9 +355,13 @@ moralize <- function( x ){
 #'
 #' Removes every first edge on a proper causal path from \code{x}.
 #' If \code{x} is a MAG or PAG, then only \dQuote{visible} directed
-#' edges are removed.
+#' edges are removed (Zhang, 2008).
 #'
-#' @param x the input graph, a DAG, MAG, or PDAG.
+#' @param x the input graph, a DAG, MAG, PDAG, or PAG.
+#'
+#' @references
+#' J. Zhang (2008), Causal Reasoning with Ancestral Graphs. 
+#' \emph{Journal of Machine Learning Research} 9: 1437-1474.
 #' 
 #' @examples
 #' g <- dagitty( "dag { x <-> m <-> y <- x }" )
@@ -422,19 +426,20 @@ ancestorGraph <- function( x, v=NULL ){
 #' Variable Statuses
 #'
 #' Get or set variables with a given status in a graph. Variables in dagitty graphs can
-#' have one of several statuses. Variables with _exposure_ and _outcome_ status are 
-#' important when determining causal effects via the functions \code{\link{adjustmentSets}}
-#' and \code{\link{instrumentalVariables}}. Variables with status _latent_ are assumed 
-#' to be unobserved variables or latent constructs, and they are not considered when deriving
+#' have one of several statuses. Variables with status \emph{exposure} and 
+#' \emph{outcome} are important when determining causal effects via the functions 
+#' \code{\link{adjustmentSets}} and \code{\link{instrumentalVariables}}. Variables
+#' with status \emph{latent} are assumed 
+#' to be unobserved variables or latent constructs, which is respected when deriving
 #' testable implications of a graph via the functions 
 #' \code{\link{impliedConditionalIndependencies}} or \code{\link{vanishingTetrads}}.
 #'
 #' \code{setVariableStatus} first removes the given status from all variables in the graph
-#' that had it, and then gives it to the given variables.
+#' that had it, and then sets it on the given variables.
 #' For instance, if  \code{status="exposure"}  and \code{value="X"} are given, then
 #' \code{X} will be the only exposure in the resulting graph.
 #'
-#' @param x the input graph.
+#' @param x the input graph, of any type.
 #' @param value character vector; names of variables to receive the given status.
 #' @param status character, one of "exposure", "outcome" or "latent".
 #'
@@ -534,10 +539,10 @@ setVariableStatus <- function( x, status, value ) {
 #' Extracts the variable names from an input graph. Useful for iterating
 #' over all variables.
 #'
-#' @param x the input graph.
+#' @param x the input graph, of any type.
 #' @export
 #' @examples
-#' ## A "DAG" with Greek and Portuguese variable names. These can be
+#' ## A "DAG" with Romanian and Portuguese variable names. These can be
 #' ## input using quotes to overcome the limitations on unquoted identifiers.
 #' g <- dagitty( 'digraph {
 #'   "coração" [pos="0.297,0.502"]
@@ -563,7 +568,7 @@ names.dagitty <- function( x ){
 #' \code{dagitty} object. Note that the coordinate system is undefined, typically one 
 #' needs to compute the bounding box before plotting the graph.
 #'
-#' @param x the input graph.
+#' @param x the input graph, of any type.
 #' @param value a list with components \code{x} and \code{y}, 
 #' giving relative coordinates for each variable. This format is suitable 
 #' for \code{\link{xy.coords}}.
@@ -573,7 +578,7 @@ names.dagitty <- function( x ){
 #' plot( coordinates( getExample("Shrier") ) )
 #' 
 #' ## Define a graph and set coordinates afterwards
-#' x <- dagitty('graph{
+#' x <- dagitty('dag{
 #'     G <-> H <-> I <-> G
 #'     D <- B -> C -> I <- F <- B <- A
 #'     H <- E <- C -> G <- D
@@ -677,7 +682,7 @@ canonicalize <- function( x ){
 #' 
 #' Extracts edge information from the input graph. 
 #'
-#' @param x the input graph.
+#' @param x the input graph, of any type.
 #' @return a data frame with the following variables:
 #' \itemize{
 #'  \item{v}{ name of the start node.}
@@ -723,13 +728,13 @@ is.dagitty <- function(x) inherits(x,"dagitty")
 #' different every time (which also means that you can try several times until you find
 #' a decent layout).
 #' 
-#' @param x the input graph.
+#' @param x the input graph, of any type.
 #' @param method the layout method; currently, only \code{"spring"} is supported.
 #' @return the same graph as \code{x} but with layout coordinates added. 
 #' 
 #' @examples
 #' ## Generate a layout for the M-bias graph and plot it
-#' plot( graphLayout( dagitty( "graph { X <- U1 -> M <- U2 -> Y } " ) ) )
+#' plot( graphLayout( dagitty( "dag { X <- U1 -> M <- U2 -> Y } " ) ) )
 #'
 #' @export
 graphLayout <- function( x, method="spring" ){
@@ -753,12 +758,13 @@ graphLayout <- function( x, method="spring" ){
 #' simple visualization purposes and not as a full-fledged graph drawing
 #' function.
 #'
-#' @param x the input graph.
+#' @param x the input graph, a DAG, MAG, or PDAG.
 #' @param ... not used.
 #'
 #' @export
 plot.dagitty <- function( x, ... ){	
 	x <- as.dagitty( x )
+	.supportsTypes(x,c("dag","mag","pdag"))
 	coords <- coordinates( x )
 	labels <- names(coords$x)
 	plot.new()
@@ -848,15 +854,35 @@ plot.dagitty <- function( x, ... ){
 #' not given.
 #' @param effect which effect is to be identified. If \code{effect="total"}, then the
 #' total effect is to be identified, and the adjustment criterion by Perkovic et 
-#' al (2015), an extension of Pearl's back-door criterion, is used. Otherwise, if 
+#' al (2015; see also van der Zander et al., 2014), 
+#' an extension of Pearl's back-door criterion, is used. Otherwise, if 
 #' \code{effect="direct"}, then the average direct effect is to be identified, and Pearl's
 #' single-door criterion is used (Pearl, 2009). In a structural equation model (Gaussian
 #' graphical model), direct effects are simply the path coefficients.
+#' @param type which type of adjustment set(s) to compute. If \code{type="minimal"},
+#' then only minimal sufficient adjustment sets are returned (default). For 
+#' \code{type="all"}, all valid adjustment sets are returned. For \code{type="canonical"},
+#' a single adjustment set is returned that consists of all (possible) ancestors
+#' of exposures and outcomes, minus (possible) descendants of nodes on proper causal
+#' paths. This canonical adjustment set is always valid if any valid set exists
+#' at all.
 #'
 #' @details
 #' If the input graph is a MAG or PAG, then it must not contain any undirected
 #' edges (=hidden selection variables).
 #'
+#' @references
+#' J. Pearl (2009), Causality: Models, Reasoning and Inference. 
+#' Cambridge University Press.
+#'
+#' B. van der Zander, M. Liskiewicz and J. Textor (2014),
+#' Constructing separators and adjustment sets in ancestral graphs.
+#' In \emph{Proceedings of UAI 2014.}
+#' 
+#' E. Perkovic, J. Textor, M. Kalisch and M. H. Maathuis (2015), A
+#' Complete Generalized Adjustment Criterion. In \emph{Proceedings of UAI
+#' 2015.}
+#' 
 #' @examples
 #' # The M-bias graph showing that adjustment for 
 #' # pre-treatment covariates is not always valid
@@ -872,7 +898,13 @@ plot.dagitty <- function( x, ... ){
 #' g <- dagitty("pdag { x[e] y[o] a -- {i z b}; {a z i} -> x -> y <- {z b} }")
 #' adjustmentSets( g )
 #' @export
-adjustmentSets <- function( x, exposure=NULL, outcome=NULL, effect="total" ){
+adjustmentSets <- function( x, exposure=NULL, outcome=NULL, 
+	type=c("minimal","canonical","all"), effect=c("total","direct") ){
+	effect <- match.arg( effect )
+	type <- match.arg( type )
+	if( effect == "direct" && type != "minimal" ){
+		stop("Only minimal adjustment sets are supported for direct effects!")
+	}
 	x <- as.dagitty( x )
 	.supportsTypes( x, c("dag","mag","pdag","pag") )
 	if( !is.null( exposure ) ){
@@ -881,25 +913,46 @@ adjustmentSets <- function( x, exposure=NULL, outcome=NULL, effect="total" ){
 	if( !is.null( outcome ) ){
 		outcomes(x) <- outcome
 	}
-
 	if( length(exposures(x)) == 0 || length(outcomes(x)) == 0 ){
 		stop("Both exposure(s) and outcome(s) need to be set!")
 	}
 
-	xv <- .getJSVar()
-	tryCatch({
-		.jsassign( xv, as.character(x) )
-		.jsassign( xv, .jsp("GraphParser.parseGuess(global.",xv,")") )
-	
-		if( effect=="direct" ){	
-			.jsassign( xv, .jsp("GraphAnalyzer.listMsasDirectEffect(global.",xv,")") )
-		} else {
-			.jsassign( xv, .jsp("GraphAnalyzer.listMsasTotalEffect(global.",xv,")") )
-		}
-		.jsassign( xv, .jsp("DagittyR.adj2r(global.",xv,")"))
-		r <- structure( .jsget(xv), class="dagitty.sets" )
-	},finally={.deleteJSVar(xv)})
-
+	if( type == "minimal" ){
+		xv <- .getJSVar()
+		tryCatch({
+			.jsassigngraph( xv, x )
+			if( effect=="direct" ){	
+				.jsassign( xv, .jsp("GraphAnalyzer.listMsasDirectEffect(global.",xv,")") )
+			} else {
+				.jsassign( xv, .jsp("GraphAnalyzer.listMsasTotalEffect(global.",xv,")") )
+			}
+			.jsassign( xv, .jsp("DagittyR.adj2r(global.",xv,")"))
+			r <- structure( .jsget(xv), class="dagitty.sets" )
+		},finally={.deleteJSVar(xv)})
+	} else if( type == "all" ){
+		covariates <- setdiff( names( x ), c( exposure, outcome ) )
+		subsets <- (expand.grid( rep( list(0:1),length(covariates)) ))
+		r <- lapply( 1:nrow(subsets), function(i){
+			Z <- covariates[as.logical(subsets[i,])]
+			if( isAdjustmentSet( x, Z ) ){
+				Z
+		    	} else {
+				NA
+			}
+		})
+		non.r <- which(sapply(r,function(x) isTRUE(is.na(x))))
+		if( length(non.r) > 0 ){
+			r <- r[-non.r]
+		} 
+		r <- structure(r,class="dagitty.sets")
+	} else { # type == "canonical"
+		xv <- .getJSVar()
+		tryCatch({
+			.jsassigngraph( xv, x )
+			.jsassign( xv, .jsp("DagittyR.canonicalAdjustment(global.",xv,")"))
+			r <- structure(.jsget(xv),class="dagitty.sets")
+		},finally={.deleteJSVar(xv)})
+	}
 	r
 }
 
@@ -908,7 +961,9 @@ adjustmentSets <- function( x, exposure=NULL, outcome=NULL, effect="total" ){
 #' Test whether a set fulfills the adjustment criterion, that means,
 #' it removes all confounding bias when estimating a *total* effect.
 #' This is an extension of Pearl's 
-#' Back-door criterion which is complete in the sense that either a set
+#' Back-door criterion (Shpitser et al, 2010; van der Zander et al, 
+#' 2014; Perkovic et al, 2015) 
+#' which is complete in the sense that either a set
 #' fulfills this criterion, or it does not remove all confounding bias.
 #'
 #' @param x the input graph, a DAG, MAG, PDAG, or PAG.
@@ -917,6 +972,20 @@ adjustmentSets <- function( x, exposure=NULL, outcome=NULL, effect="total" ){
 #' @param outcome name(s) of the outcome variable(s), also taken from the graph if 
 #' not given.
 #' @param Z vector of variable names.
+#'
+#' @details
+#' If the input graph is a MAG or PAG, then it must not contain any undirected
+#' edges (=hidden selection variables).
+#'
+#' @references
+#'
+#' E. Perkovic, J. Textor, M. Kalisch and M. H. Maathuis (2015), A
+#' Complete Generalized Adjustment Criterion. In \emph{Proceedings of UAI
+#' 2015.}
+#'
+#' I. Shpitser, T. VanderWeele and J. M. Robins (2010), On the
+#' validity of covariate adjustment for estimating causal effects. In
+#' \emph{Proceedings of UAI 2010.}
 #'
 #' @export
 isAdjustmentSet <- function( x, Z, exposure=NULL, outcome=NULL ){
@@ -946,8 +1015,12 @@ isAdjustmentSet <- function( x, Z, exposure=NULL, outcome=NULL ){
 }
 
 
-#' List Conditional Indpendencies Implied by Graphical Model
-#' @param x the input graph.
+#' List Implied Conditional Independencies
+#'
+#' Generates a list of conditional independence statements that must hold in every
+#' probability distribution compatible with the given model.
+#'
+#' @param x the input graph, a DAG, MAG, or PDAG.
 #' @param type can be one of "missing.edge" or "basis.set". With the former, one testable 
 #' implication is returned per missing edge of the graph. With the latter, one testable
 #' implication is returned per vertex of the graph that has non-descendants other than
@@ -955,13 +1028,19 @@ isAdjustmentSet <- function( x, Z, exposure=NULL, outcome=NULL ){
 #' whereas missing edge sets involve only bivariate independencies.
 #' @param max.results integer. The listing of conditional independencies is stopped once
 #' this many results have been found. Use \code{Inf} to generate them all. This applies
-#' only when \code{type="missing.edge"}. 
+#' only when \code{type="missing.edge"}.
+#' @examples
+#' g <- dagitty( "dag{ x -> m -> y }" )
+#' impliedConditionalIndependencies( g ) # one
+#' latents( g ) <- c("m")
+#' impliedConditionalIndependencies( g ) # none
 #' @export
 impliedConditionalIndependencies <- function( x, type="missing.edge", max.results=100 ){
 	if( ! type %in% c("missing.edge","basis.set") ){
 		stop("'type' must be one of: missing.edge, basis.set")
 	}
 	x <- as.dagitty( x )
+	.supportsTypes( x, c("dag","mag","pdag") )
 
 	xv <- .getJSVar()
 	tryCatch({
@@ -970,10 +1049,12 @@ impliedConditionalIndependencies <- function( x, type="missing.edge", max.result
 
 		if( type == "missing.edge" ){
 			if( is.finite( max.results ) ){
-				.jsassign( xv, .jsp("GraphAnalyzer.listMinimalImplications(global.",xv,",",
+				.jsassign( xv,
+					.jsp("GraphAnalyzer.listMinimalImplications(global.",xv,",",
 					as.numeric(max.results),")"))
 			} else {
-				.jsassign( xv, .jsp("GraphAnalyzer.listMinimalImplications(global.",xv,")"))
+				.jsassign( xv, 
+					.jsp("GraphAnalyzer.listMinimalImplications(global.",xv,")"))
 			}
 		} else {
 			.jsassign( xv, .jsp("GraphAnalyzer.listBasisImplications(global.",xv,")"))
@@ -985,28 +1066,43 @@ impliedConditionalIndependencies <- function( x, type="missing.edge", max.result
 	r
 }
 
-#' Find (Conditional) Instrumental Variables to Estimate Causal Effects
-#' @param x the input graph.
+#' Find Instrumental Variables
+#'
+#' Generates a list of instrumental variables that can be used to infer the total effect
+#' of an exposure on an outcome in the presence of latent confounding, under linearity
+#' assumptions. 
+#'
+#' @param x the input graph, a DAG.
 #' @param exposure name of the exposure variable. If not given (default), then the 
-#'  exposure variable is supposed to be defined in the graph itself. Only a single exposure
-#' variable is supported.
+#' exposure variable is supposed to be defined in the graph itself. Only a single
+#' exposure variable and a single outcome variable supported.
 #' @param outcome name of the outcome variable, also taken from the graph if not given.
 #' Only a single outcome variable is supported.
+#'
+#' @references
+#' B. van der Zander, J. Textor and M. Liskiewicz (2015),
+#' Efficiently Finding Conditional Instruments for Causal Inference.
+#' In \emph{Proceedings of the 24th International Joint Conference on 
+#' Artificial Intelligence (IJCAI 2015)}, pp. 3243-3249. AAAI Press, 2015.
+#'
+#' @examples
+#' # The classic IV model
+#' instrumentalVariables( "dag{ i->x->y; x<->y }", "x", "y" )
+#' # A conditional instrumental variable
+#' instrumentalVariables( "dag{ i->x->y; x<->y ; y<-z->i }", "x", "y" )
 #' @export
 instrumentalVariables <- function( x, exposure=NULL, outcome=NULL ){
 	x <- as.dagitty( x )
+	.supportsTypes( x, "dag" )
 
 	if( !is.null( exposure ) ){
-		if( length( exposure ) > 1 ){
-			stop("IV identification only supported for single exposures!")
-		}
-		x <- setVariableStatus( x, "exposure", exposure )
+		exposures(x) <- exposure
 	}
 	if( !is.null( outcome ) ){
-		if( length( outcome ) > 1 ){
-			stop("IV identification only supported for single outcomes!")
-		}
-		x <- setVariableStatus( x, "outcome", outcome )
+		outcomes(x) <- outcome
+	}
+	if( length(exposures(x)) != 1 || length(outcomes(x)) != 1 ){
+		stop("Both exposure(s) and outcome(s) need to be set!")
 	}
 
 	xv <- .getJSVar()
@@ -1046,6 +1142,10 @@ instrumentalVariables <- function( x, exposure=NULL, outcome=NULL ){
 #' nrow(vanishingTetrads(g,"within"))
 #' nrow(vanishingTetrads(g,"between"))
 #' nrow(vanishingTetrads(g,"epistemic"))
+#'
+#' @references
+#' Kenny, D. A. (1979), Correlation and Causality. Wiley, New York.
+#'
 #' @export
 vanishingTetrads <- function( x, type=NA ){
 	x <- as.dagitty( x )
@@ -1113,7 +1213,7 @@ lavaanToGraph <- function( x, ... ){
 	} else {
 		latents <- ""
 	}
-	dagitty( paste("graph { ",latents,"\n",
+	dagitty( paste("dag { ",latents,"\n",
 		paste(arrows,collapse="\n")," } ",collapse="\n") )
 }
 
@@ -1156,7 +1256,129 @@ toString.dagitty <- function( x, format="dagitty", ... ){
 #'
 #' @param x character, string describing a graphical model in dagitty syntax.
 #' @param layout logical, whether to automatically generate layout coordinates for each
-#' variable (see \code{\link{graphLayout}}). 
+#' variable (see \code{\link{graphLayout}}) 
+#' @details
+#' The textual syntax for DAGitty graph is based on the dot language of the 
+#' graphviz software (\url{http://www.graphviz.org/content/dot-language}). This is a
+#' fairly intuitive syntax -- use the examples below and in the other functions to
+#' get you started. An important difference to graphviz is that the DAGitty language
+#' supports several types of graphs, which have different semantics. However, many users
+#' will mainly focus on DAGs.
+#'
+#' A DAGitty graph description has the following form:
+#'
+#' \code{[graph type] '{' [statements] '}'}
+#'
+#' where \code{[graph type]} is one of 'dag', 'mag', 'pdag', or 'pag' and \code{[statements]}
+#' is a list of variables statements and edge statements, which may (optionally) be
+#' separated by semicolons. Whitespace, including newlines, has no semantic role.
+#'
+#' Variable statments look like
+#'
+#' \code{[variable id] '[' [properties] ']'}
+#'
+#' For example, the statement
+#'
+#' \code{x [exposure,pos="1,0"]}
+#'
+#' declares a variable with ID x that is an exposure variable and has a layout position
+#' of 1,0.
+#'
+#' The edge statement
+#'
+#' \code{x -> y}
+#'
+#' declares a directed edge from variable x to variable y. Explicit variable statements
+#' are not required for the variables involved in edge statements, unless attributes 
+#' such as position or exposure/outcome status need to be set.
+#'
+#' DAGs (directed acyclic graphs) can contain the following edges: \code{->}, \code{<->}. 
+#' Bidirected edges in DAGs are simply shorthands for substructures \code{<- U ->}, 
+#' where U is an unobserved variable.
+#'
+#' MAGs (maximal ancestral graphs) can contain the following edges: \code{->},
+#' \code{<->}, \code{--}. 
+#' The bidirected and directed edges of MAGs can represent latent confounders, and 
+#' the undirected edges represent latent selection variables. 
+#' For details, see Richardson and Spirtes (2002).
+#'
+#' PDAGs (partially directed acyclic graphs) can contain the following edges: \code{->},
+#' \code{<->}, \code{--}. 
+#' The bidirected edges mean the same thing as in DAGs. The undirected edges represent
+#' edges whose direction is not known. Thus, PDAGs are used to represent equivalence
+#' classes of DAGs (see also the function \code{\link{equivalenceClass}}).
+#'
+#' PAGs (partial ancestral graphs) are to MAGs what PDAGs are to DAGs: they represent
+#' equivalence classes of MAGs. MAGs can contain the following edges: \code{@-@}, 
+#' \code{->}, \code{@->}, \code{--}, \code{@--}
+#' (the @ symbols are written as circle marks in most of the literature). For
+#' details on PAGs, see Zhang et al (2008). For now, only a few DAGitty functions
+#' support PAGs (for instance, \code{\link{adjustmentSets}}.
+#'
+#' The DAGitty parser does not perform semantic validation. That is, 
+#' it will not check whether a DAG is actually acyclic, or whether all chain components
+#' in a PAG are actually chordal. This is not done because it can be computationally
+#' rather expensive.
+#'
+#' @references
+#' Richardson, Thomas; Spirtes, Peter (2002), Ancestral graph Markov models.
+#' \emph{The Annals of Statistics} 30(4): 962–1030.
+#'
+#' J. Zhang (2008), Causal Reasoning with Ancestral Graphs. 
+#' \emph{Journal of Machine Learning Research} 9: 1437-1474.
+#'
+#' B. van der Zander and M. Liskiewicz (2016), 
+#' Separators and Adjustment Sets in Markov Equivalent DAGs.
+#' In \emph{Proceedings of the Thirtieth AAAI Conference on Artificial Intelligence (AAAI'16)}, 
+#' Phoenix, Arizona, USA.
+#' @examples
+#' # Specify a simple DAG containing one path
+#' g <- dagitty("dag{ 
+#'   a -> b ;
+#'   b -> c ;
+#'   d -> c
+#'  }")
+#' # Newlines and semicolons are optional
+#' g <- dagitty("dag{ 
+#'   a -> b b -> c c -> d
+#'  }")
+#' # Paths can be specified in one go; the semicolon below is
+#' # optional
+#' g <- dagitty("dag{ 
+#'   a -> b ->c ; c -> d
+#'  }")
+#' # Edges can be written in reverse notation
+#' g <- dagitty("dag{ 
+#'   a -> b -> c <- d
+#'  }")
+#' # Spaces are optional as well
+#' g <- dagitty("dag{a->b->c<-d}")
+#' # Variable attributes can be set in square brackets
+#' # Example: DAG with one exposure, one outcome, and one unobserved variable
+#' g <- dagitty("dag{
+#'   x -> y ; x <- z -> y
+#'   x [exposure]
+#'   y [outcome]
+#'   z [unobserved]
+#' }") 
+#' # The same graph as above
+#' g <- dagitty("dag{x[e]y[o]z[u]x<-z->y<-x}")
+#' # A two-factor latent variable model
+#' g <- dagitty("dag {
+#'   X <-> Y
+#'   X -> a X -> b X -> c X -> d
+#'   Y -> a Y -> b Y -> c Y -> d
+#' }")
+#' # Curly braces can be used to "group" variables and 
+#' # specify edges to whole groups of variables
+#' # The same two-factor model
+#' g <- dagitty("dag{ {X<->Y} -> {a b c d} }")
+#' # A MAG
+#' g <- dagitty("mag{ a -- x -> y <-> z }")
+#' # A PDAG
+#' g <- dagitty("pdag{ x -- y -- z }")
+#' # A PAG
+#' g <- dagitty("pag{ x @-@ y @-@ z }")  
 #' @export
 dagitty <- function(x, layout=FALSE){
 	if(!is.character(x)){
@@ -1170,7 +1392,11 @@ dagitty <- function(x, layout=FALSE){
 	}, error=function(e){
 		stop( e )
 	},finally={.deleteJSVar(xv)})
-	structure( r, class="dagitty" )
+	r <- structure( r, class="dagitty" )
+	if( layout ){
+		r <- graphLayout(r)
+	}
+	r
 }
 
 #' Load Graph from dagitty.net
@@ -1199,7 +1425,7 @@ downloadGraph <- function(x="dagitty.net/mz-Tuw9"){
 #' Derives testable implications from the given graphical model and tests them against
 #' the given dataset.
 #'
-#' @param x the input graph.
+#' @param x the input graph, a DAG, MAG, or PDAG.
 #' @param data matrix or data frame containing the data.
 #' @param sample.cov the sample covariance matrix; ignored if \code{data} is supplied.
 #' Either \code{data} or \code{sample.cov} and \code{sample.nobs} must be supplied.
@@ -1208,6 +1434,7 @@ downloadGraph <- function(x="dagitty.net/mz-Tuw9"){
 #'  test to perform. Supported values are \code{"cis"} (conditional independencies),
 #'  \code{"tetrads"} and \code{"tetrads.type"}, where "type" is one of the items of the 
 #'  tetrad typology, e.g. \code{"tetrads.within"} (see \code{\link{vanishingTetrads}}).
+#'  Tetrad testing is only implemented for DAGs.
 #' @param R how many bootstrap replicates for estimating confidence
 #'   intervals. If \code{NULL}, then confidence intervals are based on normal
 #'   approximation. For tetrads, the normal approximation is only valid in 
@@ -1219,8 +1446,9 @@ downloadGraph <- function(x="dagitty.net/mz-Tuw9"){
 #' structural equation model) is postulated. Conditional independence implications (CI)
 #' do not require this assumption. However, both Tetrad and CI implications are tested
 #' parametrically: for Tetrads, Wishart's confidence interval formula is used, whereas
-#' for CIs, a Z test of zero conditional covariance is performed (if the covariance
-#' matrix is given) or a test of regressional independence (it the raw data is given).
+#' for CIs, a Z test of zero conditional covariance (if the covariance
+#' matrix is given) or a test of regressional independence (it the raw data is given)
+#' is performed.
 #' Tetrad tests also support bootstrapping instead of estimating parametric confidence
 #' intervals.
 #' 
@@ -1232,9 +1460,17 @@ downloadGraph <- function(x="dagitty.net/mz-Tuw9"){
 #' plotLocalTestResults(localTests( "dag{ X -> {M1 M2} -> Y }", d, "cis" ))
 #'
 #' @export
-localTests <- function(x, data=NULL, type="tetrads",
+localTests <- function(x, data=NULL, 
+	type=c("cis","tetrads","tetrads.within","tetrads.between","tetrads.epistemic"),
 	sample.cov=NULL,sample.nobs=NULL,
 	conf.level=.95,R=NULL){
+	x <- as.dagitty(x)
+	type <- match.arg(type)
+	if( type=="cis" ){
+		.supportsTypes(x,c("dag","pdag","mag"))
+	} else {
+		.supportsTypes(x,c("dag"))
+	}
 	if( !is.null(sample.cov) && is.null(sample.nobs) ){
 		stop("Please provide sample size (sample.nobs)!")
 	}
@@ -1318,7 +1554,7 @@ localTests <- function(x, data=NULL, type="tetrads",
 #' \link{localTests}. 
 #' @param xlab X axis label.
 #' @param xlim numerical vector with 2 elements; range of X axis.
-#' @param ... further arguments ot be passed on to \code{\link{plot}}.
+#' @param ... further arguments to be passed on to \code{\link{plot}}.
 #'
 #' @examples
 #' d <- simulateSEM("dag{X->{U1 M2}->Y U1->M1}",.6,.6)
@@ -1360,6 +1596,7 @@ plotLocalTestResults <- function(x,xlab="test statistic (95% CI)",
 #' @export
 paths <- function(x,from=exposures(x),to=outcomes(x),Z=list(),limit=100,directed=FALSE){
 	x <- as.dagitty(x)
+	.supportsTypes(x,c("dag","mag","pdag"))
 	xv <- .getJSVar()
 	xv2 <- .getJSVar()
 	exposures(x) <- from
@@ -1410,6 +1647,7 @@ paths <- function(x,from=exposures(x),to=outcomes(x),Z=list(),limit=100,directed
 #' @export
 dconnected <- function(x,X,Y=list(),Z=list()){
 	x <- as.dagitty(x)
+	.supportsTypes(x,c("dag","pdag","mag"))
 	xv <- .getJSVar()
 	Xv <- .getJSVar()
 	Yv <- .getJSVar()

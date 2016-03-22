@@ -333,6 +333,18 @@ var GraphAnalyzer = {
 		
 		return this.listMinimalSeparators( gam, adjusted_nodes, latent_nodes )
 	},
+
+	canonicalAdjustmentSet : function( g, Z ){
+		var Z = _.difference( g.anteriorsOf( _.union(g.getSources(), g.getTargets() ) ),
+			_.union( g.getLatentNodes(),
+				g.getSources(), g.getTargets(),
+				GraphAnalyzer.dpcp( g ) ) )
+		if( GraphAnalyzer.isAdjustmentSet( g, Z ) ){
+			return [Z]
+		} else {
+			return []
+		}
+	},
 	
 	listMsasDirectEffect : function( g, must, must_not ){
 		var gtype = g.getType()
