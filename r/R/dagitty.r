@@ -547,12 +547,12 @@ setVariableStatus <- function( x, status, value ) {
 #' @param x the input graph, of any type.
 #' @export
 #' @examples
-#' ## A "DAG" with Romanian and Portuguese variable names. These can be
+#' ## A "DAG" with Romanian and Swedish variable names. These can be
 #' ## input using quotes to overcome the limitations on unquoted identifiers.
 #' g <- dagitty( 'digraph {
 #'   "coração" [pos="0.297,0.502"]
-#'   "inimă" [pos="0.482,0.387"]
-#'   "coração" -> "inimă"
+#'   "hjärta" [pos="0.482,0.387"]
+#'   "coração" -> "hjärta"
 #' }' )
 #' names( g )
 names.dagitty <- function( x ){
@@ -1327,7 +1327,7 @@ toString.dagitty <- function( x, format="dagitty", ... ){
 #'
 #' @references
 #' Richardson, Thomas; Spirtes, Peter (2002), Ancestral graph Markov models.
-#' \emph{The Annals of Statistics} 30(4): 962–1030.
+#' \emph{The Annals of Statistics} 30(4): 962-1030.
 #'
 #' J. Zhang (2008), Causal Reasoning with Ancestral Graphs. 
 #' \emph{Journal of Machine Learning Research} 9: 1437-1474.

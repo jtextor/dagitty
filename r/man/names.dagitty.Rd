@@ -14,12 +14,12 @@ Extracts the variable names from an input graph. Useful for iterating
 over all variables.
 }
 \examples{
-## A "DAG" with Romanian and Portuguese variable names. These can be
+## A "DAG" with Romanian and Swedish variable names. These can be
 ## input using quotes to overcome the limitations on unquoted identifiers.
 g <- dagitty( 'digraph {
   "coração" [pos="0.297,0.502"]
-  "inimă" [pos="0.482,0.387"]
-  "coração" -> "inimă"
+  "hjärta" [pos="0.482,0.387"]
+  "coração" -> "hjärta"
 }' )
 names( g )
 }

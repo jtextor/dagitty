@@ -129,7 +129,7 @@ g <- dagitty("pag{ x @-@ y @-@ z }")
 }
 \references{
 Richardson, Thomas; Spirtes, Peter (2002), Ancestral graph Markov models.
-\emph{The Annals of Statistics} 30(4): 962–1030.
+\emph{The Annals of Statistics} 30(4): 962-1030.
 
 J. Zhang (2008), Causal Reasoning with Ancestral Graphs. 
 \emph{Journal of Machine Learning Research} 9: 1437-1474.
