@@ -1,8 +1,9 @@
 Dear CRAN team
 
-Prof. Ripley kindly made me aware that the package fails on LATIN-1 systems.
+This submission addresses your comment below:
 
-This minor update fixes that.
+Can you pls provide a pointer for 'DAGitty' (and use single quotes)?  If
+a URL, write as <http://....>.  Also, pls write "This package ..."
 
 Best regards
 Johannes Textor

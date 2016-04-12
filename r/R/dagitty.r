@@ -29,6 +29,20 @@ graphType <- function( x ){
 	finally={.deleteJSVar(xv)})
 	r
 }
+'graphType<-' <- function( x, value=c("dag","mag","pdag","pag") ){
+	value <- match.arg(value)
+	x <- as.dagitty( x )
+	xv <- .getJSVar()
+	r <- NULL
+	tryCatch({
+		.jsassigngraph( xv, x )
+		.jseval( paste0("global.",xv,".setType('",value,"')") )
+		r <- .jsgetgraph( xv )
+	}, 
+	error=function(e) stop(e),
+	finally={.deleteJSVar(xv)})
+	r
+}
 
 #' Get Bundled Examples
 #'
@@ -771,9 +785,13 @@ plot.dagitty <- function( x, ... ){
 	x <- as.dagitty( x )
 	.supportsTypes(x,c("dag","mag","pdag"))
 	coords <- coordinates( x )
+        if( any( !is.finite( coords$x ) | !is.finite( coords$y ) ) ){
+                stop("Please supply plot coordinates for graph! See ?coordinates and ?graphLayout.")
+        }
 	labels <- names(coords$x)
+	par(mar=rep(0,4))
 	plot.new()
-	par(new=TRUE,mar=rep(0,4))
+	par(new=TRUE)
 	wx <- sapply( paste0("mm",labels), 
 		function(s) strwidth(s,units="inches") )
 	wy <- sapply( paste0("\n",labels), 

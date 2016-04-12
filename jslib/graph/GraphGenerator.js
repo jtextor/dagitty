@@ -24,6 +24,7 @@ var GraphGenerator = {
 				}
 			}
 		}
+		g.setType("dag")
 		return g
 	}
 }
