@@ -49,6 +49,29 @@ QUnit.test( "parsing and serializing", function( assert ) {
 	// GraphParser.VALIDATE_GRAPH_STRUCTURE = false;
 	assert.equal( GraphParser.parseGuess( "dag{{x->{a b}}}" ).edges.length, 2 )
 
+	assert.equal( GraphParser.parseGuess( "dag{{x->{a ; b}}}" ).edges.length, 2,
+		"semicolons" )
+	assert.equal( GraphParser.parseGuess( "dag{a;b}" ).getVertices().length, 2,
+		"semicolons 2" )
+	assert.equal( GraphParser.parseGuess( "dag{;b}" ).getVertices().length, 1,
+		"semicolons 2" )
+	assert.equal( GraphParser.parseGuess( "dag{a;}" ).getVertices().length, 1, 
+		"semicolons 2" )
+
+	assert.equal( GraphParser.parseGuess( "dag{}" ).getVertices().length, 0,
+		"semicolons 2" )
+	assert.equal( GraphParser.parseGuess( "dag{;}" ).getVertices().length, 0,
+		"semicolons 2" )
+	assert.equal( GraphParser.parseGuess( "dag{;;;}" ).getVertices().length, 0,
+		"semicolons 2" )
+
+	assert.equal( GraphParser.parseGuess( "dag{a}" ).getVertices().length,
+		1, "spaces" )
+	assert.equal( GraphParser.parseGuess( "dag{a }" ).getVertices().length,
+		1, "spaces" )
+	assert.equal( GraphParser.parseGuess( "dag{ a }" ).getVertices().length,
+		1, "spaces" )
+
 
 	assert.equal( GraphParser.parseGuess( "pag{a @-> {b --@ {c @-@ d} }}" ).edges.length, 6 )
 	assert.equal( _.pluck(GraphParser.parseGuess( "pag{a @->b<-@c}" ).getVertices(),"id").sort().join(","), "a,b,c" )
@@ -454,7 +477,7 @@ QUnit.test( "graph transformations", function( assert ) {
 	assert.equal((function(){
 		var g = GraphParser.parseGuess("dag{x<-z3<-z1->x}")
 		return GraphTransformer.markovEquivalentDags(g).length
-	})(),6)
+	})(),6,"markov equiv")
 
 	var transformations = [
 		GraphTransformer.pagToPdag,

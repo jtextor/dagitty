@@ -953,7 +953,7 @@ adjustmentSets <- function( x, exposure=NULL, outcome=NULL,
 			r <- structure( .jsget(xv), class="dagitty.sets" )
 		},finally={.deleteJSVar(xv)})
 	} else if( type == "all" ){
-		covariates <- setdiff( names( x ), c( exposure, outcome ) )
+		covariates <- setdiff( names( x ), c( exposures(x), outcomes(x) ) )
 		subsets <- (expand.grid( rep( list(0:1),length(covariates)) ))
 		r <- lapply( 1:nrow(subsets), function(i){
 			Z <- covariates[as.logical(subsets[i,])]

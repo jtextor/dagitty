@@ -9,6 +9,24 @@
  *
  */
 
+{
+  function extractList(list, index) {
+    var result = [], i;
+
+    for (i = 0; i < list.length; i++) {
+      if (list[i][index] !== null) {
+        result.push(list[i][index]);
+      }
+    }
+
+    return result;
+  }
+
+  function buildList(head, tail, index) {
+    return (head !== null ? [head] : []).concat(extractList(tail, index));
+  }
+}
+
 start
   = graph
 
@@ -23,7 +41,7 @@ subgraph
   }
 
 stmt_list
-  = l:(hd:stmt (';' _)? tl:stmt_list? {return [hd].concat(tl||[]) })?  { return l }
+  = head:stmt? tail:( _? stmt )* { return buildList(head,tail,1) }
 
 stmt
   =  globaloption / edge_stmt / node_stmt / subgraph
@@ -92,4 +110,4 @@ char
   / '\\' { return '\\'; }
 
 _ 
-  = [\n\r\t ] *
+  = [\n\r\t ;] *
