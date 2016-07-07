@@ -1505,7 +1505,11 @@ localTests <- function(x, data=NULL,
 	}
 	w <- (1-conf.level)/2
 	if( type %in% c("tetrads","tetrads.within","tetrads.between","tetrads.epistemic") ){
-		tets <- vanishingTetrads( x, strsplit(type,"\\.")[[1]][2] )
+		if( type == "tetrads" ){
+			tets <- vanishingTetrads( x )
+		} else {
+			tets <- vanishingTetrads( x, strsplit(type,"\\.")[[1]][2] )
+		}
 		if( length(tets) == 0 ){
 			return(data.frame())
 		}
@@ -1577,6 +1581,8 @@ localTests <- function(x, data=NULL,
 #' \link{localTests}. 
 #' @param xlab X axis label.
 #' @param xlim numerical vector with 2 elements; range of X axis.
+#' @param axis.pars arguments to be passed on to \code{\link{axis}}
+#'  when generating the Y axis for the plot.
 #' @param ... further arguments to be passed on to \code{\link{plot}}.
 #'
 #' @examples
@@ -1586,10 +1592,10 @@ localTests <- function(x, data=NULL,
 #'
 #' @export
 plotLocalTestResults <- function(x,xlab="test statistic (95% CI)",
-	xlim=c(min(x[,c(4,5)]),max(x[,c(4,5)])),...){
+	xlim=c(min(x[,c(4,5)]),max(x[,c(4,5)])),axis.pars=list(las=1),...){
 	y <- seq_len(nrow(x))
 	plot( x[,1], y,xlab=xlab,xlim=xlim, yaxt="n", ylab="", ... )
-	axis( 2, at=y, labels=rownames(x), las=1 )
+	do.call( axis, c( list( 2, at=y, labels=rownames(x)), axis.pars ) )
 	segments( x[,4], y, x[,5], y )
 	#segments( seq_len(nrow(x))+.1, x[,1]-2*x[,2], 
 	#	y1=x[,1]+2*x[,2], col=2 )

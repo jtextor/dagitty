@@ -734,6 +734,11 @@ QUnit.test( "testable implications", function( assert ) {
 });
 
 QUnit.test( "tetrad analysis", function( assert ) {
+	assert.equal( function(){
+		var g = GraphParser.parseGuess("dag { {a b} ->  x -> y }")
+		return GraphAnalyzer.vanishingTetrads( g ).length
+	}() , 1, "choke point in I/J side" )
+
 	assert.equal((function(){
 		var g = GraphParser.parseGuess("dag { xi1 [u] xi2 [u] xi3 [u] xi1 <-> xi2 <-> xi3 <-> xi1 "+
 			" xi1 -> {X1 X2 X3} xi2 -> {X4 X5 X6} xi3 -> {X7 X8 X9} }")
@@ -769,7 +774,7 @@ QUnit.test( "tetrad analysis", function( assert ) {
 
 	assert.equal((function(){
 		return GraphAnalyzer.vanishingTetrads( TestGraphs.findExample( "Thoemmes" ) ).length
-	})(), 33 )
+	})(), 98 )
 
 	assert.equal((function(){
 		return GraphTransformer.trekGraph( TestGraphs.findExample( "m-bias" ) ).toAdjacencyList()

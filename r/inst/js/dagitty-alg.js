@@ -1046,14 +1046,17 @@ var GraphAnalyzer = {
 	vanishingTetrads : function( g, nr_limit, type ){
 		var r = []
 		g = GraphTransformer.canonicalDag(g).g
-		var gtrek = GraphTransformer.trekGraph( g, "up_", "dw_" )		
+		var gtrek = GraphTransformer.trekGraph( g, "up_", "dw_" )
+		gtrek.addVertex("s")
+		gtrek.addVertex("t")	
 		var latents = g.getLatentNodes()
 		var is_latent = []; for( var i = 0 ; i < latents.length ; i ++ ){ is_latent[latents[i].id]=1 }
 		
 		var vv = _.pluck(_.reject(g.getVertices(),function(v){return is_latent[v.id]}),"id"), 
-			i1, i2, i3, i4, iside, jside
+			i1, i2, i3, i4, iside, jside, s = gtrek.getVertex("s"), t = gtrek.getVertex("t")
 		
 		function examineQuadruple( i1, i2, j1, j2 ){
+			//console.log( "examining quadruple : ",i1,i2,j1,j2 )
 			var pi, pj
 			iside = [ gtrek.getVertex( "up_"+i1 ),
 				gtrek.getVertex( "up_"+i2 ) ]
@@ -1071,9 +1074,25 @@ var GraphAnalyzer = {
 					return
 				}
 			}
-			if( GraphAnalyzer.minVertexCut( gtrek, iside, jside ) <= 1 ){
+			gtrek.addEdge( s, iside[0], Graph.Edgetype.Directed )
+			gtrek.addEdge( s, iside[1], Graph.Edgetype.Directed )
+
+			gtrek.addEdge( jside[0], t, Graph.Edgetype.Directed )
+			gtrek.addEdge( jside[1], t, Graph.Edgetype.Directed )
+
+
+			//console.log( gtrek.toString() )
+			//console.log( "min cut is : ", GraphAnalyzer.minVertexCut( gtrek, [s], [t] ) )
+			if( GraphAnalyzer.minVertexCut( gtrek, [s], [t] ) <= 1 ){
 				r.push( [i1, j1, j2, i2] ) // lisrel convention
 			}
+
+			gtrek.deleteEdge( s, iside[0], Graph.Edgetype.Directed )
+			gtrek.deleteEdge( s, iside[1], Graph.Edgetype.Directed )
+
+			gtrek.deleteEdge( jside[0], t, Graph.Edgetype.Directed )
+			gtrek.deleteEdge( jside[1], t, Graph.Edgetype.Directed )
+
 		}
 
 		var p1, p2, p3, p4	
@@ -1154,7 +1173,7 @@ var GraphAnalyzer = {
 			while( qfront < vqueue.length ){
 				vid = vqueue[qfront]
 				forwards = dirqueue[qfront]
-								// vqueue = [vstart.id], dirqueue = [1],
+				// vqueue = [vstart.id], dirqueue = [1],
 				if( is_target[vid] && forwards ){
 					var v2id = t.id, dir = dirqueue[qfront]
 					parents = [v2id]
@@ -1168,12 +1187,12 @@ var GraphAnalyzer = {
 				}
 								
 				if( flowV[ vid ] ){
-									// If there has been flow, we can only move out
-									// in the opposite direction that we came in.
+					// If there has been flow, we can only move out
+					// in the opposite direction that we came in.
 					if( forwards ){
 						vnext = g.getVertex(vid).getParents()
 						for( i = 0 ; i < vnext.length ; i ++ ){
-											/// going backwards only if previously went forwards
+							/// going backwards only if previously went forwards
 							if( flowE[vnext[i].id][vid] ){
 								checkPath( vnext[i], false )
 							}
@@ -1186,9 +1205,9 @@ var GraphAnalyzer = {
 					}
 									
 				} else {
-									// If there is no flow in this vertex, none
-									// of the parent edges have flow. We can only move out
-									// forwards. Also, we must have come in forwards.
+					// If there is no flow in this vertex, none
+					// of the parent edges have flow. We can only move out
+					// forwards. Also, we must have come in forwards.
 					vnext = g.getVertex(vid).getChildren()
 					for( i = 0 ; i < vnext.length ; i ++ ){
 						checkPath( vnext[i], true )
