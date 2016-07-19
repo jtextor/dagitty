@@ -4,8 +4,9 @@
 \alias{plotLocalTestResults}
 \title{Plot Results of Local Tests}
 \usage{
-plotLocalTestResults(x, xlab = "test statistic (95\% CI)", xlim = c(min(x[,
-  c(4, 5)]), max(x[, c(4, 5)])), ...)
+plotLocalTestResults(x, xlab = "test statistic (95\% CI)", xlim = range(x[,
+  c(ncol(x) - 1, ncol(x))]), sort.by.statistic = TRUE, n = Inf,
+  axis.pars = list(las = 1), ...)
 }
 \arguments{
 \item{x}{data frame; results of the local tests as returned by 
@@ -14,6 +15,15 @@ plotLocalTestResults(x, xlab = "test statistic (95\% CI)", xlim = c(min(x[,
 \item{xlab}{X axis label.}
 
 \item{xlim}{numerical vector with 2 elements; range of X axis.}
+
+\item{sort.by.statistic}{logical. Sort the rows of \code{x} by
+the absolute value of the test statistic before plotting.}
+
+\item{n}{plot only the n tests for which the absolute value of 
+the test statistics diverges most from 0.}
+
+\item{axis.pars}{arguments to be passed on to \code{\link{axis}}
+when generating the Y axis for the plot.}
 
 \item{...}{further arguments to be passed on to \code{\link{plot}}.}
 }

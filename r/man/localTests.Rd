@@ -4,9 +4,10 @@
 \alias{localTests}
 \title{Test Graph against Data}
 \usage{
-localTests(x, data = NULL, type = c("cis", "tetrads", "tetrads.within",
-  "tetrads.between", "tetrads.epistemic"), sample.cov = NULL,
-  sample.nobs = NULL, conf.level = 0.95, R = NULL)
+localTests(x, data = NULL, type = c("cis", "cis.loess", "tetrads",
+  "tetrads.within", "tetrads.between", "tetrads.epistemic"), tests = NULL,
+  sample.cov = NULL, sample.nobs = NULL, conf.level = 0.95, R = NULL,
+  loess.pars = NULL)
 }
 \arguments{
 \item{x}{the input graph, a DAG, MAG, or PDAG.}
@@ -14,10 +15,17 @@ localTests(x, data = NULL, type = c("cis", "tetrads", "tetrads.within",
 \item{data}{matrix or data frame containing the data.}
 
 \item{type}{character indicating which kind of local
-test to perform. Supported values are \code{"cis"} (conditional independencies),
+test to perform. Supported values are \code{"cis"} (linear conditional independence),
+\code{"cis.loess"} (conditional independence using loess regression), 
 \code{"tetrads"} and \code{"tetrads.type"}, where "type" is one of the items of the 
 tetrad typology, e.g. \code{"tetrads.within"} (see \code{\link{vanishingTetrads}}).
 Tetrad testing is only implemented for DAGs.}
+
+\item{tests}{optional list of the precise tests to perform. If not given, the list
+of tests is automatically derived from the input graph. Can be used to restrict 
+testing to only a certain subset of tests (for instance, to test only those conditional
+independencies for which the conditioning set is of a reasonably low dimension, such
+as shown in the example).}
 
 \item{sample.cov}{the sample covariance matrix; ignored if \code{data} is supplied.
 Either \code{data} or \code{sample.cov} and \code{sample.nobs} must be supplied.}
@@ -31,6 +39,9 @@ statistics.}
 intervals. If \code{NULL}, then confidence intervals are based on normal
 approximation. For tetrads, the normal approximation is only valid in 
 large samples even if the data are normally distributed.}
+
+\item{loess.pars}{list of parameter to be passed on to  \code{\link[stats]{loess}}
+(for \code{type="cis.loess"}), for example the smoothing range.}
 }
 \description{
 Derives testable implications from the given graphical model and tests them against
@@ -42,17 +53,26 @@ structural equation model) is postulated. Conditional independence implications 
 do not require this assumption. However, both Tetrad and CI implications are tested
 parametrically: for Tetrads, Wishart's confidence interval formula is used, whereas
 for CIs, a Z test of zero conditional covariance (if the covariance
-matrix is given) or a test of regressional independence (it the raw data is given)
-is performed.
-Tetrad tests also support bootstrapping instead of estimating parametric confidence
-intervals.
+matrix is given) or a test of residual independence after linear regression
+(it the raw data is given) is performed.
+Both tetrad and CI tests also support bootstrapping instead of estimating parametric
+confidence intervals.
 }
 \examples{
 # Simulate full mediation model with measurement error of M1
+set.seed(123)
 d <- simulateSEM("dag{X->{U1 M2}->Y U1->M1}",.6,.6)
 
 # Postulate and test full mediation model without measurement error
 plotLocalTestResults(localTests( "dag{ X -> {M1 M2} -> Y }", d, "cis" ))
+
+# Simulate data from example SEM
+g <- getExample("Polzer")
+d <- simulateSEM(g,.1,.1)
+
+# Compute independencies with at most 3 conditioning variables
+imp <- Filter(function(x) length(x$Z)<4, impliedConditionalIndependencies(g))
+plotLocalTestResults(localTests( g, d, "cis.loess", R=100, tests=imp, loess.pars=list(span=0.6) ))
 
 }
 

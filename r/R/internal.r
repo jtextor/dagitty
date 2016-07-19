@@ -214,6 +214,48 @@
 	c( coef(summary(mdl))[2,c(1,2,4)], confint( mdl, ind$Y, level=conf.level ) )
 }
 
+.ci.test.lm.perm <- function( x, ind, conf.level, R=500 ){
+	requireNamespace("boot",quietly=TRUE)
+	if( length(ind$Z) > 0 ){
+		ix <- lm( paste(ind$X,"~",paste(ind$Z,collapse=" + ")), data=x )$residuals
+		iy <- lm( paste(ind$Y,"~",paste(ind$Z,collapse=" + ")), data=x )$residuals
+	} else {
+		ix <- x[,ind$X]
+		iy <- x[,ind$Y]
+	}
+	.perm.cor.test(ix,iy,conf.level,R)
+}
+
+.ci.test.loess.perm <- function( x, ind, conf.level, R=500, loess.pars=list() ){
+	if( length(ind$Z) > 0 ){
+		ix <- do.call( loess, c(
+			list(formula=paste(ind$X,"~",paste(ind$Z,collapse=" + ")),
+			data=x),loess.pars
+			))$residuals
+		iy <- do.call( loess, c(
+			list(formula=paste(ind$Y,"~",paste(ind$Z,collapse=" + ")),
+			data=x),loess.pars
+			))$residuals
+	} else {
+		ix <- x[,ind$X]
+		iy <- x[,ind$Y]
+	}
+	.perm.cor.test(ix,iy,conf.level,R)
+}
+
+.perm.cor.test <- function( a, b, conf.level, R ){
+	requireNamespace("boot",quietly=TRUE)
+	bo <- boot::boot( cbind(a,b), function(data,i){
+		cor(data[i,1],data[i,2])
+	}, R )
+	c(
+		Estimate=bo$t0,
+		"Std. Error"=sd(bo$t),
+		quantile(bo$t,c((1-conf.level)/2,1-(1-conf.level)/2))
+	)
+}
+
+
 .ci.test.covmat <- function( sample.cov, sample.nobs,
 	ind, conf.level ){
 	vars <- unlist(c(ind$X,ind$Y,ind$Z))

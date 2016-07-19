@@ -3,6 +3,8 @@ dagitty v0.2-1 (Release date: 2016-XX-XX)
 
 Changes:
 
-* plot function now sets margins properly and gives better error messages
-* Bugfix in adjustmentSets with type="all" when exposure was defined in graph
-* Improved parser for larger graphs
+ * Non-parametric conditional independence testing for additive noise using
+   loess smoothing
+ * plot function now sets margins properly and gives better error messages
+ * Bugfix in adjustmentSets with type="all" when exposure was defined in graph
+ * Improved parser for larger graphs

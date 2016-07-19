@@ -5,7 +5,7 @@
 \title{List Implied Conditional Independencies}
 \usage{
 impliedConditionalIndependencies(x, type = "missing.edge",
-  max.results = 100)
+  max.results = Inf)
 }
 \arguments{
 \item{x}{the input graph, a DAG, MAG, or PDAG.}

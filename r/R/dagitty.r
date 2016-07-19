@@ -4,7 +4,7 @@
 #' @importFrom grDevices dev.size
 #' @importFrom methods is
 #' @importFrom utils tail
-#' @importFrom stats as.formula coef confint cov lm pnorm qnorm quantile runif
+#' @importFrom stats as.formula coef confint cov lm pnorm qnorm quantile runif loess
 #' @importFrom graphics abline arrows axis lines par plot plot.new segments strheight strwidth text xspline
 NULL
 
@@ -1058,7 +1058,7 @@ isAdjustmentSet <- function( x, Z, exposure=NULL, outcome=NULL ){
 #' latents( g ) <- c("m")
 #' impliedConditionalIndependencies( g ) # none
 #' @export
-impliedConditionalIndependencies <- function( x, type="missing.edge", max.results=100 ){
+impliedConditionalIndependencies <- function( x, type="missing.edge", max.results=Inf ){
 	if( ! type %in% c("missing.edge","basis.set") ){
 		stop("'type' must be one of: missing.edge, basis.set")
 	}
@@ -1449,12 +1449,18 @@ downloadGraph <- function(x="dagitty.net/mz-Tuw9"){
 #' the given dataset.
 #'
 #' @param x the input graph, a DAG, MAG, or PDAG.
+#' @param tests optional list of the precise tests to perform. If not given, the list
+#'  of tests is automatically derived from the input graph. Can be used to restrict 
+#'  testing to only a certain subset of tests (for instance, to test only those conditional
+#'  independencies for which the conditioning set is of a reasonably low dimension, such
+#'  as shown in the example). 
 #' @param data matrix or data frame containing the data.
 #' @param sample.cov the sample covariance matrix; ignored if \code{data} is supplied.
 #' Either \code{data} or \code{sample.cov} and \code{sample.nobs} must be supplied.
 #' @param sample.nobs number of observations; ignored if \code{data} is supplied.
 #' @param type character indicating which kind of local
-#'  test to perform. Supported values are \code{"cis"} (conditional independencies),
+#'  test to perform. Supported values are \code{"cis"} (linear conditional independence),
+#'  \code{"cis.loess"} (conditional independence using loess regression), 
 #'  \code{"tetrads"} and \code{"tetrads.type"}, where "type" is one of the items of the 
 #'  tetrad typology, e.g. \code{"tetrads.within"} (see \code{\link{vanishingTetrads}}).
 #'  Tetrad testing is only implemented for DAGs.
@@ -1464,29 +1470,41 @@ downloadGraph <- function(x="dagitty.net/mz-Tuw9"){
 #'   large samples even if the data are normally distributed.
 #' @param conf.level determines the size of confidence intervals for test
 #'   statistics.
+#' @param loess.pars list of parameter to be passed on to  \code{\link[stats]{loess}}
+#'   (for \code{type="cis.loess"}), for example the smoothing range.
 #'
 #' @details Tetrad implications can only be derived if a Gaussian model (i.e., a linear
 #' structural equation model) is postulated. Conditional independence implications (CI)
 #' do not require this assumption. However, both Tetrad and CI implications are tested
 #' parametrically: for Tetrads, Wishart's confidence interval formula is used, whereas
 #' for CIs, a Z test of zero conditional covariance (if the covariance
-#' matrix is given) or a test of regressional independence (it the raw data is given)
-#' is performed.
-#' Tetrad tests also support bootstrapping instead of estimating parametric confidence
-#' intervals.
+#' matrix is given) or a test of residual independence after linear regression
+#' (it the raw data is given) is performed.
+#' Both tetrad and CI tests also support bootstrapping instead of estimating parametric
+#' confidence intervals.
 #' 
 #' @examples
 #' # Simulate full mediation model with measurement error of M1
+#' set.seed(123)
 #' d <- simulateSEM("dag{X->{U1 M2}->Y U1->M1}",.6,.6)
 #' 
 #' # Postulate and test full mediation model without measurement error
 #' plotLocalTestResults(localTests( "dag{ X -> {M1 M2} -> Y }", d, "cis" ))
 #'
+#' # Simulate data from example SEM
+#' g <- getExample("Polzer")
+#' d <- simulateSEM(g,.1,.1)
+#' 
+#' # Compute independencies with at most 3 conditioning variables
+#' imp <- Filter(function(x) length(x$Z)<4, impliedConditionalIndependencies(g))
+#' plotLocalTestResults(localTests( g, d, "cis.loess", R=100, tests=imp, loess.pars=list(span=0.6) ))
+#'
 #' @export
 localTests <- function(x, data=NULL, 
-	type=c("cis","tetrads","tetrads.within","tetrads.between","tetrads.epistemic"),
+	type=c("cis","cis.loess","tetrads","tetrads.within","tetrads.between","tetrads.epistemic"),
+	tests=NULL,
 	sample.cov=NULL,sample.nobs=NULL,
-	conf.level=.95,R=NULL){
+	conf.level=.95,R=NULL,loess.pars=NULL){
 	x <- as.dagitty(x)
 	type <- match.arg(type)
 	if( type=="cis" ){
@@ -1500,17 +1518,22 @@ localTests <- function(x, data=NULL,
 	if( !is.null(R) && is.null(data) ){
 		stop("Bootstrapping requires raw data!")
 	}
+	if( is.null(R) && type=="cis.loess" ){
+		stop("Non-parametric conditional independence testing requires bootstrapping! Please provide R argument.")
+	}
 	if( is.null(data) && is.null(sample.cov) ){
 		stop("Please provide either data or sample covariance matrix!")
 	}
 	w <- (1-conf.level)/2
 	if( type %in% c("tetrads","tetrads.within","tetrads.between","tetrads.epistemic") ){
-		if( type == "tetrads" ){
-			tets <- vanishingTetrads( x )
-		} else {
-			tets <- vanishingTetrads( x, strsplit(type,"\\.")[[1]][2] )
+		if( is.null( tests ) ){
+			if( type == "tetrads" ){
+				tests <- vanishingTetrads( x )
+			} else {
+				tests <- vanishingTetrads( x, strsplit(type,"\\.")[[1]][2] )
+			}
 		}
-		if( length(tets) == 0 ){
+		if( length(tests) == 0 ){
 			return(data.frame())
 		}
 		if( is.null( sample.cov ) ){
@@ -1519,55 +1542,71 @@ localTests <- function(x, data=NULL,
 		if( is.null( sample.nobs ) ){
 			sample.nobs <- nrow(data)
 		}
-		tetrad.values <- .tetradsFromCov(sample.cov,tets)
-		tetrad.sample.sds <- sapply(seq_len(nrow(tets)),
-			function(i) .tetrad.sem(tets[i,],sample.cov,sample.nobs))
+		tetrad.values <- .tetradsFromCov(sample.cov,tests)
+		tetrad.sample.sds <- sapply(seq_len(nrow(tests)),
+			function(i) .tetrad.sem(tests[i,],sample.cov,sample.nobs))
 		r <- data.frame(
-				row.names=apply( tets, 1, 
+				row.names=apply( tests, 1, 
 					function(x) paste(x,collapse=",") ),
-				estimate=tetrad.values,
-				std.error=tetrad.sample.sds,
-				p.value=2*pnorm(abs(tetrad.values/tetrad.sample.sds),
-					lower.tail=FALSE)
+				estimate=tetrad.values
 		)
 		if( !is.null(R) ){
 			requireNamespace("boot",quietly=TRUE)
 			bo <- boot::boot( data,
-				function(data,i) .tetradsFromData(data,tets,i), R )
+				function(data,i) .tetradsFromData(data,tests,i), R )
 			r <- cbind( r, t(apply( bo$t, 2,
-				function(x) quantile(x,c((1-conf.level)/2,1-(1-conf.level)/2)) )) )
+				function(x) c(sd(x), quantile(x,c((1-conf.level)/2,1-(1-conf.level)/2))) )) )
+			colnames(r) <- c("estimate","std.error",
+				paste0(100*w,"%"),paste0(100*(1-w),"%"))
 		} else {
-			conf <- cbind( tetrad.values+qnorm(w)*tetrad.sample.sds,
+			std.errors <- tetrad.sample.sds
+			p.values <- 2*pnorm(abs(tetrad.values/tetrad.sample.sds),
+				lower.tail=FALSE)
+			conf <- cbind( r, std.errors, p.values, tetrad.values+qnorm(w)*tetrad.sample.sds,
 				tetrad.values+qnorm(1-w)*tetrad.sample.sds )
 				colnames(conf) <- c(paste0(100*w,"%"),paste0(100*(1-w),"%"))
 			r <- cbind( r, conf )
+			colnames(r) <- c("estimate","std.error","p.value",
+				paste0(100*w,"%"),paste0(100*(1-w),"%"))
 		}
-	} else if( type == "cis" ){
-		if( !is.null(R) ){
-			stop("Bootstrapping for conditional independence is not yet implemented.")
+	} else if( type %in% c("cis","cis.loess") ){
+		if( is.null(tests) ){
+			tests <- impliedConditionalIndependencies( x )
 		}
-		cis <- impliedConditionalIndependencies( x )
-		if( length(cis) == 0 ){
+		if( length(tests) == 0 ){
 			return(data.frame())
 		}
-		if( !is.null(data) ){
+		row.names <- sapply(tests,as.character)
+		if( !is.null(R) ){
+			if( type == "cis" ){
+				f <- function(i) .ci.test.lm.perm(data,i,conf.level,R)
+			} else {
+				f <- function(i) .ci.test.loess.perm(data,i,conf.level,R,loess.pars)
+			}
 			r <- as.data.frame(
-				row.names=sapply(cis,as.character),
-				t(sapply( cis, function(i) 
-					.ri.test(data,i,conf.level) ))
+				row.names=row.names,
+				t(sapply( tests, f ))
 			)
+			colnames(r) <- c("estimate","std.error",
+				paste0(100*w,"%"),paste0(100*(1-w),"%"))
 		} else {
-			r <- as.data.frame(
-				row.names=sapply(cis,as.character),
-				t(sapply( cis, function(i) 
-					.ci.test.covmat(sample.cov,sample.nobs,i,conf.level) ))
-			)
+			if( !is.null(data) ){
+				r <- as.data.frame(
+					row.names=row.names,
+					t(sapply( tests, function(i) 
+						.ri.test(data,i,conf.level) ))
+				)
+			} else {
+				r <- as.data.frame(
+					row.names=row.names,
+					t(sapply( tests, function(i) 
+						.ci.test.covmat(sample.cov,sample.nobs,i,conf.level) ))
+				)
+			}
+			colnames(r) <- c("estimate","std.error","p.value",
+				paste0(100*w,"%"),paste0(100*(1-w),"%"))
 		}
-	} else {
-		stop("Local test type '",type,"' not supported!")
 	}
-	colnames(r) <- c("estimate","std.error","p.value",
-		paste0(100*w,"%"),paste0(100*(1-w),"%"))
 	return(r)
 }
 
@@ -1583,6 +1622,10 @@ localTests <- function(x, data=NULL,
 #' @param xlim numerical vector with 2 elements; range of X axis.
 #' @param axis.pars arguments to be passed on to \code{\link{axis}}
 #'  when generating the Y axis for the plot.
+#' @param sort.by.statistic logical. Sort the rows of \code{x} by
+#'  the absolute value of the test statistic before plotting.
+#' @param n plot only the n tests for which the absolute value of 
+#'  the test statistics diverges most from 0.
 #' @param ... further arguments to be passed on to \code{\link{plot}}.
 #'
 #' @examples
@@ -1592,11 +1635,16 @@ localTests <- function(x, data=NULL,
 #'
 #' @export
 plotLocalTestResults <- function(x,xlab="test statistic (95% CI)",
-	xlim=c(min(x[,c(4,5)]),max(x[,c(4,5)])),axis.pars=list(las=1),...){
+	xlim=range(x[,c(ncol(x)-1,ncol(x))]),sort.by.statistic=TRUE,
+	n=Inf,axis.pars=list(las=1),...){
+	x <- x[order(abs(x[1]),decreasing=TRUE),]
+	if( is.finite(n) && n > 0 && n < nrow(x) ){
+		x <- x[1:n,]
+	}
 	y <- seq_len(nrow(x))
 	plot( x[,1], y,xlab=xlab,xlim=xlim, yaxt="n", ylab="", ... )
 	do.call( axis, c( list( 2, at=y, labels=rownames(x)), axis.pars ) )
-	segments( x[,4], y, x[,5], y )
+	segments( x[,ncol(x)-1], y, x[,ncol(x)], y )
 	#segments( seq_len(nrow(x))+.1, x[,1]-2*x[,2], 
 	#	y1=x[,1]+2*x[,2], col=2 )
 	abline( v=0 )
