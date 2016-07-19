@@ -27,6 +27,16 @@ var GraphSerializer = {
 			if( v.label ){
 				properties.push( "label=\""+v.label.replace(/"/g, "\\\"")+"\"" )
 			}
+			if( v.attributes ){
+				var vk = Object.keys( v.attributes )
+				for( var i = 0 ; i < vk.length ; i ++ ){
+					if( v.attributes[vk[i]] ){
+						properties.push(vk[i]+"=\""+(""+v.attributes[vk[i]]).replace(/"/g, "\\\"")+"\"")
+					} else {
+						properties.push(vk[i])
+					}
+				}
+			}
 			if( properties.length > 0 ){
 				property_string = " ["+properties.join(",")+"]"
 			}
@@ -64,6 +74,16 @@ var GraphSerializer = {
 			}
 			if( e.id ){
 				eop.push("label=\"" + encodeURIComponent( e.id ) + "\"")
+			}
+			if( e.attributes ){
+				var vk = Object.keys( e.attributes )
+				for( var i = 0 ; i < vk.length ; i ++ ){
+					if( e.attributes[vk[i]] ){
+						eop.push(vk[i]+"=\""+(""+e.attributes[vk[i]]).replace(/"/g, "\\\"")+"\"")
+					} else {
+						eop.push(vk[i])
+					}
+				}
 			}
 			if( eop.length > 0 ){
 				es += " ["+eop.join(",")+"]"

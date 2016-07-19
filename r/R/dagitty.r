@@ -155,43 +155,52 @@ simulateSEM <- function( x, b.lower=-.6, b.upper=.6, eps=1, N=500, standardized=
 	}
 	.supportsTypes( x, c("dag") )
 	x <- as.dagitty( x )
-	xc <- canonicalize( x )
-	x <- xc$g
-	vars <- names( x )
-	e <- edges( x )
+	e <- .edgeAttributes( x, "beta" )
+	e$a <- as.double(as.character(e$a))
+	b.not.set <- is.na(e$a)
+	e$a[b.not.set] <- runif(sum(b.not.set),b.lower,b.upper)
+	ovars <- names(x)
+	nV <- length(ovars)
+	nL <- sum(e$e=="<->")
 	if( nrow(e) > 0 ){
-		Beta <- matrix( 0, nrow=length(vars), ncol=length(vars) )
-		rownames(Beta) <- colnames(Beta) <- vars
-		ecovs <- runif( length(xc$L), b.lower, b.upper )
-		names(ecovs) <- xc$L
-		e[,1] <- as.character(e[,1])
-		e[,2] <- as.character(e[,2])
-		for( i in seq_len( nrow( e ) ) ){
-			if( e[i,1] %in% xc$L ){
-				Beta[(e[i,1]),(e[i,2])] <- sqrt(abs(ecovs[e[i,1]]))
-				if( ecovs[e[i,1]] < 0 ){
-					Beta[(e[i,1]),(e[i,2])] <- - Beta[(e[i,1]),(e[i,2])]
-					ecovs[e[i,1]] <- -ecovs[e[i,1]]
+		vars <- paste0("v",ovars)
+		if( nL > 0 ){
+			lats <- paste0("l",seq_len(nL))
+		} else {
+			lats <- c()
+		}
+		Beta <- matrix( 0, nrow=nV+nL, ncol=nV+nL )
+		rownames(Beta) <- colnames(Beta) <- c(vars,lats)
+		cL <- 1
+		for( i in seq_len( nrow(e) ) ){
+			b <- e$a[i]
+			if( e$e[i] == "<->" ){
+				Beta[paste0("l",cL),e$v[i]] <- sqrt(abs(b))
+				if( b < 0 ){
+					Beta[paste0("l",cL),paste0("v",e$w[i])] <- -sqrt(abs(b))
+				} else {
+					Beta[paste0("l",cL),paste0("v",e$w[i])] <- sqrt(abs(b))
+	
 				}
-			} else {
-				Beta[(e[i,1]),(e[i,2])] <- runif(1,b.lower,b.upper)			
+			} else if( e$e == "->" ){
+				Beta[paste0("v",e$v[i]),paste0("v",e$w[i])] <- b
 			}
 		}
-		L <- (diag( 1, length(vars) ) - Beta)
+		L <- (diag( 1, nV+nL ) - Beta)
 		Li <- MASS::ginv( L )
 		if( standardized == TRUE ){
 			Phi <- MASS::ginv( t(Li)^2 ) %*% rep(1,nrow(Beta))
-			Phi <- diag( c(Phi), length(vars) )
+			Phi <- diag( c(Phi), nV+nL )
 		} else {
-			Phi <- diag( eps, length(vars) )
+			Phi <- diag( eps, nV+nL )
 		}
 		Sigma <- t(Li) %*% Phi %*% Li
 	} else {
-		Sigma <- diag(1,length(vars))
+		Sigma <- diag(1,nV+nL)
 	}
-	r <- MASS::mvrnorm( N, rep(0,length(vars)), Sigma )
-	colnames(r) <- vars
-	as.data.frame(r[,setdiff(vars,xc$L)])
+	r <- MASS::mvrnorm( N, rep(0,nV+nL), Sigma )[,1:nV]
+	colnames(r) <- ovars
+	as.data.frame(r)
 }
 
 #' Ancestral Relations

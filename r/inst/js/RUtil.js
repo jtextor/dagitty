@@ -47,6 +47,18 @@ var DagittyR = {
 		return this.adj2r( GraphAnalyzer.canonicalAdjustmentSet( g ) )
 	},
 	
+	edgeAttributes2r : function( g, a ){
+		'use strict'
+		var r = { v : [], w : [], e : [], a : [] }
+		_.each(g.edges, function( e ){
+			r.v.push( e.v1.id )
+			r.w.push( e.v2.id )
+			r.a.push( e.attributes ? e.attributes[a] : null )
+			r.e.push( Graph.Edgetype.Symbol[e.directed] )
+		} )
+		return r
+	},
+
 	edge2r : function( g ){
 		'use strict'
 		var r = { v : [], w : [], e : [], x : [], y : [] }

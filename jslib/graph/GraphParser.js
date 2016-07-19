@@ -94,6 +94,8 @@ var GraphParser = {
 				for( i = 0 ; i < s.attributes.length ; i ++ ){
 					switch( s.attributes[i][0] ){
 					case "latent":
+					case "l":
+					case "unobserved":
 					case "u":
 						g.addLatentNode( n )
 						break
@@ -118,6 +120,12 @@ var GraphParser = {
 						break
 					case "label":
 						n.label = s.attributes[i][1]
+						break
+					default:
+						if( !n.attributes ){
+							n.attributes={}
+						}
+						n.attributes[s.attributes[i][0]]=s.attributes[i][1]
 						break
 					}
 				}
@@ -186,6 +194,11 @@ var GraphParser = {
 						case "label":
 							e.id = s.attributes[j][1]
 							break
+						default:
+							if( !e.attributes ){
+								e.attributes = {}
+							}
+							e.attributes[s.attributes[j][0]]=s.attributes[j][1]
 						}
 					}
 				}

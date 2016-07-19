@@ -1056,7 +1056,6 @@ var GraphAnalyzer = {
 			i1, i2, i3, i4, iside, jside, s = gtrek.getVertex("s"), t = gtrek.getVertex("t")
 		
 		function examineQuadruple( i1, i2, j1, j2 ){
-			//console.log( "examining quadruple : ",i1,i2,j1,j2 )
 			var pi, pj
 			iside = [ gtrek.getVertex( "up_"+i1 ),
 				gtrek.getVertex( "up_"+i2 ) ]
@@ -1080,9 +1079,6 @@ var GraphAnalyzer = {
 			gtrek.addEdge( jside[0], t, Graph.Edgetype.Directed )
 			gtrek.addEdge( jside[1], t, Graph.Edgetype.Directed )
 
-
-			//console.log( gtrek.toString() )
-			//console.log( "min cut is : ", GraphAnalyzer.minVertexCut( gtrek, [s], [t] ) )
 			if( GraphAnalyzer.minVertexCut( gtrek, [s], [t] ) <= 1 ){
 				r.push( [i1, j1, j2, i2] ) // lisrel convention
 			}
@@ -2674,6 +2670,8 @@ var GraphParser = {
 				for( i = 0 ; i < s.attributes.length ; i ++ ){
 					switch( s.attributes[i][0] ){
 					case "latent":
+					case "l":
+					case "unobserved":
 					case "u":
 						g.addLatentNode( n )
 						break
@@ -2698,6 +2696,12 @@ var GraphParser = {
 						break
 					case "label":
 						n.label = s.attributes[i][1]
+						break
+					default:
+						if( !n.attributes ){
+							n.attributes={}
+						}
+						n.attributes[s.attributes[i][0]]=s.attributes[i][1]
 						break
 					}
 				}
@@ -2766,6 +2770,11 @@ var GraphParser = {
 						case "label":
 							e.id = s.attributes[j][1]
 							break
+						default:
+							if( !e.attributes ){
+								e.attributes = {}
+							}
+							e.attributes[s.attributes[j][0]]=s.attributes[j][1]
 						}
 					}
 				}
@@ -4042,6 +4051,16 @@ var GraphSerializer = {
 			if( v.label ){
 				properties.push( "label=\""+v.label.replace(/"/g, "\\\"")+"\"" )
 			}
+			if( v.attributes ){
+				var vk = Object.keys( v.attributes )
+				for( var i = 0 ; i < vk.length ; i ++ ){
+					if( v.attributes[vk[i]] ){
+						properties.push(vk[i]+"=\""+(""+v.attributes[vk[i]]).replace(/"/g, "\\\"")+"\"")
+					} else {
+						properties.push(vk[i])
+					}
+				}
+			}
 			if( properties.length > 0 ){
 				property_string = " ["+properties.join(",")+"]"
 			}
@@ -4079,6 +4098,16 @@ var GraphSerializer = {
 			}
 			if( e.id ){
 				eop.push("label=\"" + encodeURIComponent( e.id ) + "\"")
+			}
+			if( e.attributes ){
+				var vk = Object.keys( e.attributes )
+				for( var i = 0 ; i < vk.length ; i ++ ){
+					if( e.attributes[vk[i]] ){
+						eop.push(vk[i]+"=\""+(""+e.attributes[vk[i]]).replace(/"/g, "\\\"")+"\"")
+					} else {
+						eop.push(vk[i])
+					}
+				}
 			}
 			if( eop.length > 0 ){
 				es += " ["+eop.join(",")+"]"

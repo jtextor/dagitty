@@ -226,6 +226,19 @@
 	.perm.cor.test(ix,iy,conf.level,R)
 }
 
+.edgeAttributes <- function( x, a ){
+	x <- as.dagitty( x )
+	xv <- .getJSVar()
+	yv <- .getJSVar()
+	tryCatch({
+		.jsassigngraph( xv, x )
+		.jsassign( yv, a )
+		.jsassign( xv, .jsp("DagittyR.edgeAttributes2r(global.",xv,",global.",yv,")") )
+		r <- .jsget(xv)
+	}, finally={.deleteJSVar(xv);.deleteJSVar(yv)})
+	as.data.frame(r)
+}
+
 .ci.test.loess.perm <- function( x, ind, conf.level, R=500, loess.pars=list() ){
 	if( length(ind$Z) > 0 ){
 		ix <- do.call( loess, c(
