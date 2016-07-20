@@ -93,7 +93,7 @@ id
  = BAREWORD / STRING
 
 BAREWORD
-  = id:[0-9a-zA-Z_.]+ _ { return id.join('') }
+  = m:'-'? id:[0-9a-zA-Z_.]+ _ { return (m===null?'':'-') + id.join('') }
 
 STRING
   = '"' '"' _ {return "";}

@@ -109,14 +109,16 @@ getExample <- function( x ){
 #' Simulate Data from Structural Equation Model
 #'
 #' Interprets the input graph as a structural equation model, generates random path 
-#' coefficients, and simulates data from the model. This is just a dumb frontend to 
-#' lavaan's \code{\link[lavaan]{simulateData}} function and probably not very useful 
+#' coefficients, and simulates data from the model. This is a very bare-bones 
+#' function and probably not very useful 
 #' except for quick validation purposes (e.g. checking that an implied vanishing 
 #' tetrad truly vanishes in simulated data). For more elaborate simulation studies, please
 #' use the lavaan package or similar facilities in other packages.
 #'
 #' @details Data are generated in the following manner. 
-#' Each directed arrow is assigned a path coefficient chosen uniformly
+#' Each directed arrow is assigned a path coefficient that can be given using the attribute
+#' "beta" in the model syntax (see the examples). All coefficients not set in this manner are
+#' set to the \code{b.default} argument, or if that is not given, are chosen uniformly
 #' at random from the interval given by \code{b.lower} and \code{b.upper} (inclusive; set
 #' both parameters to the same value for constant path coefficients). Each bidirected 
 #' arrow a <-> b is replaced by a substructure  a <- L -> b, where L is an exogenous latent
@@ -127,8 +129,10 @@ getExample <- function( x ){
 #' 
 #' @param x the input graph, a DAG (which may contain bidirected edges).
 #' @param N number of samples to generate.
-#' @param b.lower lower bound for path coefficients.
+#' @param b.lower lower bound for random path coefficients, applied if \code{b.default=NULL}.
 #' @param b.upper upper bound for path coefficients.
+#' @param b.default default path coefficient applied to arrows for which no coefficient is 
+#'  defined in the model syntax.
 #' @param eps residual variance (only meaningful if \code{standardized=FALSE}).
 #' @param standardized whether a standardized output is desired (all variables have variance 1).
 #'
@@ -137,19 +141,19 @@ getExample <- function( x ){
 #' For instance, the graph structure z <- x -> y -> z is incompatible with standardized
 #' coefficients of 0.9, since this would imply that the variance of z must be larger than
 #' 1. For large graphs with many parallel paths, it can be very difficult to find coefficients 
-#' that work. 
+#' that work.
 #' 
 #' @return Returns a data frame containing \code{N} values for each variable in \code{x}.
 #' 
 #' @examples
 #' ## Simulate data with pre-defined path coefficients of -.6
-#' g <- dagitty('dag{z -> x <- y}')
-#' x <- simulateSEM( g, .707, .707 ) # sqrt(2)/2 is largest possible
+#' g <- dagitty('dag{z -> x [beta=-.6] x <- y [beta=-.6] }')
+#' x <- simulateSEM( g ) 
 #' cov(x)
 #'
 #' 
 #' @export
-simulateSEM <- function( x, b.lower=-.6, b.upper=.6, eps=1, N=500, standardized=TRUE ){
+simulateSEM <- function( x, b.default=NULL, b.lower=-.6, b.upper=.6, eps=1, N=500, standardized=TRUE ){
 	if( !requireNamespace( "MASS", quietly=TRUE ) ){
 		stop("This function requires the 'MASS' package!")
 	}
@@ -158,7 +162,11 @@ simulateSEM <- function( x, b.lower=-.6, b.upper=.6, eps=1, N=500, standardized=
 	e <- .edgeAttributes( x, "beta" )
 	e$a <- as.double(as.character(e$a))
 	b.not.set <- is.na(e$a)
-	e$a[b.not.set] <- runif(sum(b.not.set),b.lower,b.upper)
+	if( is.null( b.default ) ){
+		e$a[b.not.set] <- runif(sum(b.not.set),b.lower,b.upper)
+	} else {
+		e$a[b.not.set] <- b.default
+	}
 	ovars <- names(x)
 	nV <- length(ovars)
 	nL <- sum(e$e=="<->")
@@ -175,21 +183,23 @@ simulateSEM <- function( x, b.lower=-.6, b.upper=.6, eps=1, N=500, standardized=
 		for( i in seq_len( nrow(e) ) ){
 			b <- e$a[i]
 			if( e$e[i] == "<->" ){
-				Beta[paste0("l",cL),e$v[i]] <- sqrt(abs(b))
+				lV <- paste0("l",cL) 
+				lb <- sqrt(abs(b))
+				Beta[lV,paste0("v",e$v[i])] <- lb
 				if( b < 0 ){
-					Beta[paste0("l",cL),paste0("v",e$w[i])] <- -sqrt(abs(b))
+					Beta[lV,paste0("v",e$w[i])] <- -lb
 				} else {
-					Beta[paste0("l",cL),paste0("v",e$w[i])] <- sqrt(abs(b))
-	
+					Beta[lV,paste0("v",e$w[i])] <- lb
 				}
-			} else if( e$e == "->" ){
+				cL <- cL + 1
+			} else if( e$e[i] == "->" ){
 				Beta[paste0("v",e$v[i]),paste0("v",e$w[i])] <- b
 			}
 		}
 		L <- (diag( 1, nV+nL ) - Beta)
 		Li <- MASS::ginv( L )
 		if( standardized == TRUE ){
-			Phi <- MASS::ginv( t(Li)^2 ) %*% rep(1,nrow(Beta))
+			Phi <- MASS::ginv( t(Li)^2 ) %*% rep(eps,nrow(Beta))
 			Phi <- diag( c(Phi), nV+nL )
 		} else {
 			Phi <- diag( eps, nV+nL )
@@ -200,7 +210,8 @@ simulateSEM <- function( x, b.lower=-.6, b.upper=.6, eps=1, N=500, standardized=
 	}
 	r <- MASS::mvrnorm( N, rep(0,nV+nL), Sigma )[,1:nV]
 	colnames(r) <- ovars
-	as.data.frame(r)
+	r <- as.data.frame(r)
+	r[,setdiff(ovars,latents(x))]
 }
 
 #' Ancestral Relations
@@ -587,6 +598,19 @@ names.dagitty <- function( x ){
 		r <- .jsget(xv)},
 	finally={.deleteJSVar(xv)})
 	r
+}
+
+#' Retrieve Exogenous Variables 
+#'
+#' Returns the names of all variables that have no directed arrow pointing to them.
+#' Note that this does not preclude variables connected to bidirected arrows.
+#' 
+#' @param x the input graph, of any type.
+#' @export
+exogenousVariables <- function( x ){
+	x <- as.dagitty( x )
+	e <- edges( x )
+	setdiff( names(x), as.character( e$w[e$e=="->"] ) )
 }
 
 #' Plot Coordinates of Variables in Graph
@@ -1571,9 +1595,8 @@ localTests <- function(x, data=NULL,
 			std.errors <- tetrad.sample.sds
 			p.values <- 2*pnorm(abs(tetrad.values/tetrad.sample.sds),
 				lower.tail=FALSE)
-			conf <- cbind( r, std.errors, p.values, tetrad.values+qnorm(w)*tetrad.sample.sds,
+			conf <- cbind( std.errors, p.values, tetrad.values+qnorm(w)*tetrad.sample.sds,
 				tetrad.values+qnorm(1-w)*tetrad.sample.sds )
-				colnames(conf) <- c(paste0(100*w,"%"),paste0(100*(1-w),"%"))
 			r <- cbind( r, conf )
 			colnames(r) <- c("estimate","std.error","p.value",
 				paste0(100*w,"%"),paste0(100*(1-w),"%"))

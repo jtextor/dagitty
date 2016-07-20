@@ -169,7 +169,7 @@ var GraphSerializer = {
 			v_nonzero_degree[e.v2.id] = 1
 		} )
 		// include vertices without adjacent edges as well
-		_.each( _.without( _.pluck(g.getVertices(),"id"), _.keys( v_nonzero_degree ) ),
+		_.each( _.difference( _.pluck(g.getVertices(),"id"), _.keys( v_nonzero_degree ) ),
 			function(vid){
 				r += vid+" ~~ "+vid+"\n"
 			}

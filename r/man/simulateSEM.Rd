@@ -4,13 +4,16 @@
 \alias{simulateSEM}
 \title{Simulate Data from Structural Equation Model}
 \usage{
-simulateSEM(x, b.lower = -0.6, b.upper = 0.6, eps = 1, N = 500,
-  standardized = TRUE)
+simulateSEM(x, b.default = NULL, b.lower = -0.6, b.upper = 0.6, eps = 1,
+  N = 500, standardized = TRUE)
 }
 \arguments{
 \item{x}{the input graph, a DAG (which may contain bidirected edges).}
 
-\item{b.lower}{lower bound for path coefficients.}
+\item{b.default}{default path coefficient applied to arrows for which no coefficient is 
+defined in the model syntax.}
+
+\item{b.lower}{lower bound for random path coefficients, applied if \code{b.default=NULL}.}
 
 \item{b.upper}{upper bound for path coefficients.}
 
@@ -32,15 +35,17 @@ Returns a data frame containing \code{N} values for each variable in \code{x}.
 }
 \description{
 Interprets the input graph as a structural equation model, generates random path 
-coefficients, and simulates data from the model. This is just a dumb frontend to 
-lavaan's \code{\link[lavaan]{simulateData}} function and probably not very useful 
+coefficients, and simulates data from the model. This is a very bare-bones 
+function and probably not very useful 
 except for quick validation purposes (e.g. checking that an implied vanishing 
 tetrad truly vanishes in simulated data). For more elaborate simulation studies, please
 use the lavaan package or similar facilities in other packages.
 }
 \details{
 Data are generated in the following manner. 
-Each directed arrow is assigned a path coefficient chosen uniformly
+Each directed arrow is assigned a path coefficient that can be given using the attribute
+"beta" in the model syntax (see the examples). All coefficients not set in this manner are
+set to the \code{b.default} argument, or if that is not given, are chosen uniformly
 at random from the interval given by \code{b.lower} and \code{b.upper} (inclusive; set
 both parameters to the same value for constant path coefficients). Each bidirected 
 arrow a <-> b is replaced by a substructure  a <- L -> b, where L is an exogenous latent
@@ -51,8 +56,8 @@ residual variances are set to \code{eps}.
 }
 \examples{
 ## Simulate data with pre-defined path coefficients of -.6
-g <- dagitty('dag{z -> x <- y}')
-x <- simulateSEM( g, .707, .707 ) # sqrt(2)/2 is largest possible
+g <- dagitty('dag{z -> x [beta=-.6] x <- y [beta=-.6] }')
+x <- simulateSEM( g ) 
 cov(x)
 
 
