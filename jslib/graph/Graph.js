@@ -431,12 +431,21 @@ var Graph = Class.extend({
 			e = this.getEdge( v2, v1, edgetype )
 		}
 		if( typeof e == "undefined" ){
-			e = new Graph.Edge({v1:v1,v2:v2,directed:edgetype})
-			e.v1.outgoingEdges.push( e )
-			e.v2.incomingEdges.push( e )
-			this.edges.push( e )
+			e = this.quickAddEdge(v1, v2, edgetype);
 		} 
 		return e
+	},
+
+	quickAddEdge: function (v1, v2, edgetype){
+		e = new Graph.Edge({v1:v1,v2:v2,directed:edgetype})
+		e.v1.outgoingEdges.push( e )
+		e.v2.incomingEdges.push( e )
+		this.edges.push( e )
+		return e;
+	},
+
+	quickAddDirectedEdge: function (v1, v2) {
+		this.quickAddEdge(v1, v2, Graph.Edgetype.Directed)
 	},
 
 	deleteEdge : function( v1, v2, edgetype ) {
