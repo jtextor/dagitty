@@ -547,12 +547,21 @@ var Graph = Class.extend({
 			e = this.getEdge( v2, v1, edgetype )
 		}
 		if( typeof e == "undefined" ){
-			e = new Graph.Edge({v1:v1,v2:v2,directed:edgetype})
-			e.v1.outgoingEdges.push( e )
-			e.v2.incomingEdges.push( e )
-			this.edges.push( e )
+			e = this.quickAddEdge(v1, v2, edgetype);
 		} 
 		return e
+	},
+
+	quickAddEdge: function (v1, v2, edgetype){
+		e = new Graph.Edge({v1:v1,v2:v2,directed:edgetype})
+		e.v1.outgoingEdges.push( e )
+		e.v2.incomingEdges.push( e )
+		this.edges.push( e )
+		return e;
+	},
+
+	quickAddDirectedEdge: function (v1, v2) {
+		this.quickAddEdge(v1, v2, Graph.Edgetype.Directed)
 	},
 
 	deleteEdge : function( v1, v2, edgetype ) {
@@ -3919,7 +3928,7 @@ var GraphTransformer = {
 /* This is a namespace containing various methods that generate graphs,
  * e.g. at random.*/
  
-/* globals Graph  */
+/* globals Graph	*/
 /* exported GraphGenerator */
 
 var GraphGenerator = {
@@ -3930,20 +3939,71 @@ var GraphGenerator = {
 	 * the number of edges created will be maximal. It is advisable to
 	 * scale p with 1/|V|. 
 	 */
-	randomDAG : function( variables, p ){
-		var g = new Graph(), i, j
-		for( i = 0 ; i < variables.length ; i ++ ){
-			g.addVertex( variables[i] )
+	randomDAG : function( variables, p){
+		if (typeof variables == "number" ) {
+			var n = variables;
+			variables = [];
+			for (var i = 1; i <= n; i++) variables.push("v" + i);
 		}
+		var g = new Graph(), i, j
+		var vertices = []; 
+		for( i = 0 ; i < variables.length ; i ++ ){
+			var v = g.addVertex( variables[i] )
+			vertices.push(v);
+		}
+		
+		var pEdge = p;
+		if (typeof p == "object") {
+  		pEdge = p.pEdge;
+  		this.setRandomNodes(g, p);
+  	}
 		for( i = 0 ; i < variables.length ; i ++ ){
 			for( j = i+1 ; j < variables.length ; j ++ ){
-				if( Math.random() < p ){
-					g.addEdge( variables[i], variables[j] )
+				if( Math.random() < pEdge ){
+					g.quickAddDirectedEdge( vertices[i], vertices[j] )
 				}
 			}
 		}
 		g.setType("dag")
 		return g
+	},
+	
+	
+	/**
+	 * Marks nodes as source, target or latentnode.
+	 * Parameter pSource is the probability of a node becoming a source node, 
+	 * minSource and maxSource the minimum and maximum count of these nodes.
+	 * pTarget, minTarget, maxTarget, pLatentNode, minLatentNode, maxLatentNode control the creation of other node types.
+	*/
+	setRandomNodes: function (g, p) {
+	  var vertices = g.vertices.values();
+	  var prop = ["Source", "Target", "LatentNode"];
+	  for (var i=0;i<prop.length;i++) g["removeAll"+prop[i]+"s"]();
+	  var pSource = p.pSource ? p.pSource : 0, 
+	      pTarget = p.pTarget ? p.pTarget : 0, 
+	      pLatentNode = p.pLatentNode ? p.pLatentNode : 0;
+	  var maxSource = p.maxSource ? p.maxSource : vertices.length,
+	      maxTarget = p.maxTarget ? p.maxTarget : vertices.length,
+	      maxLatentNode = p.maxLatentNode ? p.maxLatentNode : vertices.length;
+	  
+		var counts = {"Source": 0, "Target": 0, "LatentNode": 0};
+		var availableVertices = [];
+	  for (var i=0;i<vertices.length;i++) {
+			var v = vertices[i];
+			var q = Math.random();
+			if (q < pSource) { if (counts.Source < maxSource) { g.addSource(v); counts.Source++; } }
+			else if (q < pSource + pTarget) { if (counts.Target < maxTarget) { g.addTarget(v); counts.Target++; } }
+			else if (q < pSource + pTarget + pLatentNode) { if (counts.LatentNode < maxLatentNode) { g.addLatentNode(v);  counts.LatentNode++; } }
+			else availableVertices.push(v);
+	  }	  
+	  for (var i=0;i<prop.length;i++) {
+	    if (!p["min"+prop[i]]) continue;
+	    for (var existing = counts[prop[i]]; existing < p["min"+prop[i]]; existing++) {
+  	    var j = Math.floor(Math.random() * availableVertices.length);
+  	    g["add"+prop[i]](availableVertices[j]);
+  	    availableVertices.splice(j, 1);
+	    }
+	  } 
 	}
 }
 /* DAGitty - a browser-based software for causal modelling and analysis
