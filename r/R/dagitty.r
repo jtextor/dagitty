@@ -892,8 +892,9 @@ plot.dagitty <- function( x, ... ){
 		ax2[undirected], -ay2[undirected], col="black", lwd=2 )
 	for( i in which( has.control.point ) ){
 		.arc( ax1[i], -ay1[i], 
-			ax2[i], -ay2[i], axc[i], -ayc[i], col="gray", 
-			code=acode[i], length=0.1 )
+			ax2[i], -ay2[i], axc[i], -ayc[i], 
+			col="gray", 
+			code=acode[i], length=0.1, lwd=2 )
 	}
 	text( coords$x, -coords$y[labels], labels )
 }

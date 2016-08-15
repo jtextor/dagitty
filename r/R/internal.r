@@ -18,17 +18,19 @@
 	}
 }
 
-.arc <- function( x1, y1, x2, y2, xm, ym, col="gray", length=0.1, code=3 ){
+.arc <- function( x1, y1, x2, y2, xm, ym, col="gray", length=0.1, code=3, lwd=1 ){
 	x <- c(x1,xm,x2)
 	y <- c(y1,ym,y2)
 	res <- xspline(x, y, 1, draw=FALSE)
 	lines(res, col=col)
 	nr <- length(res$x)
 	if( code >= 3 ){
-		arrows(res$x[1], res$y[1], res$x[4], res$y[4], col=col, code = 1, length = length)
+		arrows(res$x[1], res$y[1], res$x[4], res$y[4], col=col, 
+			code = 1, length = length, lwd=lwd)
 	}
 	if( code >= 2 ){
-		arrows(res$x[nr-3], res$y[nr-3], res$x[nr], res$y[nr], col=col, code = 2, length = length)	
+		arrows(res$x[nr-3], res$y[nr-3], res$x[nr], res$y[nr], 
+			col=col, code = 2, length = length, lwd=lwd)	
 	}
 }
 
