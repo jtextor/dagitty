@@ -896,6 +896,36 @@ QUnit.test( "graph types", function( assert ) {
 
 QUnit.test( "dseparation", function( assert ) {
 	assert.equal((function(){
+		var g = GraphParser.parseGuess( "digraph G { x <-> m -> y }" )
+		return GraphAnalyzer.dConnected( g, [g.getVertex("x")], [g.getVertex("y")], 
+			[] )
+	})(), true )
+
+	assert.equal((function(){
+		var g = GraphParser.parseGuess( "digraph G { x <-> m -> y }" )
+		return GraphAnalyzer.dConnected( g, [g.getVertex("x")], [g.getVertex("y")], 
+			[g.getVertex("m")] )
+	})(), false )
+
+	assert.equal((function(){
+		var g = GraphParser.parseGuess( "digraph G { x <-> m <-> b <-> y }" )
+		return GraphAnalyzer.dConnected( g, [g.getVertex("x")], [g.getVertex("y")], 
+			[g.getVertex("m")] )
+	})(), false )
+
+	assert.equal((function(){
+		var g = GraphParser.parseGuess( "digraph G { x <-> m <-> b <-> y }" )
+		return GraphAnalyzer.dConnected( g, [g.getVertex("x")], [g.getVertex("y")], 
+			[g.getVertex("m"),g.getVertex("b")] )
+	})(), true )
+
+	assert.equal((function(){
+		var g = GraphParser.parseGuess( "digraph G { x -> m -> y }" )
+		return GraphAnalyzer.dConnected( g, [g.getVertex("x")], [g.getVertex("y")], 
+			[] )
+	})(), true )
+
+	assert.equal((function(){
 		var g = GraphParser.parseGuess( "digraph G { x -> m -> y }" )
 		return !GraphAnalyzer.dConnected( g, [g.getVertex("x")], [g.getVertex("y")], 
 			[g.getVertex("m")] )

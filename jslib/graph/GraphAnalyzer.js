@@ -320,6 +320,7 @@ var GraphAnalyzer = {
 			return false
 		}
 		var gbd = GraphTransformer.backDoorGraph(g)
+		Z = _.map( Z, gbd.getVertex, gbd )
 		return !this.dConnected( gbd, gbd.getSources(), gbd.getTargets(), Z )
 	},
 	
@@ -739,10 +740,16 @@ var GraphAnalyzer = {
 				forward_visited[v.id]=1
 				if( Y_ids[v.id] ) return true
 				if( AnZ_ids[v.id] ){
-					vv = _.union( v.getParents(), v.getSpouses() )
+					vv = v.getParents()
 					for( i = 0 ; i < vv.length ; i ++ ){
 						if( !backward_visited[vv[i].id] ){
 							backward_queue.push( vv[i] )
+						}
+					}
+					vv = v.getSpouses()
+					for( i = 0 ; i < vv.length ; i ++ ){
+						if( !forward_visited[vv[i].id] ){
+							forward_queue.push( vv[i] )
 						}
 					}
 				} 
