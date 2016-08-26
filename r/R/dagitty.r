@@ -4,7 +4,7 @@
 #' @importFrom grDevices dev.size
 #' @importFrom methods is
 #' @importFrom utils tail
-#' @importFrom stats as.formula coef confint cov lm pnorm qnorm quantile runif loess
+#' @importFrom stats as.formula coef confint cov cor lm pnorm qnorm quantile runif loess sd
 #' @importFrom graphics abline arrows axis lines par plot plot.new segments strheight strwidth text xspline
 NULL
 

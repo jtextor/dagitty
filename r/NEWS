@@ -1,10 +1,13 @@
-dagitty v0.2-1 (Release date: 2016-XX-XX)
+dagitty v0.2-2 (Release date: 2016-08-26)
 ==============
 
 Changes:
 
- * Non-parametric conditional independence testing for additive noise using
+ * Added capability to specify arbitrary path coefficients for simulateSEM
+ * Semi-parametric conditional independence testing for additive noise using
    loess smoothing
- * plot function now sets margins properly and gives better error messages
+ * Plot function now sets margins properly and gives better error messages
  * Bugfix in adjustmentSets with type="all" when exposure was defined in graph
+ * Bugfix in dconnected and isAdjustmentSet when graphs contain inducing paths
+   with 3 or more nodes 
  * Improved parser for larger graphs
