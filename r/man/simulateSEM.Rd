@@ -5,7 +5,7 @@
 \title{Simulate Data from Structural Equation Model}
 \usage{
 simulateSEM(x, b.default = NULL, b.lower = -0.6, b.upper = 0.6, eps = 1,
-  N = 500, standardized = TRUE)
+  N = 500, standardized = TRUE, empirical = FALSE, verbose = FALSE)
 }
 \arguments{
 \item{x}{the input graph, a DAG (which may contain bidirected edges).}
@@ -21,14 +21,13 @@ defined in the model syntax.}
 
 \item{N}{number of samples to generate.}
 
-\item{standardized}{whether a standardized output is desired (all variables have variance 1).
+\item{standardized}{logical. If true, a standardized population covariance matrix
+is generated (all variables have variance 1).}
 
-If \code{standardized=TRUE}, all path coefficients are interpreted as standardized coefficients.
-But not all standardized coefficients are compatible with all graph structures.
-For instance, the graph structure z <- x -> y -> z is incompatible with standardized
-coefficients of 0.9, since this would imply that the variance of z must be larger than
-1. For large graphs with many parallel paths, it can be very difficult to find coefficients 
-that work.}
+\item{empirical}{logical. If true, the empirical covariance matrix will be equal to the
+population covariance matrix.}
+
+\item{verbose}{logical. If true, prints the generated population covariance matrix.}
 }
 \value{
 Returns a data frame containing \code{N} values for each variable in \code{x}.
@@ -53,6 +52,13 @@ variable. Path coefficients on such substructures are set to \code{sqrt(x)}, whe
 \code{x} is again chosen at random from the given interval; if \code{x} is negative,
 one path coefficient is set to \code{-sqrt(x)} and the other to \code{sqrt(x)}. All
 residual variances are set to \code{eps}.
+
+If \code{standardized=TRUE}, all path coefficients are interpreted as standardized coefficients.
+But not all standardized coefficients are compatible with all graph structures.
+For instance, the graph structure z <- x -> y -> z is incompatible with standardized
+coefficients of 0.9, since this would imply that the variance of z must be larger than
+1. For large graphs with many parallel paths, it can be very difficult to find coefficients 
+that work.
 }
 \examples{
 ## Simulate data with pre-defined path coefficients of -.6

@@ -115,6 +115,21 @@ getExample <- function( x ){
 #' tetrad truly vanishes in simulated data). For more elaborate simulation studies, please
 #' use the lavaan package or similar facilities in other packages.
 #'
+#' @param x the input graph, a DAG (which may contain bidirected edges).
+#' @param N number of samples to generate.
+#' @param b.lower lower bound for random path coefficients, applied if \code{b.default=NULL}.
+#' @param b.upper upper bound for path coefficients.
+#' @param b.default default path coefficient applied to arrows for which no coefficient is 
+#'  defined in the model syntax.
+#' @param eps residual variance (only meaningful if \code{standardized=FALSE}).
+#' @param empirical logical. If true, the empirical covariance matrix will be equal to the
+#'  population covariance matrix.
+#' @param standardized logical. If true, a standardized population covariance matrix
+#'   is generated (all variables have variance 1).
+#' @param verbose logical. If true, prints the generated population covariance matrix.
+#' 
+#' @return Returns a data frame containing \code{N} values for each variable in \code{x}.
+#'
 #' @details Data are generated in the following manner. 
 #' Each directed arrow is assigned a path coefficient that can be given using the attribute
 #' "beta" in the model syntax (see the examples). All coefficients not set in this manner are
@@ -126,15 +141,6 @@ getExample <- function( x ){
 #' \code{x} is again chosen at random from the given interval; if \code{x} is negative,
 #' one path coefficient is set to \code{-sqrt(x)} and the other to \code{sqrt(x)}. All
 #' residual variances are set to \code{eps}.
-#' 
-#' @param x the input graph, a DAG (which may contain bidirected edges).
-#' @param N number of samples to generate.
-#' @param b.lower lower bound for random path coefficients, applied if \code{b.default=NULL}.
-#' @param b.upper upper bound for path coefficients.
-#' @param b.default default path coefficient applied to arrows for which no coefficient is 
-#'  defined in the model syntax.
-#' @param eps residual variance (only meaningful if \code{standardized=FALSE}).
-#' @param standardized whether a standardized output is desired (all variables have variance 1).
 #'
 #' If \code{standardized=TRUE}, all path coefficients are interpreted as standardized coefficients.
 #' But not all standardized coefficients are compatible with all graph structures.
@@ -143,7 +149,6 @@ getExample <- function( x ){
 #' 1. For large graphs with many parallel paths, it can be very difficult to find coefficients 
 #' that work.
 #' 
-#' @return Returns a data frame containing \code{N} values for each variable in \code{x}.
 #' 
 #' @examples
 #' ## Simulate data with pre-defined path coefficients of -.6
@@ -153,7 +158,8 @@ getExample <- function( x ){
 #'
 #' 
 #' @export
-simulateSEM <- function( x, b.default=NULL, b.lower=-.6, b.upper=.6, eps=1, N=500, standardized=TRUE ){
+simulateSEM <- function( x, b.default=NULL, b.lower=-.6, b.upper=.6, eps=1, N=500, standardized=TRUE,
+	empirical=FALSE, verbose=FALSE ){
 	if( !requireNamespace( "MASS", quietly=TRUE ) ){
 		stop("This function requires the 'MASS' package!")
 	}
@@ -208,7 +214,10 @@ simulateSEM <- function( x, b.default=NULL, b.lower=-.6, b.upper=.6, eps=1, N=50
 	} else {
 		Sigma <- diag(1,nV+nL)
 	}
-	r <- MASS::mvrnorm( N, rep(0,nV+nL), Sigma )[,1:nV]
+	if( verbose ){
+		print( Sigma )
+	}
+	r <- MASS::mvrnorm( N, rep(0,nV+nL), Sigma, empirical=empirical )[,1:nV]
 	colnames(r) <- ovars
 	r <- as.data.frame(r)
 	r[,setdiff(ovars,latents(x))]
