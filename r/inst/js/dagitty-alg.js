@@ -301,20 +301,32 @@ var Graph = Class.extend({
 	},
 	
 	/** 
-	 *         TODO for now, only works with directed edges 
+	 *         TODO for now, only works with specified edges 
 	 */
-	contractVertex : function( v ){
-		var i,j
-		for( i = 0 ; i < v.incomingEdges.length ; i++ ){
-			for( j = 0 ; j < v.outgoingEdges.length ; j++ ){
-				this.addEdge( new Graph.Edge.Directed( 
-					{ 
-						v1 : v.incomingEdges[i].v1, 
-						v2 : v.outgoingEdges[j].v2 
-					} ) )
-			}
-		}
-		this.deleteVertex( v )
+	contractVertex : function( v0 ){
+		var children = v0.getChildren()
+		var parents = v0.getParents()
+		var spouses = v0.getSpouses()
+		var neighbours = v0.getNeighbours()
+		
+		var self = this
+		
+		_.each(children, function(v){
+			_.each(children, function(w){   if (v.id != w.id) self.addEdge(w, v, Graph.Edgetype.Bidirected ) }) // v <- v0 -> w
+			_.each(parents, function(w){ if (v.id != w.id) self.addEdge(w, v, Graph.Edgetype.Directed ) }) // v <- v0 <- w
+			_.each(spouses, function(w){    if (v.id != w.id) self.addEdge(w, v, Graph.Edgetype.Bidirected ) }) // v <- v0 <-> w
+			_.each(neighbours, function(w){ if (v.id != w.id) self.addEdge(w, v, Graph.Edgetype.Directed ) }) // v <- v0 - w
+		})
+		_.each(parents, function(v){
+			_.each(neighbours, function(w){ if (v.id != w.id) self.addEdge(v, w, Graph.Edgetype.Directed ) }) // v -> v0 - w
+		})
+		_.each(spouses, function(v){
+			_.each(neighbours, function(w){ if (v.id != w.id) self.addEdge(v, w, Graph.Edgetype.Bidirected ) }) // v <-> v0 - w
+		})
+		_.each(neighbours, function(v){
+			_.each(neighbours, function(w){ if (v.id != w.id) self.addEdge(v, w, Graph.Edgetype.Undirected ) }) // v - v0 - w
+		})
+		this.deleteVertex( v0 )
 	},
 	
 	clearVisited : function(){
@@ -3875,6 +3887,13 @@ var GraphTransformer = {
 		return gn
 	},
 
+	contractLatentNodes: function(g){
+		var gn = g.clone()
+		_.each( gn.getLatentNodes(), function (v) {
+			gn.contractVertex(v)
+		} )
+		return gn
+	},
 	
 	markovEquivalentDags : function(g,n){
 		var c = this.dagToCpdag(g)
@@ -4105,7 +4124,7 @@ var ObservedGraph = Class.extend({
 	}
 } )
 
-/* globals _,Graph,GraphAnalyzer */
+/* globals _,Graph,GraphAnalyzer,GraphTransformer */
 /* exported GraphSerializer */
 
 var GraphSerializer = {
@@ -4417,6 +4436,31 @@ var GraphSerializer = {
 			r_str.push(gt[i])
 		}
 		return "\t\""+r_str.join("\\n\"+\n\t\"")+"\""
+	},
+
+	//Exports the graph as igraph edge list with the attributes needed for the causaleffect package.
+	//Latent nodes are replaced by bidirectional edges, only directed and bidirectinal edges are allowed, and nodes without edges are dropped.
+	toCausalEffectIgraohRCode : function (g){
+		var gbidi = GraphTransformer.contractLatentNodes(g)
+		var edgesresult = []
+		var bidirectinoal = []
+		var quote = "\""
+		_.each(gbidi.getEdges(), function(e){
+			edgesresult.push( quote + e.v1.id + "\",\"" + e.v2.id + quote )
+			if (e.directed == Graph.Edgetype.Bidirected) {
+				bidirectinoal.push(edgesresult.length)
+				edgesresult.push( quote + e.v2.id + "\",\"" + e.v1.id + quote )
+				bidirectinoal.push(edgesresult.length)
+			}
+		} )
+		
+		return "set.edge.attribute(graph = graph_from_edgelist(matrix(c( "+edgesresult.join(", ")+" ),nc = 2,byrow = TRUE)), name = \"description\", index = c("+bidirectinoal.join(", ")+"), value = \"U\")"
+	},
+	
+	//Exports R-code to find the causal effect from the current exposures to current outcomes using the causaleffect package
+	toCausalEffectRCode : function(g){
+		var nodeList = function(a) { return "c(" + a.map(function(v){return "\""+v.id+"\""}).join(", ") + ")" }
+		return "causal.effect(y = "+nodeList(g.getTargets())+", x = "+nodeList(g.getSources())+", G = "+this.toCausalEffectIgraohRCode(g)+")"
 	}
 }; // eslint-disable-line 
 

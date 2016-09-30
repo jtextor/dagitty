@@ -1,4 +1,4 @@
-/* globals _,Graph,GraphAnalyzer */
+/* globals _,Graph,GraphAnalyzer,GraphTransformer */
 /* exported GraphSerializer */
 
 var GraphSerializer = {
@@ -310,6 +310,31 @@ var GraphSerializer = {
 			r_str.push(gt[i])
 		}
 		return "\t\""+r_str.join("\\n\"+\n\t\"")+"\""
+	},
+
+	//Exports the graph as igraph edge list with the attributes needed for the causaleffect package.
+	//Latent nodes are replaced by bidirectional edges, only directed and bidirectinal edges are allowed, and nodes without edges are dropped.
+	toCausalEffectIgraohRCode : function (g){
+		var gbidi = GraphTransformer.contractLatentNodes(g)
+		var edgesresult = []
+		var bidirectinoal = []
+		var quote = "\""
+		_.each(gbidi.getEdges(), function(e){
+			edgesresult.push( quote + e.v1.id + "\",\"" + e.v2.id + quote )
+			if (e.directed == Graph.Edgetype.Bidirected) {
+				bidirectinoal.push(edgesresult.length)
+				edgesresult.push( quote + e.v2.id + "\",\"" + e.v1.id + quote )
+				bidirectinoal.push(edgesresult.length)
+			}
+		} )
+		
+		return "set.edge.attribute(graph = graph_from_edgelist(matrix(c( "+edgesresult.join(", ")+" ),nc = 2,byrow = TRUE)), name = \"description\", index = c("+bidirectinoal.join(", ")+"), value = \"U\")"
+	},
+	
+	//Exports R-code to find the causal effect from the current exposures to current outcomes using the causaleffect package
+	toCausalEffectRCode : function(g){
+		var nodeList = function(a) { return "c(" + a.map(function(v){return "\""+v.id+"\""}).join(", ") + ")" }
+		return "causal.effect(y = "+nodeList(g.getTargets())+", x = "+nodeList(g.getSources())+", G = "+this.toCausalEffectIgraohRCode(g)+")"
 	}
 }; // eslint-disable-line 
 
