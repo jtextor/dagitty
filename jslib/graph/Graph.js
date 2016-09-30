@@ -185,20 +185,32 @@ var Graph = Class.extend({
 	},
 	
 	/** 
-	 *         TODO for now, only works with directed edges 
+	 *         TODO for now, only works with specified edges 
 	 */
-	contractVertex : function( v ){
-		var i,j
-		for( i = 0 ; i < v.incomingEdges.length ; i++ ){
-			for( j = 0 ; j < v.outgoingEdges.length ; j++ ){
-				this.addEdge( new Graph.Edge.Directed( 
-					{ 
-						v1 : v.incomingEdges[i].v1, 
-						v2 : v.outgoingEdges[j].v2 
-					} ) )
-			}
-		}
-		this.deleteVertex( v )
+	contractVertex : function( v0 ){
+		var children = v0.getChildren()
+		var parents = v0.getParents()
+		var spouses = v0.getSpouses()
+		var neighbours = v0.getNeighbours()
+		
+		var self = this
+		
+		_.each(children, function(v){
+			_.each(children, function(w){   if (v.id != w.id) self.addEdge(w, v, Graph.Edgetype.Bidirected ) }) // v <- v0 -> w
+			_.each(parents, function(w){ if (v.id != w.id) self.addEdge(w, v, Graph.Edgetype.Directed ) }) // v <- v0 <- w
+			_.each(spouses, function(w){    if (v.id != w.id) self.addEdge(w, v, Graph.Edgetype.Bidirected ) }) // v <- v0 <-> w
+			_.each(neighbours, function(w){ if (v.id != w.id) self.addEdge(w, v, Graph.Edgetype.Directed ) }) // v <- v0 - w
+		})
+		_.each(parents, function(v){
+			_.each(neighbours, function(w){ if (v.id != w.id) self.addEdge(v, w, Graph.Edgetype.Directed ) }) // v -> v0 - w
+		})
+		_.each(spouses, function(v){
+			_.each(neighbours, function(w){ if (v.id != w.id) self.addEdge(v, w, Graph.Edgetype.Bidirected ) }) // v <-> v0 - w
+		})
+		_.each(neighbours, function(v){
+			_.each(neighbours, function(w){ if (v.id != w.id) self.addEdge(v, w, Graph.Edgetype.Undirected ) }) // v - v0 - w
+		})
+		this.deleteVertex( v0 )
 	},
 	
 	clearVisited : function(){
