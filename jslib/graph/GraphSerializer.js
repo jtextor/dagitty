@@ -1,4 +1,4 @@
-/* globals _,Graph,GraphAnalyzer,GraphTransformer */
+/* globals _,Graph,GraphAnalyzer,GraphTransformer,Hash */
 /* exported GraphSerializer */
 
 var GraphSerializer = {
@@ -54,10 +54,12 @@ var GraphSerializer = {
 	
 	dotBarewordRe : new RegExp( "^[0-9a-zA-Z_.]+$" ),
 	
+	quoteVid : function ( vid ){
+		return "\"" + vid.replace(/"/g, "\\\"") + "\""
+	},
+	
 	dotQuoteVid : function( vid ){
-		if( !vid.match( this.dotBarewordRe ) ){
-			return "\"" + vid.replace(/"/g, "\\\"") + "\""
-		}
+		if( !vid.match( this.dotBarewordRe ) ) return this.quoteVid( vid )
 		return vid
 	},
 	
@@ -313,28 +315,35 @@ var GraphSerializer = {
 	},
 
 	//Exports the graph as igraph edge list with the attributes needed for the causaleffect package.
-	//Latent nodes are replaced by bidirectional edges, only directed and bidirectinal edges are allowed, and nodes without edges are dropped.
-	toCausalEffectIgraohRCode : function (g){
+	//Latent nodes are replaced by bidirectional edges, only directed and bidirectional edges are allowed
+	toCausalEffectIgraphRCode : function (g){
 		var gbidi = GraphTransformer.contractLatentNodes(g)
 		var edgesresult = []
-		var bidirectinoal = []
-		var quote = "\""
+		var bidirectional = []
+		var withEdges = new Hash()
 		_.each(gbidi.getEdges(), function(e){
-			edgesresult.push( quote + e.v1.id + "\",\"" + e.v2.id + quote )
+			withEdges.set(e.v1.id, true)
+			withEdges.set(e.v2.id, true)
+			edgesresult.push( GraphSerializer.quoteVid(e.v1.id) + "," + GraphSerializer.quoteVid(e.v2.id) )
 			if (e.directed == Graph.Edgetype.Bidirected) {
-				bidirectinoal.push(edgesresult.length)
-				edgesresult.push( quote + e.v2.id + "\",\"" + e.v1.id + quote )
-				bidirectinoal.push(edgesresult.length)
+				bidirectional.push(edgesresult.length)
+				edgesresult.push( GraphSerializer.quoteVid(e.v2.id) + "," + GraphSerializer.quoteVid(e.v1.id) )
+				bidirectional.push(edgesresult.length)
 			}
 		} )
 		
-		return "set.edge.attribute(graph = graph_from_edgelist(matrix(c( "+edgesresult.join(", ")+" ),nc = 2,byrow = TRUE)), name = \"description\", index = c("+bidirectinoal.join(", ")+"), value = \"U\")"
+		var result = edgesresult.length > 0 ? "set.edge.attribute(graph = graph_from_edgelist(matrix(c( "+edgesresult.join(", ")+" ),nc = 2,byrow = TRUE)), name = \"description\", index = c("+bidirectional.join(", ")+"), value = \"U\")" : "make_empty_graph()"
+		
+		var withoutEdges = _.filter(g.getVertices(), function(v){return !withEdges.get(v.id)})
+		if (withoutEdges.length > 0) result = result + " + vertices(" + withoutEdges.map(function(v){ return GraphSerializer.quoteVid(v.id) }).join(", ")+  ")"
+		
+		return result
 	},
 	
 	//Exports R-code to find the causal effect from the current exposures to current outcomes using the causaleffect package
 	toCausalEffectRCode : function(g){
-		var nodeList = function(a) { return "c(" + a.map(function(v){return "\""+v.id+"\""}).join(", ") + ")" }
-		return "causal.effect(y = "+nodeList(g.getTargets())+", x = "+nodeList(g.getSources())+", G = "+this.toCausalEffectIgraohRCode(g)+")"
+		var nodeList = function(a) { return "c(" + a.map(function(v){return GraphSerializer.quoteVid(v.id)}).join(", ") + ")" }
+		return "causal.effect(y = "+nodeList(g.getTargets())+", x = "+nodeList(g.getSources())+", G = "+this.toCausalEffectIgraphRCode(g)+")"
 	}
 }; // eslint-disable-line 
 
