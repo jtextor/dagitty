@@ -301,20 +301,32 @@ var Graph = Class.extend({
 	},
 	
 	/** 
-	 *         TODO for now, only works with directed edges 
+	 *         TODO for now, only works with specified edges 
 	 */
-	contractVertex : function( v ){
-		var i,j
-		for( i = 0 ; i < v.incomingEdges.length ; i++ ){
-			for( j = 0 ; j < v.outgoingEdges.length ; j++ ){
-				this.addEdge( new Graph.Edge.Directed( 
-					{ 
-						v1 : v.incomingEdges[i].v1, 
-						v2 : v.outgoingEdges[j].v2 
-					} ) )
-			}
-		}
-		this.deleteVertex( v )
+	contractVertex : function( v0 ){
+		var children = v0.getChildren()
+		var parents = v0.getParents()
+		var spouses = v0.getSpouses()
+		var neighbours = v0.getNeighbours()
+		
+		var self = this
+		
+		_.each(children, function(v){
+			_.each(children, function(w){   if (v.id != w.id) self.addEdge(w, v, Graph.Edgetype.Bidirected ) }) // v <- v0 -> w
+			_.each(parents, function(w){ if (v.id != w.id) self.addEdge(w, v, Graph.Edgetype.Directed ) }) // v <- v0 <- w
+			_.each(spouses, function(w){    if (v.id != w.id) self.addEdge(w, v, Graph.Edgetype.Bidirected ) }) // v <- v0 <-> w
+			_.each(neighbours, function(w){ if (v.id != w.id) self.addEdge(w, v, Graph.Edgetype.Directed ) }) // v <- v0 - w
+		})
+		_.each(parents, function(v){
+			_.each(neighbours, function(w){ if (v.id != w.id) self.addEdge(v, w, Graph.Edgetype.Directed ) }) // v -> v0 - w
+		})
+		_.each(spouses, function(v){
+			_.each(neighbours, function(w){ if (v.id != w.id) self.addEdge(v, w, Graph.Edgetype.Bidirected ) }) // v <-> v0 - w
+		})
+		_.each(neighbours, function(v){
+			_.each(neighbours, function(w){ if (v.id != w.id) self.addEdge(v, w, Graph.Edgetype.Undirected ) }) // v - v0 - w
+		})
+		this.deleteVertex( v0 )
 	},
 	
 	clearVisited : function(){
@@ -3875,6 +3887,13 @@ var GraphTransformer = {
 		return gn
 	},
 
+	contractLatentNodes: function(g){
+		var gn = g.clone()
+		_.each( gn.getLatentNodes(), function (v) {
+			gn.contractVertex(v)
+		} )
+		return gn
+	},
 	
 	markovEquivalentDags : function(g,n){
 		var c = this.dagToCpdag(g)
@@ -3949,18 +3968,19 @@ var GraphGenerator = {
 	 * parameters for the setRandomNodes function (see below)
 	 */
 	randomDAG : function( variables, p){
-		var g, i, j
+		var i, j
 		if (typeof variables == "number" ) {
 			var n = variables
 			variables = []
 			for (i = 1; i <= n; i++) variables.push("v" + i)
 		}
-		g = new Graph()
+		var g = new Graph()
 		var vertices = [] 
 		for( i = 0 ; i < variables.length ; i ++ ){
 			var v = g.addVertex( variables[i] )
 			vertices.push(v)
-		}		
+		}
+		
 		var pEdge = p
 		if (typeof p == "object") {
 			pEdge = p.pEdge
@@ -3985,34 +4005,47 @@ var GraphGenerator = {
 	 * pTarget, minTarget, maxTarget, pLatentNode, minLatentNode, maxLatentNode control the creation of other node types.
 	*/
 	setRandomNodes: function (g, p) {
+		var i, j, k
 		var vertices = g.vertices.values()
 		var prop = ["Source", "Target", "LatentNode"]
-		var i
 		for (i=0;i<prop.length;i++) g["removeAll"+prop[i]+"s"]()
+		for (i=0,j=1,k=2;i<prop.length;i++,j++,k++) {
+			if (j >= prop.length) j = 0
+			if (k >= prop.length) k = 0
+			var minOthers = (p["min"+prop[j]] ? p["min"+prop[j]] : 0) + (p["min"+prop[k]] ? p["min"+prop[k]] : 0)
+			if (!(("max" + prop[i])  in p) || (p["max"+prop[i]] > vertices.length - minOthers ))
+				p["max"+prop[i]] = vertices.length - minOthers
+		}
 		var pSource = p.pSource ? p.pSource : 0, 
 			pTarget = p.pTarget ? p.pTarget : 0, 
 			pLatentNode = p.pLatentNode ? p.pLatentNode : 0
-		var maxSource = p.maxSource ? p.maxSource : vertices.length,
-			maxTarget = p.maxTarget ? p.maxTarget : vertices.length,
-			maxLatentNode = p.maxLatentNode ? p.maxLatentNode : vertices.length
+		var maxSource = "maxSource" in p ? p.maxSource : vertices.length,
+			maxTarget = "maxTarget" in p ? p.maxTarget : vertices.length,
+			maxLatentNode = "maxLatentNode" in p ? p.maxLatentNode : vertices.length
+		
 		var counts = {"Source": 0, "Target": 0, "LatentNode": 0}
 		var availableVertices = []
 		for (i=0;i<vertices.length;i++) {
 			var v = vertices[i]
 			var q = Math.random()
-			if (q < pSource) { if (counts.Source < maxSource) { g.addSource(v); counts.Source++ } }
-			else if (q < pSource + pTarget) { if (counts.Target < maxTarget) { g.addTarget(v); counts.Target++ } }
-			else if (q < pSource + pTarget + pLatentNode) { if (counts.LatentNode < maxLatentNode) { g.addLatentNode(v);  counts.LatentNode++ } }
-			else availableVertices.push(v)
-		}	  
+			var kind = null
+			if (q < pSource) { if (counts.Source < maxSource) kind = "Source" }
+			else if (q < pSource + pTarget) { if (counts.Target < maxTarget) kind = "Target" }
+			else if (q < pSource + pTarget + pLatentNode) { if (counts.LatentNode < maxLatentNode) kind = "LatentNode" }
+			if (kind)	{
+				g["add" + kind](v) 
+				counts[kind]++ 
+			} else availableVertices.push(v)
+		}
 		for (i=0;i<prop.length;i++) {
 			if (!p["min"+prop[i]]) continue
 			for (var existing = counts[prop[i]]; existing < p["min"+prop[i]]; existing++) {
-				var j = Math.floor(Math.random() * availableVertices.length)
+				if (availableVertices.length == 0) throw "no available vertices"
+				j = Math.floor(Math.random() * availableVertices.length)
 				g["add"+prop[i]](availableVertices[j])
 				availableVertices.splice(j, 1)
 			}
-		}
+		} 
 	}
 }
 /* DAGitty - a browser-based software for causal modelling and analysis
@@ -4091,7 +4124,7 @@ var ObservedGraph = Class.extend({
 	}
 } )
 
-/* globals _,Graph,GraphAnalyzer */
+/* globals _,Graph,GraphAnalyzer,GraphTransformer */
 /* exported GraphSerializer */
 
 var GraphSerializer = {
@@ -4403,6 +4436,31 @@ var GraphSerializer = {
 			r_str.push(gt[i])
 		}
 		return "\t\""+r_str.join("\\n\"+\n\t\"")+"\""
+	},
+
+	//Exports the graph as igraph edge list with the attributes needed for the causaleffect package.
+	//Latent nodes are replaced by bidirectional edges, only directed and bidirectinal edges are allowed, and nodes without edges are dropped.
+	toCausalEffectIgraohRCode : function (g){
+		var gbidi = GraphTransformer.contractLatentNodes(g)
+		var edgesresult = []
+		var bidirectinoal = []
+		var quote = "\""
+		_.each(gbidi.getEdges(), function(e){
+			edgesresult.push( quote + e.v1.id + "\",\"" + e.v2.id + quote )
+			if (e.directed == Graph.Edgetype.Bidirected) {
+				bidirectinoal.push(edgesresult.length)
+				edgesresult.push( quote + e.v2.id + "\",\"" + e.v1.id + quote )
+				bidirectinoal.push(edgesresult.length)
+			}
+		} )
+		
+		return "set.edge.attribute(graph = graph_from_edgelist(matrix(c( "+edgesresult.join(", ")+" ),nc = 2,byrow = TRUE)), name = \"description\", index = c("+bidirectinoal.join(", ")+"), value = \"U\")"
+	},
+	
+	//Exports R-code to find the causal effect from the current exposures to current outcomes using the causaleffect package
+	toCausalEffectRCode : function(g){
+		var nodeList = function(a) { return "c(" + a.map(function(v){return "\""+v.id+"\""}).join(", ") + ")" }
+		return "causal.effect(y = "+nodeList(g.getTargets())+", x = "+nodeList(g.getSources())+", G = "+this.toCausalEffectIgraohRCode(g)+")"
 	}
 }; // eslint-disable-line 
 

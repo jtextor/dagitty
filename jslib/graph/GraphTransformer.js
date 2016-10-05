@@ -914,6 +914,13 @@ var GraphTransformer = {
 		return gn
 	},
 
+	contractLatentNodes: function(g){
+		var gn = g.clone()
+		_.each( gn.getLatentNodes(), function (v) {
+			gn.contractVertex(v)
+		} )
+		return gn
+	},
 	
 	markovEquivalentDags : function(g,n){
 		var c = this.dagToCpdag(g)
