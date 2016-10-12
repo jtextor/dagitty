@@ -1,6 +1,12 @@
+dagitty v0.2-3 (not yet released)
+
+Changes:
+ * simulateSEM: added options 'empirical' and 'verbose'
+ * plot.dagitty: fixed bug where bent undirected lines where not drawn thick
+   but non-bent undirected lines were
+
 dagitty v0.2-2 (Release date: 2016-08-26)
 ==============
-
 Changes:
 
  * Added capability to specify arbitrary path coefficients for simulateSEM

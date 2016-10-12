@@ -22,7 +22,7 @@
 	x <- c(x1,xm,x2)
 	y <- c(y1,ym,y2)
 	res <- xspline(x, y, 1, draw=FALSE)
-	lines(res, col=col)
+	lines(res, col=col, lwd=lwd)
 	nr <- length(res$x)
 	if( code >= 3 ){
 		arrows(res$x[1], res$y[1], res$x[4], res$y[4], col=col, 
