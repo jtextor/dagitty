@@ -16,9 +16,11 @@ var GraphAnalyzer = {
 			h.getEdges().map(function(e){return e.toString()}).sort().join("\r"))
 	},
 	
-	trekRule : function( g, v1, v2, use_ids_as_labels ){
+	trekRule : function( g, v1, v2, use_ids_as_labels, standardized ){
+		standardized = standardized ? 1 : 0
 		var vnr = [], i, j, vi, vj
-		var vv = g.getVertices(), ee = g.getEdges(), parameters = []
+		var vv = g.getVertices(), ee = g.getEdges(), parameters = [],
+			has_parameter = {}, p
 		if( typeof use_ids_as_labels === "undefined" ){
 			use_ids_as_labels = false
 		}
@@ -29,11 +31,16 @@ var GraphAnalyzer = {
 			} else {
 				vnr[vv[i].id] = i
 			}
-			parameters.push( "v"+vnr[vv[i].id] ) 
+			if( !standardized ){
+				parameters.push( "v"+vnr[vv[i].id] ) 
+			}
 		}
 		
 		var pars = function( e, c ){
 			if( e.id ){ return e.id }
+			if( e.attributes && e.attributes["beta"] ){
+				return e.attributes["beta"]
+			}
 			vi = g.getVertex(e.v1)
 			vj = g.getVertex(e.v2)
 			if( c == "c" ){
@@ -46,13 +53,20 @@ var GraphAnalyzer = {
 				return c+vnr[vi.id]+c+vnr[vj.id]
 			}
 		}
-		
+	
 		for( i = 0 ; i < ee.length ; i ++ ){
 			var e = ee[i]
-			if( e.directed == Graph.Edgetype.Bidirected )
-				parameters.push( pars(e,"c") )
-			if( e.directed == Graph.Edgetype.Directed )
-				parameters.push( pars(e,"b") )
+			if( e.directed == Graph.Edgetype.Bidirected ){
+				p = pars(e,"c")
+			} else if( e.directed == Graph.Edgetype.Directed ){
+				p = pars(e,"b")
+			}
+			if( !has_parameter[p] ){
+				if( parseFloat( p ) != p ){
+					parameters.push( p )
+				}
+				has_parameter[p] = true
+			}
 		}
 		
 		var gtrek = GraphTransformer.trekGraph( g, "up_", "dw_" )
@@ -62,15 +76,23 @@ var GraphAnalyzer = {
 		var visit = function( v, t, trek ){
 			if( v == t )
 			{
-				treks.push( trek.clone() )
+				treks.push( trek.slice() )
 				return
 			}
 			_.each( v.getChildren(), function( vc ){
 				if( !Graph.Vertex.isVisited( vc ) ){
 					Graph.Vertex.markAsVisited( vc )
+					var gd = 0
+					if( standardized && v.id.substr(0,3) == "up_" && vc.id.substr(0,3) == "up_" ){
+						gd = gtrek.getVertex( "dw_"+v.id.substr(3) )
+						Graph.Vertex.markAsVisited( gd )
+					}
 					trek.push( vc.id )
 					visit( vc, t, trek )
 					Graph.Vertex.markAsNotVisited( vc )
+					if( gd ){
+						Graph.Vertex.markAsNotVisited( gd )
+					}
 					trek.pop()
 				}
 			} )
@@ -97,16 +119,19 @@ var GraphAnalyzer = {
 							trek_monomials[i].push( 
 								pars(g.getEdge(v1_id,v2_id,Graph.Edgetype.Directed),"b"))
 				} else {
-					if( v1_id == v2_id )
-						trek_monomials[i].push( 
-							/*<->*/"v"+vnr[v1_id] )
-					else{
+					if( v1_id == v2_id ){
+						if( !standardized ){
+							trek_monomials[i].push( 
+								/*<->*/"v"+vnr[v1_id] )
+						}
+					} else {
 						trek_monomials[i].push( /*<-->*/
-							pars(g.getEdge(v1_id,v2_id,Graph.Edgetype.Bidirected),"b"))
+							pars(g.getEdge(v1_id,v2_id,Graph.Edgetype.Bidirected),"c"))
 					}
 				}
 			}
 		}
+		//print( trek_monomials )
 		return [trek_monomials,parameters]
 	},
 	

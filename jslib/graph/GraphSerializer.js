@@ -220,8 +220,9 @@ var GraphSerializer = {
 		return "GroebnerBasis[{"+pv[0]+"},\n{"+pv[2].join(",")+"},\n{"+pv[1].join(",")+"}]"
 	},
 
-	singularSyntax : function( g, use_ids_as_labels ){
-		var pv = this.polynomialVariety( g, use_ids_as_labels )
+	singularSyntax : function( g, use_ids_as_labels, standardized ){
+		standardized = standardized ? 1 : 0
+		var pv = this.polynomialVariety( g, use_ids_as_labels, standardized )
 
 		// constraints
 		return "ring r = 0,("+pv[1].join(",")+","+pv[2].join(",")+"),(dp("+pv[1].length+"),lp);\n" +
@@ -234,10 +235,11 @@ var GraphSerializer = {
 		//return "GroebnerBasis[{"+pv[0]+"},{"+pv[2].join(",")+"},{"+pv[1].join(",")+"}]"
 	},
 
-	polynomialVariety : function( g, use_ids_as_labels ){
+	polynomialVariety : function( g, use_ids_as_labels, standardized ){
 		if( typeof use_ids_as_labels === "undefined" ){
 			use_ids_as_labels = false
 		}
+		standardized = standardized ? 1 : 0
 		var vv = g.getVertices(), i, j, v_elements = [], 
 			values = [], vnr = []
 		for( i = 0 ; i < vv.length ; i ++ ){
@@ -253,16 +255,18 @@ var GraphSerializer = {
 		}
 		
 		for( i = 0 ; i < vv.length ; i ++ ){
+			//if( !standardized ){
 			if( i == 0 ){
 				var parameters = GraphAnalyzer.trekRule( g, vv[i], vv[i],
-					use_ids_as_labels )[1]
+					use_ids_as_labels, standardized )[1]
 			}
+			//}
 			if( g.isLatentNode( vv[i] ) ) continue
-			for( j = i ; j < vv.length ; j ++ ){
+			for( j = i + standardized; j < vv.length ; j ++ ){
 				if( g.isLatentNode( vv[j] ) ) continue
 				values.push(covs(i,j))
 				var monomials = GraphAnalyzer.trekRule( g, 
-					vv[i], vv[j], use_ids_as_labels )
+					vv[i], vv[j], use_ids_as_labels, standardized )
 				if( monomials[0].length > 0 ){
 					v_elements.push( 
 						covs(i,j)+" - (" + 

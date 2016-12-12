@@ -4,7 +4,7 @@
 #' @importFrom grDevices dev.size
 #' @importFrom methods is
 #' @importFrom utils tail
-#' @importFrom stats as.formula coef confint cov cor lm pnorm qnorm quantile runif loess sd
+#' @importFrom stats as.formula coef confint cov cov2cor cor lm pnorm pchisq qnorm quantile runif loess sd
 #' @importFrom graphics abline arrows axis lines par plot plot.new segments strheight strwidth text xspline
 NULL
 
@@ -215,7 +215,9 @@ simulateSEM <- function( x, b.default=NULL, b.lower=-.6, b.upper=.6, eps=1, N=50
 		Sigma <- diag(1,nV+nL)
 	}
 	if( verbose ){
-		print( Sigma )
+		SigmaC <- Sigma
+		colnames( SigmaC ) <- rownames( SigmaC ) <- ovars
+		print( SigmaC )
 	}
 	r <- MASS::mvrnorm( N, rep(0,nV+nL), Sigma, empirical=empirical )[,1:nV]
 	colnames(r) <- ovars
@@ -1511,6 +1513,9 @@ downloadGraph <- function(x="dagitty.net/mz-Tuw9"){
 #'   intervals. If \code{NULL}, then confidence intervals are based on normal
 #'   approximation. For tetrads, the normal approximation is only valid in 
 #'   large samples even if the data are normally distributed.
+#' @param tol bound value for tolerated deviation from local test value. By default, we perform
+#    a two-sided test of the hypothesis theta=0. If this parameter is given, the test changes
+#    to abs(theta)=tol versus abs(theta)>tol.
 #' @param conf.level determines the size of confidence intervals for test
 #'   statistics.
 #' @param loess.pars list of parameter to be passed on to  \code{\link[stats]{loess}}
@@ -1547,7 +1552,9 @@ localTests <- function(x, data=NULL,
 	type=c("cis","cis.loess","tetrads","tetrads.within","tetrads.between","tetrads.epistemic"),
 	tests=NULL,
 	sample.cov=NULL,sample.nobs=NULL,
-	conf.level=.95,R=NULL,loess.pars=NULL){
+	conf.level=.95,R=NULL,
+	tol=NULL,
+	loess.pars=NULL){
 	x <- as.dagitty(x)
 	type <- match.arg(type)
 	if( type=="cis" ){
@@ -1562,10 +1569,19 @@ localTests <- function(x, data=NULL,
 		stop("Bootstrapping requires raw data!")
 	}
 	if( is.null(R) && type=="cis.loess" ){
-		stop("Non-parametric conditional independence testing requires bootstrapping! Please provide R argument.")
+		stop("Semi-parametric conditional independence testing requires bootstrapping! Please provide R argument.")
 	}
 	if( is.null(data) && is.null(sample.cov) ){
 		stop("Please provide either data or sample covariance matrix!")
+	}
+	if( !is.null(tol) && (type !="cis") ){
+		stop("tol parameter is only implemented for conditional independence testing!")
+	}
+	if( !is.null(tol) && !is.null(R) ){
+		stop("Bootstrap only computes confidence intervals, so tol parameter cannot be used!")
+	}
+	if( is.null(tol) ){
+		tol=0
 	}
 	w <- (1-conf.level)/2
 	if( type %in% c("tetrads","tetrads.within","tetrads.between","tetrads.epistemic") ){
@@ -1632,19 +1648,16 @@ localTests <- function(x, data=NULL,
 			colnames(r) <- c("estimate","std.error",
 				paste0(100*w,"%"),paste0(100*(1-w),"%"))
 		} else {
+			stopifnot( type=="cis" )
 			if( !is.null(data) ){
-				r <- as.data.frame(
-					row.names=row.names,
-					t(sapply( tests, function(i) 
-						.ri.test(data,i,conf.level) ))
-				)
-			} else {
-				r <- as.data.frame(
-					row.names=row.names,
-					t(sapply( tests, function(i) 
-						.ci.test.covmat(sample.cov,sample.nobs,i,conf.level) ))
-				)
+				sample.cov <- cov2cor(cov(data))
+				sample.nobs <- nrow(data)
 			}
+			r <- as.data.frame(
+				row.names=row.names,
+				t(sapply( tests, function(i) 
+					.ci.test.covmat(sample.cov,sample.nobs,i,conf.level,tol) ))
+			)
 			colnames(r) <- c("estimate","std.error","p.value",
 				paste0(100*w,"%"),paste0(100*(1-w),"%"))
 		}
@@ -1847,7 +1860,8 @@ print.dagitty.sets <- function( x, prefix="", ... ){
 		if( length(i) == 0 ){
 			cat( prefix, "{}\n")
 		} else {
-			cat( prefix, "{",paste(i,collapse=", "), "}\n" )
+			l <- paste("{ ",paste(i,collapse=", ")," }\n")
+			writeLines( strwrap( l, exdent=2 ) )
 		}
 	}
 }

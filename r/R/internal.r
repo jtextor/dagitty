@@ -206,28 +206,6 @@
 	r
 }
 
-.ri.test <- function( x, ind, conf.level ){
-	if( length(ind$Z) > 0 ){
-		f <- as.formula( paste(ind$X,"~",paste(ind$Y,paste(ind$Z,collapse=" + "),sep=" + ") ) )
-	} else {
-		f <- as.formula( paste(ind$X,"~",ind$Y) )
-	}
-	mdl <- lm( f, data=x )
-	c( coef(summary(mdl))[2,c(1,2,4)], confint( mdl, ind$Y, level=conf.level ) )
-}
-
-.ci.test.lm.perm <- function( x, ind, conf.level, R=500 ){
-	requireNamespace("boot",quietly=TRUE)
-	if( length(ind$Z) > 0 ){
-		ix <- lm( paste(ind$X,"~",paste(ind$Z,collapse=" + ")), data=x )$residuals
-		iy <- lm( paste(ind$Y,"~",paste(ind$Z,collapse=" + ")), data=x )$residuals
-	} else {
-		ix <- x[,ind$X]
-		iy <- x[,ind$Y]
-	}
-	.perm.cor.test(ix,iy,conf.level,R)
-}
-
 .edgeAttributes <- function( x, a ){
 	x <- as.dagitty( x )
 	xv <- .getJSVar()
@@ -239,6 +217,19 @@
 		r <- .jsget(xv)
 	}, finally={.deleteJSVar(xv);.deleteJSVar(yv)})
 	as.data.frame(r)
+}
+
+## BEGIN functions that implement conditional independence tests
+
+.ci.test.lm.perm <- function( x, ind, conf.level, R=500 ){
+	if( length(ind$Z) > 0 ){
+		ix <- lm( paste(ind$X,"~",paste(ind$Z,collapse=" + ")), data=x )$residuals
+		iy <- lm( paste(ind$Y,"~",paste(ind$Z,collapse=" + ")), data=x )$residuals
+	} else {
+		ix <- x[,ind$X]
+		iy <- x[,ind$Y]
+	}
+	.perm.cor.test(ix,iy,conf.level,R)
 }
 
 .ci.test.loess.perm <- function( x, ind, conf.level, R=500, loess.pars=list() ){
@@ -270,21 +261,29 @@
 	)
 }
 
-
 .ci.test.covmat <- function( sample.cov, sample.nobs,
-	ind, conf.level ){
+	ind, conf.level, tol ){
 	vars <- unlist(c(ind$X,ind$Y,ind$Z))
 	sample.cov <- sample.cov[vars,vars]
 	M <- MASS::ginv(sample.cov)
 	pcor <- -M[1,2] / sqrt( M[1,1] * M[2,2] )
 	pcor.z <- atanh( pcor )
-	pcor.z.sem <- 1 / sqrt( sample.nobs - length(ind$Z) - 3 )
-	pcor.stat <- pcor.z / pcor.z.sem
+	tol.z <- atanh( tol )
+	df <- sample.nobs - length(ind$Z) - 3
+	pcor.z.sem <- 1 / sqrt( df )
+	if( isTRUE( all.equal( tol, 0 ) ) ){ 
+		pcor.pval <- pchisq( pcor.z^2*df, 1, lower.tail=FALSE )
+	} else {
+		pcor.pval <- pchisq( pcor.z^2*df, 1, ncp=tol.z^2*df, lower.tail=FALSE )
+	}
 	crit <- qnorm( (1-conf.level)/2, lower.tail=FALSE )
-	c( pcor, atan(pcor.z.sem), 2 * pnorm( abs(pcor.stat), lower.tail=FALSE ),
+	c( pcor, mean( pcor-atan( pcor.z-pcor.z.sem ), atan( pcor.z+pcor.z.sem )-pcor ),
+		pcor.pval,
 		atan( pcor.z-crit*pcor.z.sem ),
 		atan( pcor.z+crit*pcor.z.sem ) )
 }
+
+## END functions that implement conditional independence tests
 
 .tetradsFromData <- function( x, tets, i=seq_len(nrow(x)) ){
 	M <- cov(x[i,])

@@ -43,6 +43,7 @@ QUnit.test( "graph manipulation", function( assert ) {
 	g.deleteVertex("m")
 	assert.equal( GraphSerializer.toDotEdgeStatements( g ), "x -> y", "vertex deletion"  )
 
+
 } )
 
 QUnit.test( "parsing and serializing", function( assert ) {
@@ -637,6 +638,11 @@ QUnit.test( "adjustment in DAGs", function( assert ) {
 		"C -> Y1 \n"+
 		"C -> m \n X1 -> X2 \n X1 -> Y2 -> Y1 \n X2 -> Y1 \n X1 -> m2 -> m -> X2 }"))),
 		"{C}\n{m, m2}")
+
+	g = GraphParser.parseGuess( "dag G { a <-> b } " )
+	assert.equal( GraphTransformer.trekGraph( g ).edges.length, 4, "trek graph with <->" )
+
+
 });
 
 QUnit.test( "adjustment in other graphs", function( assert ) {

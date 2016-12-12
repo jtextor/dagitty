@@ -970,9 +970,11 @@ var GraphAnalyzer = {
 			h.getEdges().map(function(e){return e.toString()}).sort().join("\r"))
 	},
 	
-	trekRule : function( g, v1, v2, use_ids_as_labels ){
+	trekRule : function( g, v1, v2, use_ids_as_labels, standardized ){
+		standardized = standardized ? 1 : 0
 		var vnr = [], i, j, vi, vj
-		var vv = g.getVertices(), ee = g.getEdges(), parameters = []
+		var vv = g.getVertices(), ee = g.getEdges(), parameters = [],
+			has_parameter = {}, p
 		if( typeof use_ids_as_labels === "undefined" ){
 			use_ids_as_labels = false
 		}
@@ -983,11 +985,16 @@ var GraphAnalyzer = {
 			} else {
 				vnr[vv[i].id] = i
 			}
-			parameters.push( "v"+vnr[vv[i].id] ) 
+			if( !standardized ){
+				parameters.push( "v"+vnr[vv[i].id] ) 
+			}
 		}
 		
 		var pars = function( e, c ){
 			if( e.id ){ return e.id }
+			if( e.attributes && e.attributes["beta"] ){
+				return e.attributes["beta"]
+			}
 			vi = g.getVertex(e.v1)
 			vj = g.getVertex(e.v2)
 			if( c == "c" ){
@@ -1000,13 +1007,20 @@ var GraphAnalyzer = {
 				return c+vnr[vi.id]+c+vnr[vj.id]
 			}
 		}
-		
+	
 		for( i = 0 ; i < ee.length ; i ++ ){
 			var e = ee[i]
-			if( e.directed == Graph.Edgetype.Bidirected )
-				parameters.push( pars(e,"c") )
-			if( e.directed == Graph.Edgetype.Directed )
-				parameters.push( pars(e,"b") )
+			if( e.directed == Graph.Edgetype.Bidirected ){
+				p = pars(e,"c")
+			} else if( e.directed == Graph.Edgetype.Directed ){
+				p = pars(e,"b")
+			}
+			if( !has_parameter[p] ){
+				if( parseFloat( p ) != p ){
+					parameters.push( p )
+				}
+				has_parameter[p] = true
+			}
 		}
 		
 		var gtrek = GraphTransformer.trekGraph( g, "up_", "dw_" )
@@ -1016,15 +1030,23 @@ var GraphAnalyzer = {
 		var visit = function( v, t, trek ){
 			if( v == t )
 			{
-				treks.push( trek.clone() )
+				treks.push( trek.slice() )
 				return
 			}
 			_.each( v.getChildren(), function( vc ){
 				if( !Graph.Vertex.isVisited( vc ) ){
 					Graph.Vertex.markAsVisited( vc )
+					var gd = 0
+					if( standardized && v.id.substr(0,3) == "up_" && vc.id.substr(0,3) == "up_" ){
+						gd = gtrek.getVertex( "dw_"+v.id.substr(3) )
+						Graph.Vertex.markAsVisited( gd )
+					}
 					trek.push( vc.id )
 					visit( vc, t, trek )
 					Graph.Vertex.markAsNotVisited( vc )
+					if( gd ){
+						Graph.Vertex.markAsNotVisited( gd )
+					}
 					trek.pop()
 				}
 			} )
@@ -1051,16 +1073,19 @@ var GraphAnalyzer = {
 							trek_monomials[i].push( 
 								pars(g.getEdge(v1_id,v2_id,Graph.Edgetype.Directed),"b"))
 				} else {
-					if( v1_id == v2_id )
-						trek_monomials[i].push( 
-							/*<->*/"v"+vnr[v1_id] )
-					else{
+					if( v1_id == v2_id ){
+						if( !standardized ){
+							trek_monomials[i].push( 
+								/*<->*/"v"+vnr[v1_id] )
+						}
+					} else {
 						trek_monomials[i].push( /*<-->*/
-							pars(g.getEdge(v1_id,v2_id,Graph.Edgetype.Bidirected),"b"))
+							pars(g.getEdge(v1_id,v2_id,Graph.Edgetype.Bidirected),"c"))
 					}
 				}
 			}
 		}
+		//print( trek_monomials )
 		return [trek_monomials,parameters]
 	},
 	
@@ -3420,6 +3445,8 @@ var GraphTransformer = {
 			if( ee[i].directed == 2 ){ // bidirected edge
 				vup = up_prefix+ee[i].v1.id; vdown = down_prefix+ee[i].v2.id
 				n.addEdge( vup, vdown )
+				vup = up_prefix+ee[i].v2.id; vdown = down_prefix+ee[i].v1.id
+				n.addEdge( vup, vdown )
 			}
 		} 
 		for( i = 0 ; i < vv.length ; i ++ ){
@@ -4124,7 +4151,7 @@ var ObservedGraph = Class.extend({
 	}
 } )
 
-/* globals _,Graph,GraphAnalyzer,GraphTransformer */
+/* globals _,Graph,GraphAnalyzer,GraphTransformer,Hash */
 /* exported GraphSerializer */
 
 var GraphSerializer = {
@@ -4180,10 +4207,12 @@ var GraphSerializer = {
 	
 	dotBarewordRe : new RegExp( "^[0-9a-zA-Z_.]+$" ),
 	
+	quoteVid : function ( vid ){
+		return "\"" + vid.replace(/"/g, "\\\"") + "\""
+	},
+	
 	dotQuoteVid : function( vid ){
-		if( !vid.match( this.dotBarewordRe ) ){
-			return "\"" + vid.replace(/"/g, "\\\"") + "\""
-		}
+		if( !vid.match( this.dotBarewordRe ) ) return this.quoteVid( vid )
 		return vid
 	},
 	
@@ -4344,8 +4373,9 @@ var GraphSerializer = {
 		return "GroebnerBasis[{"+pv[0]+"},\n{"+pv[2].join(",")+"},\n{"+pv[1].join(",")+"}]"
 	},
 
-	singularSyntax : function( g, use_ids_as_labels ){
-		var pv = this.polynomialVariety( g, use_ids_as_labels )
+	singularSyntax : function( g, use_ids_as_labels, standardized ){
+		standardized = standardized ? 1 : 0
+		var pv = this.polynomialVariety( g, use_ids_as_labels, standardized )
 
 		// constraints
 		return "ring r = 0,("+pv[1].join(",")+","+pv[2].join(",")+"),(dp("+pv[1].length+"),lp);\n" +
@@ -4358,10 +4388,11 @@ var GraphSerializer = {
 		//return "GroebnerBasis[{"+pv[0]+"},{"+pv[2].join(",")+"},{"+pv[1].join(",")+"}]"
 	},
 
-	polynomialVariety : function( g, use_ids_as_labels ){
+	polynomialVariety : function( g, use_ids_as_labels, standardized ){
 		if( typeof use_ids_as_labels === "undefined" ){
 			use_ids_as_labels = false
 		}
+		standardized = standardized ? 1 : 0
 		var vv = g.getVertices(), i, j, v_elements = [], 
 			values = [], vnr = []
 		for( i = 0 ; i < vv.length ; i ++ ){
@@ -4377,16 +4408,18 @@ var GraphSerializer = {
 		}
 		
 		for( i = 0 ; i < vv.length ; i ++ ){
+			//if( !standardized ){
 			if( i == 0 ){
 				var parameters = GraphAnalyzer.trekRule( g, vv[i], vv[i],
-					use_ids_as_labels )[1]
+					use_ids_as_labels, standardized )[1]
 			}
+			//}
 			if( g.isLatentNode( vv[i] ) ) continue
-			for( j = i ; j < vv.length ; j ++ ){
+			for( j = i + standardized; j < vv.length ; j ++ ){
 				if( g.isLatentNode( vv[j] ) ) continue
 				values.push(covs(i,j))
 				var monomials = GraphAnalyzer.trekRule( g, 
-					vv[i], vv[j], use_ids_as_labels )
+					vv[i], vv[j], use_ids_as_labels, standardized )
 				if( monomials[0].length > 0 ){
 					v_elements.push( 
 						covs(i,j)+" - (" + 
@@ -4439,28 +4472,35 @@ var GraphSerializer = {
 	},
 
 	//Exports the graph as igraph edge list with the attributes needed for the causaleffect package.
-	//Latent nodes are replaced by bidirectional edges, only directed and bidirectinal edges are allowed, and nodes without edges are dropped.
-	toCausalEffectIgraohRCode : function (g){
+	//Latent nodes are replaced by bidirectional edges, only directed and bidirectional edges are allowed
+	toCausalEffectIgraphRCode : function (g){
 		var gbidi = GraphTransformer.contractLatentNodes(g)
 		var edgesresult = []
-		var bidirectinoal = []
-		var quote = "\""
+		var bidirectional = []
+		var withEdges = new Hash()
 		_.each(gbidi.getEdges(), function(e){
-			edgesresult.push( quote + e.v1.id + "\",\"" + e.v2.id + quote )
+			withEdges.set(e.v1.id, true)
+			withEdges.set(e.v2.id, true)
+			edgesresult.push( GraphSerializer.quoteVid(e.v1.id) + "," + GraphSerializer.quoteVid(e.v2.id) )
 			if (e.directed == Graph.Edgetype.Bidirected) {
-				bidirectinoal.push(edgesresult.length)
-				edgesresult.push( quote + e.v2.id + "\",\"" + e.v1.id + quote )
-				bidirectinoal.push(edgesresult.length)
+				bidirectional.push(edgesresult.length)
+				edgesresult.push( GraphSerializer.quoteVid(e.v2.id) + "," + GraphSerializer.quoteVid(e.v1.id) )
+				bidirectional.push(edgesresult.length)
 			}
 		} )
 		
-		return "set.edge.attribute(graph = graph_from_edgelist(matrix(c( "+edgesresult.join(", ")+" ),nc = 2,byrow = TRUE)), name = \"description\", index = c("+bidirectinoal.join(", ")+"), value = \"U\")"
+		var result = edgesresult.length > 0 ? "set.edge.attribute(graph = graph_from_edgelist(matrix(c( "+edgesresult.join(", ")+" ),nc = 2,byrow = TRUE)), name = \"description\", index = c("+bidirectional.join(", ")+"), value = \"U\")" : "make_empty_graph()"
+		
+		var withoutEdges = _.filter(g.getVertices(), function(v){return !withEdges.get(v.id)})
+		if (withoutEdges.length > 0) result = result + " + vertices(" + withoutEdges.map(function(v){ return GraphSerializer.quoteVid(v.id) }).join(", ")+  ")"
+		
+		return result
 	},
 	
 	//Exports R-code to find the causal effect from the current exposures to current outcomes using the causaleffect package
 	toCausalEffectRCode : function(g){
-		var nodeList = function(a) { return "c(" + a.map(function(v){return "\""+v.id+"\""}).join(", ") + ")" }
-		return "causal.effect(y = "+nodeList(g.getTargets())+", x = "+nodeList(g.getSources())+", G = "+this.toCausalEffectIgraohRCode(g)+")"
+		var nodeList = function(a) { return "c(" + a.map(function(v){return GraphSerializer.quoteVid(v.id)}).join(", ") + ")" }
+		return "causal.effect(y = "+nodeList(g.getTargets())+", x = "+nodeList(g.getSources())+", G = "+this.toCausalEffectIgraphRCode(g)+")"
 	}
 }; // eslint-disable-line 
 

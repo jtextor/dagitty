@@ -7,7 +7,7 @@
 localTests(x, data = NULL, type = c("cis", "cis.loess", "tetrads",
   "tetrads.within", "tetrads.between", "tetrads.epistemic"), tests = NULL,
   sample.cov = NULL, sample.nobs = NULL, conf.level = 0.95, R = NULL,
-  loess.pars = NULL)
+  tol = NULL, loess.pars = NULL)
 }
 \arguments{
 \item{x}{the input graph, a DAG, MAG, or PDAG.}
@@ -39,6 +39,8 @@ statistics.}
 intervals. If \code{NULL}, then confidence intervals are based on normal
 approximation. For tetrads, the normal approximation is only valid in 
 large samples even if the data are normally distributed.}
+
+\item{tol}{bound value for tolerated deviation from local test value. By default, we perform}
 
 \item{loess.pars}{list of parameter to be passed on to  \code{\link[stats]{loess}}
 (for \code{type="cis.loess"}), for example the smoothing range.}

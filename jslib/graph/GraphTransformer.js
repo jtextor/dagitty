@@ -447,6 +447,8 @@ var GraphTransformer = {
 			if( ee[i].directed == 2 ){ // bidirected edge
 				vup = up_prefix+ee[i].v1.id; vdown = down_prefix+ee[i].v2.id
 				n.addEdge( vup, vdown )
+				vup = up_prefix+ee[i].v2.id; vdown = down_prefix+ee[i].v1.id
+				n.addEdge( vup, vdown )
 			}
 		} 
 		for( i = 0 ; i < vv.length ; i ++ ){
