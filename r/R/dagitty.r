@@ -225,6 +225,71 @@ simulateSEM <- function( x, b.default=NULL, b.lower=-.6, b.upper=.6, eps=1, N=50
 	r[,setdiff(ovars,latents(x))]
 }
 
+#' Implied Covariance Matrix of a Gaussian Graphical Model
+#'
+#' @inheritParams simulateSEM
+#'
+#' @export
+impliedCovarianceMatrix <- function( x, b.default=NULL, b.lower=-.6, b.upper=.6, eps=1, standardized=TRUE ){
+	if( !requireNamespace( "MASS", quietly=TRUE ) ){
+		stop("This function requires the 'MASS' package!")
+	}
+	.supportsTypes( x, c("dag") )
+	x <- as.dagitty( x )
+	e <- .edgeAttributes( x, "beta" )
+	e$a <- as.double(as.character(e$a))
+	b.not.set <- is.na(e$a)
+	if( is.null( b.default ) ){
+		e$a[b.not.set] <- runif(sum(b.not.set),b.lower,b.upper)
+	} else {
+		e$a[b.not.set] <- b.default
+	}
+	ovars <- names(x)
+	nV <- length(ovars)
+	nL <- sum(e$e=="<->")
+	if( nrow(e) > 0 ){
+		vars <- paste0("v",ovars)
+		if( nL > 0 ){
+			lats <- paste0("l",seq_len(nL))
+		} else {
+			lats <- c()
+		}
+		Beta <- matrix( 0, nrow=nV+nL, ncol=nV+nL )
+		rownames(Beta) <- colnames(Beta) <- c(vars,lats)
+		cL <- 1
+		for( i in seq_len( nrow(e) ) ){
+			b <- e$a[i]
+			if( e$e[i] == "<->" ){
+				lV <- paste0("l",cL) 
+				lb <- sqrt(abs(b))
+				Beta[lV,paste0("v",e$v[i])] <- lb
+				if( b < 0 ){
+					Beta[lV,paste0("v",e$w[i])] <- -lb
+				} else {
+					Beta[lV,paste0("v",e$w[i])] <- lb
+				}
+				cL <- cL + 1
+			} else if( e$e[i] == "->" ){
+				Beta[paste0("v",e$v[i]),paste0("v",e$w[i])] <- b
+			}
+		}
+		L <- (diag( 1, nV+nL ) - Beta)
+		Li <- MASS::ginv( L )
+		if( standardized == TRUE ){
+			Phi <- MASS::ginv( t(Li)^2 ) %*% rep(eps,nrow(Beta))
+			Phi <- diag( c(Phi), nV+nL )
+		} else {
+			Phi <- diag( eps, nV+nL )
+		}
+		Sigma <- t(Li) %*% Phi %*% Li
+	} else {
+		Sigma <- diag(1,nV+nL)
+	}
+	Sigma <- Sigma[1:nV,1:nV]
+	colnames( Sigma ) <- rownames( Sigma ) <- ovars
+	Sigma[setdiff(ovars,latents(x)),setdiff(ovars,latents(x))]
+}
+
 #' Ancestral Relations
 #'
 #' Retrieve the names of all variables in a given graph that are in the specified 
@@ -1574,14 +1639,8 @@ localTests <- function(x, data=NULL,
 	if( is.null(data) && is.null(sample.cov) ){
 		stop("Please provide either data or sample covariance matrix!")
 	}
-	if( !is.null(tol) && (type !="cis") ){
-		stop("tol parameter is only implemented for conditional independence testing!")
-	}
 	if( !is.null(tol) && !is.null(R) ){
 		stop("Bootstrap only computes confidence intervals, so tol parameter cannot be used!")
-	}
-	if( is.null(tol) ){
-		tol=0
 	}
 	w <- (1-conf.level)/2
 	if( type %in% c("tetrads","tetrads.within","tetrads.between","tetrads.epistemic") ){
@@ -1596,7 +1655,9 @@ localTests <- function(x, data=NULL,
 			return(data.frame())
 		}
 		if( is.null( sample.cov ) ){
-			sample.cov <- cov(data)
+			sample.cov <- cor(data)
+		} else {
+			sample.cov <- cov2cor(data)
 		}
 		if( is.null( sample.nobs ) ){
 			sample.nobs <- nrow(data)
@@ -1619,8 +1680,14 @@ localTests <- function(x, data=NULL,
 				paste0(100*w,"%"),paste0(100*(1-w),"%"))
 		} else {
 			std.errors <- tetrad.sample.sds
-			p.values <- 2*pnorm(abs(tetrad.values/tetrad.sample.sds),
-				lower.tail=FALSE)
+			if( is.null(tol) ){
+				p.values <- 2*pnorm(abs(tetrad.values/tetrad.sample.sds),
+					lower.tail=FALSE)
+			} else {
+				tetrad.z <- tetrad.values / tetrad.sample.sds
+				tol.z <- tol / tetrad.sample.sds
+				p.values <- pchisq( tetrad.z^2, 1, ncp=tol.z^2, lower.tail=FALSE )
+			}
 			conf <- cbind( std.errors, p.values, tetrad.values+qnorm(w)*tetrad.sample.sds,
 				tetrad.values+qnorm(1-w)*tetrad.sample.sds )
 			r <- cbind( r, conf )

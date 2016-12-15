@@ -271,7 +271,7 @@
 	tol.z <- atanh( tol )
 	df <- sample.nobs - length(ind$Z) - 3
 	pcor.z.sem <- 1 / sqrt( df )
-	if( isTRUE( all.equal( tol, 0 ) ) ){ 
+	if( is.null( tol ) ){ 
 		pcor.pval <- pchisq( pcor.z^2*df, 1, lower.tail=FALSE )
 	} else {
 		pcor.pval <- pchisq( pcor.z^2*df, 1, ncp=tol.z^2*df, lower.tail=FALSE )
