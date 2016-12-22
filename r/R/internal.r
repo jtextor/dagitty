@@ -268,12 +268,12 @@
 	M <- MASS::ginv(sample.cov)
 	pcor <- -M[1,2] / sqrt( M[1,1] * M[2,2] )
 	pcor.z <- atanh( pcor )
-	tol.z <- atanh( tol )
 	df <- sample.nobs - length(ind$Z) - 3
 	pcor.z.sem <- 1 / sqrt( df )
 	if( is.null( tol ) ){ 
 		pcor.pval <- pchisq( pcor.z^2*df, 1, lower.tail=FALSE )
 	} else {
+		tol.z <- atanh( tol )
 		pcor.pval <- pchisq( pcor.z^2*df, 1, ncp=tol.z^2*df, lower.tail=FALSE )
 	}
 	crit <- qnorm( (1-conf.level)/2, lower.tail=FALSE )

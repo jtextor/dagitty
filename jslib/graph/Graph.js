@@ -95,6 +95,13 @@ var Graph = Class.extend({
 				e2.layout_pos_x = e.layout_pos_x
 				e2.layout_pos_y = e.layout_pos_y
 				e2.style = e.style
+				if( e.attributes ){
+					e2.attributes = {}
+					var vk = Object.keys( e.attributes )
+					for( var i = 0 ; i < vk.length ; i ++ ){
+						e2.attributes[vk[i]] = e.attributes[vk[i]]
+					}
+				}
 			}
 		} )
 		g2.setType( this.getType() )

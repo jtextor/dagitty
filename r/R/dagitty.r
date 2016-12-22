@@ -466,6 +466,41 @@ moralize <- function( x ){
 	.graphTransformer( x, "moralGraph" )
 }
 
+#' Extract Structural Part from Structural Equation Model
+#'
+#' Removes all observed variables from the input graph.
+#'
+#' @param x the input graph, a DAG.
+#'
+#' @details Assumes that x is a graph where there are edges between 
+#' the latent variables, between the observed variables, and 
+#' from latent to observed variables, but no edge between
+#' a latent L and an observed X may have an arrowhead at L.
+#
+#' @export
+structuralPart <- function( x ){
+	.supportsTypes( x, c("dag","digraph") )
+	.graphTransformer( x, "structuralPart" )
+}
+
+#' Extract Measurement Part from Structural Equation Model
+#'
+#' Removes all edges between latent variables, then removes any
+#' latent variables without adjacent edges, then returns the graph.
+#'
+#' @param x the input graph, a DAG.
+#'
+#' @details Assumes that x is a graph where there are edges between 
+#' the latent variables, between the observed variables, and 
+#' from latent to observed variables, but no edge between
+#' a latent L and an observed X may have an arrowhead at L.
+#'
+#' @export
+measurementPart <- function( x ){
+	.supportsTypes( x, c("dag","digraph") )
+	.graphTransformer( x, "measurementPart" )
+}
+
 #' Back-Door Graph
 #'
 #' Removes every first edge on a proper causal path from \code{x}.
@@ -1907,7 +1942,31 @@ randomDAG <- function( N, p ){
 		.deleteJSVar(xv)
 		.deleteJSVar(pv)
 	})
-	r
+	as.dagitty(r)
+}
+
+#' Generate Complete DAG
+#'
+#' Generates a complete DAG on the given variable names. The order
+#' in which the variables are given corresponds to the topological ordering
+#' of the DAG.
+#'
+#' @param x variable names. Can also be a positive integer, in which case 
+#' the variables will be called  x1,...,xN.
+#' @export
+completeDAG <- function( x ){
+	if( is.numeric(x) ){
+		x <- paste0("x",seq_len(x))
+	}
+	xv <- .getJSVar()
+	tryCatch({
+	.jsassign( xv, as.list(x) )
+	.jsassign( xv, .jsp("GraphGenerator.randomDAG(",xv,",1).toString()") )
+	r <- .jsget(xv)
+	},finally={
+		.deleteJSVar(xv)
+	})
+	as.dagitty(r)
 }
 
 #' @export
@@ -1995,3 +2054,21 @@ as.dagitty.default <- function( x, ... ){
 	}
 }
 
+#'@export
+c.dagitty <- function( ... ){
+	args <- list(...)
+	xvs <- replicate( length(args), .getJSVar() )
+	rv <- .getJSVar()
+	tryCatch({
+		for( i in seq_along(args) ){ 
+			.jsassigngraph( xvs[[i]], as.dagitty( args[[i]] ) )
+		}
+		.jsassign( rv, .jsp("GraphTransformer.mergeGraphs(",
+			paste(xvs,collapse=","),").toString()") )
+		r <- .jsget( rv )
+	},finally={
+		lapply( xvs, .deleteJSVar )
+		.deleteJSVar( rv )
+	})
+	as.dagitty(r)
+}

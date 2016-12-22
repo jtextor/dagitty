@@ -35,6 +35,55 @@ var GraphTransformer = {
 		g.copyAllPropertiesTo( gn )
 		return gn
 	},
+
+	mergeGraphs : function(){
+		var i, gn = new Graph(), vv, ee
+		for( i = 0 ; i < arguments.length ; i ++ ){
+			vv = arguments[i].getVertices()
+			for( j = 0 ; j < vv.length ; j++ ){
+				if( !gn.getVertex( vv[j].id ) ){
+					gn.addVertex( new Graph.Vertex( vv[j] ) )
+				}
+			}
+			ee = arguments[i].edges
+			for( j = 0 ; j < ee.length ; j++ ){
+				gn.addEdge( ee[j].v1.id, ee[j].v2.id, ee[j].directed )
+			}
+			arguments[i].copyAllPropertiesTo( gn )
+		}
+		return gn
+	},
+
+	structuralPart : function( g ){
+		return GraphTransformer.inducedSubgraph( g, g.getLatentNodes() ) 
+	},
+
+	measurementPart : function( g ){
+		var gn = new Graph(), i, vv = g.getVertices()
+		for( i = 0 ; i < vv.length ; i++ ){
+			gn.addVertex( new Graph.Vertex( vv[i] ) )
+		}
+		for( i = 0 ; i < g.edges.length ; i++ ){
+			var e = g.edges[i]
+			if( e.directed == Graph.Edgetype.Directed &&
+				!g.isLatentNode(e.v2) ){
+				gn.addEdge( e.v1.id, e.v2.id, e.directed )
+			}
+			if( e.directed == Graph.Edgetype.Bidirected &&
+				!g.isLatentNode(e.v1) && !g.isLatentNode(e.v2) ){
+				gn.addEdge( e.v1.id, e.v2.id, e.directed )
+			}
+		}
+		g.copyAllPropertiesTo( gn )
+		// remove isolated latent nodes from measurement model
+		vv = _.pluck(gn.getLatentNodes(),"id")
+		for( i = 0 ; i < vv.length ; i++ ){
+			if( gn.getVertex(vv[i]).degree( Graph.Edgetype.Directed ) == 0 ) {
+				gn.deleteVertex(gn.getVertex(vv[i]))
+			}
+		}
+		return gn		
+	},
 	
 	skeleton : function( g ){
 		var gn = new Graph(), edge_array = g.edges, i, vv = g.vertices.values()
