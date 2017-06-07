@@ -1,6 +1,7 @@
 GraphParser.VALIDATE_GRAPH_STRUCTURE = true;
 
 var $p = function(s){ return GraphParser.parseGuess(s) }
+var $es = function(g){ return GraphSerializer.toDotEdgeStatements(g) }
 
 QUnit.test( "graph manipulation", function( assert ) {
 
@@ -11,95 +12,95 @@ QUnit.test( "graph manipulation", function( assert ) {
 	assert.equal( g.areAdjacent("x","y"), true )
 	assert.equal( g.areAdjacent("y","x"), true )
 	g.changeEdge( g.getEdge("x","y",Graph.Edgetype.Bidirected), Graph.Edgetype.Directed )
-	assert.equal( GraphSerializer.toDotEdgeStatements( g ), "x -> y" )
+	assert.equal( $es( g ), "x -> y" )
 	assert.equal( g.areAdjacent("x","y"), true )
 	assert.equal( g.areAdjacent("y","x"), true )
 
-	g = GraphParser.parseGuess( "digraph G { x -> y }" )
+	g = $p( "digraph G { x -> y }" )
 	assert.equal( g.areAdjacent("x","y"), true )
 	g.changeEdge( g.getEdge("x","y"), Graph.Edgetype.Undirected )
-	assert.equal( GraphSerializer.toDotEdgeStatements( g ), "x -- y" )
+	assert.equal( $es( g ), "x -- y" )
 	assert.equal( g.areAdjacent("x","y"), true )
 
 
-	g = GraphParser.parseGuess( "digraph G { x -> y }" )
+	g = $p( "digraph G { x -> y }" )
 	assert.equal( g.areAdjacent("x","y"), true )
 	g.reverseEdge( g.getEdge("x","y"), Graph.Edgetype.Undirected )
-	assert.equal( GraphSerializer.toDotEdgeStatements( g ), "y -> x" )
+	assert.equal( $es( g ), "y -> x" )
 	assert.equal( g.areAdjacent("x","y"), true )
 
 
-	g = GraphParser.parseGuess( "digraph G { x -- y }" )
+	g = $p( "digraph G { x -- y }" )
 	assert.equal( g.areAdjacent("x","y"), true )
 	g.changeEdge( g.getEdge("y","x",Graph.Edgetype.Undirected), Graph.Edgetype.Directed )
-	assert.equal( GraphSerializer.toDotEdgeStatements( g ), "x -> y" )
+	assert.equal( $es( g ), "x -> y" )
 	assert.equal( g.areAdjacent("x","y"), true )
 
-	g = GraphParser.parseGuess( "digraph G { x -- y }" )
+	g = $p( "digraph G { x -- y }" )
 	g.changeEdge( g.getEdge("y","x",Graph.Edgetype.Undirected), Graph.Edgetype.Directed, "y" )
-	assert.equal( GraphSerializer.toDotEdgeStatements( g ), "y -> x", "edge change" )
+	assert.equal( $es( g ), "y -> x", "edge change" )
 
-	g = GraphParser.parseGuess( "digraph G { y <- x <-> m -- y }")
+	g = $p( "digraph G { y <- x <-> m -- y }")
 	g.deleteVertex("m")
-	assert.equal( GraphSerializer.toDotEdgeStatements( g ), "x -> y", "vertex deletion"  )
+	assert.equal( $es( g ), "x -> y", "vertex deletion"  )
 
 
 } )
 
 QUnit.test( "parsing and serializing", function( assert ) {
 	// GraphParser.VALIDATE_GRAPH_STRUCTURE = false;
-	assert.equal( GraphParser.parseGuess( "dag{{x->{a b}}}" ).edges.length, 2 )
+	assert.equal( $p( "dag{{x->{a b}}}" ).edges.length, 2 )
 
-	assert.equal( GraphParser.parseGuess( "dag{{x->{a ; b}}}" ).edges.length, 2,
+	assert.equal( $p( "dag{{x->{a ; b}}}" ).edges.length, 2,
 		"semicolons" )
-	assert.equal( GraphParser.parseGuess( "dag{a;b}" ).getVertices().length, 2,
+	assert.equal( $p( "dag{a;b}" ).getVertices().length, 2,
 		"semicolons 2" )
-	assert.equal( GraphParser.parseGuess( "dag{;b}" ).getVertices().length, 1,
+	assert.equal( $p( "dag{;b}" ).getVertices().length, 1,
 		"semicolons 2" )
-	assert.equal( GraphParser.parseGuess( "dag{a;}" ).getVertices().length, 1, 
-		"semicolons 2" )
-
-	assert.equal( GraphParser.parseGuess( "dag{}" ).getVertices().length, 0,
-		"semicolons 2" )
-	assert.equal( GraphParser.parseGuess( "dag{;}" ).getVertices().length, 0,
-		"semicolons 2" )
-	assert.equal( GraphParser.parseGuess( "dag{;;;}" ).getVertices().length, 0,
+	assert.equal( $p( "dag{a;}" ).getVertices().length, 1, 
 		"semicolons 2" )
 
-	assert.equal( GraphParser.parseGuess( "dag{a}" ).getVertices().length,
+	assert.equal( $p( "dag{}" ).getVertices().length, 0,
+		"semicolons 2" )
+	assert.equal( $p( "dag{;}" ).getVertices().length, 0,
+		"semicolons 2" )
+	assert.equal( $p( "dag{;;;}" ).getVertices().length, 0,
+		"semicolons 2" )
+
+	assert.equal( $p( "dag{a}" ).getVertices().length,
 		1, "spaces" )
-	assert.equal( GraphParser.parseGuess( "dag{a }" ).getVertices().length,
+	assert.equal( $p( "dag{a }" ).getVertices().length,
 		1, "spaces" )
-	assert.equal( GraphParser.parseGuess( "dag{ a }" ).getVertices().length,
+	assert.equal( $p( "dag{ a }" ).getVertices().length,
 		1, "spaces" )
 
 
-	assert.equal( GraphParser.parseGuess( "pag{a @-> {b --@ {c @-@ d} }}" ).edges.length, 6 )
-	assert.equal( _.pluck(GraphParser.parseGuess( "pag{a @->b<-@c}" ).getVertices(),"id").sort().join(","), "a,b,c" )
-	assert.equal( _.pluck(GraphParser.parseGuess( "pag{a @->b<-@c @-@d}" ).getVertices(),"id").sort().join(","), "a,b,c,d" )
+	assert.equal( $p( "pag{a @-> {b --@ {c @-@ d} }}" ).edges.length, 6 )
+	assert.equal( _.pluck($p( "pag{a @->b<-@c}" ).getVertices(),"id").sort().join(","), "a,b,c" )
+	assert.equal( _.pluck($p( "pag{a @->b<-@c @-@d}" ).getVertices(),"id").sort().join(","), "a,b,c,d" )
 
-	assert.equal( GraphParser.parseGuess( "dag{x->{a b}}" ).edges.length, 2 )
+	assert.equal( $p( "dag{x->{a b}}" ).edges.length, 2 )
 
-	assert.equal( GraphParser.parseGuess( "dag{x->{a->b}}" ).edges.length, 3 )
+	assert.equal( $p( "dag{x->{a->b}}" ).edges.length, 3 )
 
-	assert.equal( GraphParser.parseGuess( "dag{a->{b->{c->{d->e}}}}" ).edges.length, 10 )
+	assert.equal( $p( "dag{a->{b->{c->{d->e}}}}" ).edges.length, 10 )
 
-	assert.equal( GraphSerializer.toDotVertexStatements( GraphParser.parseGuess( 
+	assert.equal( GraphSerializer.toDotVertexStatements( $p( 
 		"digraph G { \"ᚠᛇᚻ᛫ᛒᛦᚦ᛫ᚠᚱᚩᚠᚢᚱ᛫ᚠᛁᚱᚪ᛫ᚷᛖᚻᚹᛦᛚᚳᚢᛗ\" }" ) ).trim(), 
 			"\"ᚠᛇᚻ᛫ᛒᛦᚦ᛫ᚠᚱᚩᚠᚢᚱ᛫ᚠᛁᚱᚪ᛫ᚷᛖᚻᚹᛦᛚᚳᚢᛗ\"" )
 
-	assert.equal( GraphSerializer.toDotVertexStatements( GraphParser.parseGuess( 
+	assert.equal( GraphSerializer.toDotVertexStatements( $p( 
 		"digraph G { x [label=\"από το Άξιον Εστί\"] }" ) ).trim(), 
 			"x [label=\"από το Άξιον Εστί\"]" )
 
-	assert.equal( GraphSerializer.toDot( GraphParser.parseGuess( 
+	assert.equal( GraphSerializer.toDot( $p( 
 		"digraph G { graph [bb=\"0,0,100,100\"] }" ) ).trim(), 
 			"digraph G{\nbb=\"0,0,100,100\"\n\n}" )
 
 	assert.equal( TestGraphs.small1().oldToString(), "A 1\nS E\nT O\n\nA S\nS T" )
 
 	assert.equal((function(){
-		var g = GraphParser.parseGuess( 
+		var g = $p( 
 		"digraph G { x <-> y }"
 		).addSource("x").addTarget("y")
 		GraphTransformer.activeBiasGraph( g )
@@ -107,7 +108,7 @@ QUnit.test( "parsing and serializing", function( assert ) {
 	})(), Graph.Edgetype.Bidirected )
 
 	assert.equal((function(){
-		var g = GraphParser.parseGuess( 
+		var g = $p( 
 			"digraph G { xi1 [latent]\n"+
 			"xi1 -> x1\n"+
 			"xi1 -> x3\n"+
@@ -138,26 +139,26 @@ QUnit.test( "parsing and serializing", function( assert ) {
 	assert.equal((function(){
 		var g = GraphParser.parseDot( "digraph { x -> y\ny -> z\nx <-> y } " )
 		//console.log( g.toString() )
-		return GraphSerializer.toDotEdgeStatements(g)
+		return $es(g)
 	})(), "x -> y\nx <-> y\ny -> z" )
 
 
 	assert.equal((function(){
-		var g = GraphParser.parseGuess( 
+		var g = $p( 
 			"digraph G {\ny -- x -> y <-> x }" )
-		return GraphSerializer.toDotEdgeStatements(g) 
+		return $es(g) 
 	})(), "x -- y\nx -> y\nx <-> y" )
 
 
 	assert.equal((function(){
-		var g = GraphParser.parseGuess( 
+		var g = $p( 
 			"graph G {\nx [ exposure , pos =\" 12. , .13 \"]\ny [outcome]\n}" )
 		return GraphSerializer.toDot(g) 
 	})(), "graph G{\nx [exposure,pos=\"12.000,0.130\"]\ny [outcome]\n\n}\n" )
 
 
 	assert.equal((function(){
-		var g = GraphParser.parseGuess( 
+		var g = $p( 
 			"graph G { x [exposure] \n y [outcome] }" )
 		g.getVertex("x").layout_pos_x = 1.0
 		g.getVertex("x").layout_pos_y = 1.0
@@ -165,43 +166,43 @@ QUnit.test( "parsing and serializing", function( assert ) {
 	})(), "graph G{\nx [exposure,pos=\"1.000,1.000\"]\ny [outcome]\n\n}\n" )
 
 	assert.equal((function(){
-		var g = GraphParser.parseGuess( 
+		var g = $p( 
 			"graph G { x \n y }" )
 		return GraphSerializer.toDot(g)
 	})(), "graph G{\nx\ny\n\n}\n" )
 
 	assert.equal((function(){
-		var g = GraphParser.parseGuess( 
+		var g = $p( 
 			"graph G { x [] \n y [] }" )
 		return GraphSerializer.toDot(g)
 	})(), "graph G{\nx\ny\n\n}\n" )
 
 	assert.equal((function(){
-		var g = GraphParser.parseGuess( 
+		var g = $p( 
 			"digraph G { x [] \n y [] }" )
 		g.addEdge("x","y",Graph.Edgetype.Directed)
 		g.addEdge("x","y",Graph.Edgetype.Undirected)
 		g.addEdge("x","y",Graph.Edgetype.Bidirected)
-		return GraphSerializer.toDotEdgeStatements(g)
+		return $es(g)
 	})(), "x -- y\nx -> y\nx <-> y" )
 
 	assert.equal((function(){
-		var g = GraphParser.parseGuess( "digraph G { x <-> m } " )
+		var g = $p( "digraph G { x <-> m } " )
 		return typeof g.getEdge("m","x",2)
 	})(), "object" )
 
 	assert.equal((function(){
-		var g = GraphParser.parseGuess( "digraph G { x <-> m } " )
+		var g = $p( "digraph G { x <-> m } " )
 		return typeof g.getEdge("x","m",2)
 	})(), "object" )
 
 	assert.equal((function(){
-		var g = GraphParser.parseGuess( "digraph G { x -> m } " )
-		return GraphSerializer.toDotEdgeStatements(g)
+		var g = $p( "digraph G { x -> m } " )
+		return $es(g)
 	})(), "x -> m" )
 
 	assert.equal((function(){
-		var g = GraphParser.parseGuess( "dag G { M [pos=\"-0.521,-0.265\"] \n "+
+		var g = $p( "dag G { M [pos=\"-0.521,-0.265\"] \n "+
 			"X [exposure,pos=\"-1.749,-0.238\"] \n "+
 			"Y [outcome,pos=\"1.029,-0.228\"] \n "+
 			"M <-> Y [pos=\"0.645,-0.279\"] \n "+
@@ -217,7 +218,7 @@ QUnit.test( "parsing and serializing", function( assert ) {
 		"X -> Y\n}\n" )
 
 	assert.equal((function(){
-		var g = GraphParser.parseGuess( "dag G { M [pos=\"-0.521,-0.265\"] "+
+		var g = $p( "dag G { M [pos=\"-0.521,-0.265\"] "+
 			"X [exposure,pos=\"-1.749,-0.238\"] "+
 			"Y [outcome,pos=\"1.029,-0.228\"] "+
 			"M <-> Y [pos=\"0.645,-0.279\"] "+
@@ -233,21 +234,21 @@ QUnit.test( "parsing and serializing", function( assert ) {
 		"X -> Y\n}\n" )
 
 	assert.equal((function(){
-		var g = GraphParser.parseGuess( 
+		var g = $p( 
 			"digraph G { x -- y \n x -> y \n x <-> y [pos=\"1.000,1.000\"] }" )
-		return GraphSerializer.toDotEdgeStatements(g) 
+		return $es(g) 
 	})(), "x -- y\nx -> y\nx <-> y [pos=\"1.000,1.000\"]" )
 
 	assert.equal((function(){
-		var g = GraphParser.parseGuess( 
+		var g = $p( 
 			"digraph G {\n  y --   x -> y   <-> x [pos=\"1.0,0.1\"] }" )
-		return GraphSerializer.toDotEdgeStatements(g) 
+		return $es(g) 
 	})(), "x -- y [pos=\"1.000,0.100\"]\nx -> y [pos=\"1.000,0.100\"]\nx <-> y [pos=\"1.000,0.100\"]" )
 
-	assert.equal(GraphSerializer.toLavaan(GraphParser.parseGuess("dag{x1}")).split("\n")[1]
+	assert.equal(GraphSerializer.toLavaan($p("dag{x1}")).split("\n")[1]
 		,"x1 ~~ x1")
 		
-	assert.equal( GraphSerializer.toDotEdgeStatements(GraphParser.parseGuess( 
+	assert.equal( $es($p( 
 			"dag{ U -> {a b c d} }" )), "U -> a\nU -> b\nU -> c\nU -> d" )
 });
 
@@ -259,7 +260,7 @@ QUnit.test( "ancestry", function( assert ) {
 		, "Coach,FitnessLevel,Genetics,PreGameProprioception" )
 
 	assert.equal((function(){
-	    var g = GraphParser.parseGuess( 
+	    var g = $p( 
 			"digraph G {a -- b }" )
 		return g.getVertex("a").getNeighbours().length
 	})(), 1 )
@@ -317,36 +318,36 @@ QUnit.test( "separators", function( assert ) {
 } )
 
 QUnit.test( "graph analysis", function( assert ) {
-	var g = GraphParser.parseGuess("dag{x->y}")
+	var g = $p("dag{x->y}")
 	assert.equal(GraphAnalyzer.isEdgeVisible(g,g.getEdge("x","y")),true)
-	g = GraphParser.parseGuess("mag{x->y}")
+	g = $p("mag{x->y}")
 	assert.equal(GraphAnalyzer.isEdgeVisible(g,g.getEdge("x","y")),false)
-	g = GraphParser.parseGuess("mag{z<->x->y}")
+	g = $p("mag{z<->x->y}")
 	assert.equal(GraphAnalyzer.isEdgeVisible(g,g.getEdge("x","y")),true)
-	g = GraphParser.parseGuess("mag{z->x->y}")
+	g = $p("mag{z->x->y}")
 	assert.equal(GraphAnalyzer.isEdgeVisible(g,g.getEdge("x","y")),true)
-	g = GraphParser.parseGuess("mag{z--x->y}")
+	g = $p("mag{z--x->y}")
 	assert.equal(GraphAnalyzer.isEdgeVisible(g,g.getEdge("x","y")),false)
-	g = GraphParser.parseGuess("mag{c<->a {a<->b<->x}->y}")
+	g = $p("mag{c<->a {a<->b<->x}->y}")
 	assert.equal(GraphAnalyzer.isEdgeVisible(g,g.getEdge("x","y")),true)
-	g = GraphParser.parseGuess("mag{c->a {a<->b<->x}->y}")
+	g = $p("mag{c->a {a<->b<->x}->y}")
 	assert.equal(GraphAnalyzer.isEdgeVisible(g,g.getEdge("x","y")),true)
-	g = GraphParser.parseGuess("mag{c->{a b x}->y}")
+	g = $p("mag{c->{a b x}->y}")
 	assert.equal(GraphAnalyzer.isEdgeVisible(g,g.getEdge("x","y")),true)
 
 
 
 
-	g = GraphParser.parseGuess("dag{x->y}")
+	g = $p("dag{x->y}")
 	assert.equal(GraphAnalyzer.isEdgeStronglyProtected(g,g.getEdge("x","y")),false)
-	g = GraphParser.parseGuess("dag{x->y<-z}")
+	g = $p("dag{x->y<-z}")
 	assert.equal(GraphAnalyzer.isEdgeStronglyProtected(g,g.getEdge("x","y")),true)
-	g = GraphParser.parseGuess("dag{x->y<-z->x}")
+	g = $p("dag{x->y<-z->x}")
 	assert.equal(GraphAnalyzer.isEdgeStronglyProtected(g,g.getEdge("x","y")),false)
-	g = GraphParser.parseGuess("dag{{a b}->x->y}")
+	g = $p("dag{{a b}->x->y}")
 	assert.equal(GraphAnalyzer.isEdgeStronglyProtected(g,g.getEdge("x","y")),true)
 
-	g = GraphParser.parseGuess("dag{x<-z3<-z1->x}")
+	g = $p("dag{x<-z3<-z1->x}")
 	assert.equal(GraphAnalyzer.isEdgeStronglyProtected(g,g.getEdge("z1","x")),true)
 	assert.equal(GraphAnalyzer.isEdgeStronglyProtected(g,g.getEdge("z3","x")),false)
 	assert.equal(GraphAnalyzer.isEdgeStronglyProtected(g,g.getEdge("z1","z3")),false)
@@ -354,7 +355,7 @@ QUnit.test( "graph analysis", function( assert ) {
 	assert.equal( 
 		GraphAnalyzer.containsCycle( TestGraphs.cyclic_graph() ), "A&rarr;B&rarr;C&rarr;A" ) 
 	assert.equal(
-		GraphParser.parseGuess("x E\ny O\nz\na\n\nx y a z\na y\nz y").countPaths(),3)
+		$p("x E\ny O\nz\na\n\nx y a z\na y\nz y").countPaths(),3)
 	assert.equal((function(){
 		// note, this test is overly restrictive as only one solution is
 		// considered legal
@@ -372,7 +373,7 @@ QUnit.test( "graph analysis", function( assert ) {
 		"graph { A -- B \n A -- E \n A -- Z \n B -- D \n B -- E \n B -- Z \n D -- Z \n E -- Z }"
 	];
 	_.each(chordalGraphs, function(g) {
-	  assert.equal(GraphAnalyzer.isChordal(GraphParser.parseGuess(g)), true);
+	  assert.equal(GraphAnalyzer.isChordal($p(g)), true);
 	});
 	assert.equal(GraphAnalyzer.isChordal(TestGraphs.K5), true);
 	
@@ -382,7 +383,7 @@ QUnit.test( "graph analysis", function( assert ) {
 		"graph {A -- E \n B -- D \n B -- Z \n B -- A \n D -- Z \n E -- Z }"
 	];
 	_.each(notChordalGraphs, function(g) {
-	  assert.equal(GraphAnalyzer.isChordal(GraphParser.parseGuess(g)), false);
+	  assert.equal(GraphAnalyzer.isChordal($p(g)), false);
 	});
 });
 
@@ -397,54 +398,68 @@ QUnit.test( "biasing paths in DAGs (allowing <->)", function( assert ) {
 	  return vv.join(",");
 	})(),"A,B,M" )
 assert.equal((function(){
-	var g = GraphParser.parseGuess( "digraph G { x <-> y } " )
-	return GraphSerializer.toDotEdgeStatements(
+	var g = $p( "digraph G { x <-> y } " )
+	return $es(
 		GraphTransformer.activeBiasGraph(g,g.getVertex(["x"]),g.getVertex(["y"])))
 })(), "x <-> y" )
 
 assert.equal((function(){
-	var g = GraphParser.parseGuess( "digraph G { x <- m <-> y } " )
+	var g = $p( "digraph G { x <- m <-> y } " )
 	g.addSource("x")
 	g.addTarget("y")
-	return GraphSerializer.toDotEdgeStatements(GraphTransformer.activeBiasGraph(g))
+	return $es(GraphTransformer.activeBiasGraph(g))
 })(), "m -> x\nm <-> y" )
 
 assert.equal((function(){
-	var g = GraphParser.parseGuess( "digraph G { x -> m <-> y } " )
+	var g = $p( "digraph G { x -> m <-> y } " )
 	g.addSource("x")
 	g.addTarget("y")
 	g.addAdjustedNode("m")
-	return GraphSerializer.toDotEdgeStatements(GraphTransformer.activeBiasGraph(g))
+	return $es(GraphTransformer.activeBiasGraph(g))
 })(), "m <-> y\nx -> m" )
 
 assert.equal((function(){
-	var g = GraphParser.parseGuess( "digraph G { m <-> y \n x -> m -> y } " )
+	var g = $p( "digraph G { m <-> y \n x -> m -> y } " )
 	g.addSource("x")
 	g.addTarget("y")
 	g.addAdjustedNode("m")
-	return GraphSerializer.toDotEdgeStatements(GraphTransformer.activeBiasGraph(g))
+	return $es(GraphTransformer.activeBiasGraph(g))
 })(), "m <-> y\nx -> m" )
 
 assert.equal((function(){
-	var g = GraphParser.parseGuess( "digraph G { m <-> y \n x -> m -> y } " )
+	var g = $p( "digraph G { m <-> y \n x -> m -> y } " )
 	g.addSource("x")
 	g.addTarget("y")
-	return GraphSerializer.toDotEdgeStatements(GraphTransformer.activeBiasGraph(g))
+	return $es(GraphTransformer.activeBiasGraph(g))
 })(), "" )
 
 assert.equal((function(){
-	var g = GraphParser.parseGuess( "digraph G { M \n "+
+	var g = $p( "digraph G { M \n "+
 		"X [exposure] \n "+
 		"Y [outcome] \n "+
 		"M <-> Y [pos=\"0.645,-0.279\"] \n "+
 		"X -> Y \n "+
 		"X -> M -> Y } " )
-	return GraphSerializer.toDotEdgeStatements(GraphTransformer.activeBiasGraph(g))
+	return $es(GraphTransformer.activeBiasGraph(g))
 })(), "" )
 
 });
 
 QUnit.test( "graph transformations", function( assert ) {
+	assert.equal(
+		$es(GraphTransformer.lineDigraph(
+			$p( "dag{a<-b->c}" ))),
+			"")
+	assert.equal(
+		$es(GraphTransformer.lineDigraph(
+			$p( "dag{a->b->c}" ))),
+			"ab -> bc")
+
+	assert.equal(
+		$es(GraphTransformer.lineDigraph(
+			$p( "dag{a->b [label=x] b->c [label=y]}" ))),
+			"x -> y")
+
 	assert.equal(
 		GraphTransformer.ancestorGraph( TestGraphs.small1() ).oldToString(),
 		"A 1\nS E\nT O\n\nA S\nS T" ) 
@@ -476,7 +491,7 @@ QUnit.test( "graph transformations", function( assert ) {
 	})(), "A E\nB O\nU1 1\nU2 1\n\nA U1\nB U2\nU1 A\nU2 B" )
 	
 	assert.equal((function(){
-		var g = GraphParser.parseGuess("dag{x<-z3<-z1->x}")
+		var g = $p("dag{x<-z3<-z1->x}")
 		return GraphTransformer.markovEquivalentDags(g).length
 	})(),6,"markov equiv")
 
@@ -532,10 +547,10 @@ QUnit.test( "graph transformations", function( assert ) {
 			i ++;			
 		}
 		var gin = transformations[i]; i++;
-		if (typeof gin === "string") gin = GraphParser.parseGuess(gin);
+		if (typeof gin === "string") gin = $p(gin);
 		var gout = transfunc(gin);
 		var gref = transformations[i]; i++;	
-		if( gref != null ){ gref = GraphParser.parseGuess(gref) }
+		if( gref != null ){ gref = $p(gref) }
 		assert.equal(GraphAnalyzer.equals(gout, gref),true);
 	}
 });
@@ -560,13 +575,13 @@ QUnit.test( "adjustment in DAGs", function( assert ) {
 
 	assert.equal((function(){
 		// our non-X-ancestor MSAS example from the UAI paper w/ causal edge
-		var g = GraphParser.parseGuess("X1 E\nX2 E\nY O\nM1 1\nM2 1\n\nX1 Y M1\nY M2\nM1 M2\nM2 X2")
+		var g = $p("X1 E\nX2 E\nY O\nM1 1\nM2 1\n\nX1 Y M1\nY M2\nM1 M2\nM2 X2")
 		return sep_2_str( GraphAnalyzer.listMsasDirectEffect( g ) )
 	})(), "" )
 
 	assert.equal((function(){
 		// our non-X-ancestor MSAS example from the UAI paper w/o causal edge
-		var g = GraphParser.parseGuess("X1 E\nX2 E\nY O\nM1 1\nM2 1\n\nX1 M1\nY M2\nM1 M2\nM2 X2")
+		var g = $p("X1 E\nX2 E\nY O\nM1 1\nM2 1\n\nX1 M1\nY M2\nM1 M2\nM2 X2")
 		return sep_2_str( GraphAnalyzer.listMsasDirectEffect( g ) )
 	})(), "{M1, M2}" )
 
@@ -592,12 +607,12 @@ QUnit.test( "adjustment in DAGs", function( assert ) {
 	})(), "{I}" )
 
 	assert.equal((function(){
-		var g = GraphParser.parseGuess("dag{x[e] y[o] x<-z->y}")
+		var g = $p("dag{x[e] y[o] x<-z->y}")
 		return GraphAnalyzer.isAdjustmentSet(g,["z"])
 	})(), true)
 
 	assert.equal((function(){
-		var g = GraphParser.parseGuess("dag{x[e] y[o] x<->m<->y x->y}")
+		var g = $p("dag{x[e] y[o] x<->m<->y x->y}")
 		return GraphAnalyzer.isAdjustmentSet(g,["m"])
 	})(), false)
 
@@ -633,13 +648,13 @@ QUnit.test( "adjustment in DAGs", function( assert ) {
 	})(), false )
 	
 	assert.equal( sep_2_str(GraphAnalyzer.listMsasTotalEffect(
-		GraphParser.parseGuess("dag { X1 [exposure]\n "+
+		$p("dag { X1 [exposure]\n "+
 		"X2 [exposure]\n Y1 [outcome] \n Y2 [outcome]\n "+
 		"C -> Y1 \n"+
 		"C -> m \n X1 -> X2 \n X1 -> Y2 -> Y1 \n X2 -> Y1 \n X1 -> m2 -> m -> X2 }"))),
 		"{C}\n{m, m2}")
 
-	g = GraphParser.parseGuess( "dag G { a <-> b } " )
+	g = $p( "dag G { a <-> b } " )
 	assert.equal( GraphTransformer.trekGraph( g ).edges.length, 4, "trek graph with <->" )
 
 
@@ -647,18 +662,18 @@ QUnit.test( "adjustment in DAGs", function( assert ) {
 
 QUnit.test( "adjustment in other graphs", function( assert ) {
 	assert.equal( sep_2_str(GraphAnalyzer.listMsasTotalEffect(
-		GraphParser.parseGuess("pdag { X [exposure]\n"+
+		$p("pdag { X [exposure]\n"+
 		"Y [outcome]\n"+
 		"X -> W -> Y ; F -> W -- Z ; X <- F -> Z }") 
 			 ) ), 
 		"{F}" )
 
 	assert.equal( sep_2_str(GraphAnalyzer.listMsasTotalEffect(
-		GraphParser.parseGuess("mag { X [e] Y[o] X->Y }") 
+		$p("mag { X [e] Y[o] X->Y }") 
 			 ) ), "" )
 
 	assert.equal( sep_2_str(GraphAnalyzer.listMsasTotalEffect(
-		GraphParser.parseGuess("mag { X [e] Y[o] I->X->Y }") 
+		$p("mag { X [e] Y[o] I->X->Y }") 
 			 ) ), "{}" )
 
 	assert.equal( GraphAnalyzer.listMsasTotalEffect($p($p("pag{i<-@x->y x[e] y[o]}").toString()) ).length,
@@ -741,39 +756,39 @@ QUnit.test( "testable implications", function( assert ) {
 
 QUnit.test( "tetrad analysis", function( assert ) {
 	assert.equal( function(){
-		var g = GraphParser.parseGuess("dag { {a b} ->  x -> y }")
+		var g = $p("dag { {a b} ->  x -> y }")
 		return GraphAnalyzer.vanishingTetrads( g ).length
 	}() , 1, "choke point in I/J side" )
 
 	assert.equal((function(){
-		var g = GraphParser.parseGuess("dag { xi1 [u] xi2 [u] xi3 [u] xi1 <-> xi2 <-> xi3 <-> xi1 "+
+		var g = $p("dag { xi1 [u] xi2 [u] xi3 [u] xi1 <-> xi2 <-> xi3 <-> xi1 "+
 			" xi1 -> {X1 X2 X3} xi2 -> {X4 X5 X6} xi3 -> {X7 X8 X9} }")
 		return GraphAnalyzer.vanishingTetrads( g ).length
 	})(), 162 )
 
 	assert.equal((function(){
-		var g = GraphParser.parseGuess("xi1 U\neta1 U\neta2 U\nY1 1\n Y2 1\nY3 1\n Y4 1\nX1 1\n X2 1\n\nxi1 eta1 eta2 X1 X2\neta1 eta2 Y1 Y2\neta2 Y3 Y4")
+		var g = $p("xi1 U\neta1 U\neta2 U\nY1 1\n Y2 1\nY3 1\n Y4 1\nX1 1\n X2 1\n\nxi1 eta1 eta2 X1 X2\neta1 eta2 Y1 Y2\neta2 Y3 Y4")
 		return ""+GraphAnalyzer.vanishingTetrads( g ).join("\n")
 	})(), "Y1,Y3,Y4,Y2\nY1,Y3,X1,Y2\nY1,Y3,X2,Y2\nY1,Y4,X1,Y2\nY1,Y4,X2,Y2\nY1,X1,X2,Y2\nY1,Y3,Y4,X1\nY1,Y3,Y4,X2\nY1,X1,X2,Y3\nY1,X1,X2,Y4\nY2,Y3,Y4,X1\nY2,Y3,Y4,X2\nY2,X1,X2,Y3\nY2,X1,X2,Y4\nY3,X1,X2,Y4" )
 
 	assert.equal((function(){
-		var g = GraphParser.parseGuess("xi1 U\nxi2 U\nxi3 U\nU1 U\nU2 U\nU3 U\nX1 1\nX2 1\nX3 1\nX4 1\nX5 1\nX6 1\nX7 1\nX8 1\nX9 1\n\nxi1 X1 X2 X3\nxi2 X4 X5 X6\nxi3 X7 X8 X9\nU1 xi1 xi2\nU2 xi2 xi3\nU3 xi1 xi3")
+		var g = $p("xi1 U\nxi2 U\nxi3 U\nU1 U\nU2 U\nU3 U\nX1 1\nX2 1\nX3 1\nX4 1\nX5 1\nX6 1\nX7 1\nX8 1\nX9 1\n\nxi1 X1 X2 X3\nxi2 X4 X5 X6\nxi3 X7 X8 X9\nU1 xi1 xi2\nU2 xi2 xi3\nU3 xi1 xi3")
 		return GraphAnalyzer.vanishingTetrads( g ).length
 	})(), 162 )
 
 	assert.equal((function(){
-		var g = GraphParser.parseGuess("xi1 U\neta1 U\neta2 U\nY1 1\n Y2 1\nY3 1\n Y4 1\nX1 1\n X2 1\n\nxi1 eta1 eta2 X1 X2\neta1 eta2 Y1 Y2\neta2 Y3 Y4")
+		var g = $p("xi1 U\neta1 U\neta2 U\nY1 1\n Y2 1\nY3 1\n Y4 1\nX1 1\n X2 1\n\nxi1 eta1 eta2 X1 X2\neta1 eta2 Y1 Y2\neta2 Y3 Y4")
 		return GraphAnalyzer.vanishingTetrads( g ).length
 	})(), 15 )
 
 	assert.equal((function(){
-		var g = GraphParser.parseGuess("U U\nX1 1\nX10 1 \nX2 1 \nX3 1 \nX4 1 \nX5 1 \nX6 1 \nX7 1 \nX8 1 \nX9 1 \nxi_1 U \nxi_2 U \n\n"+
+		var g = $p("U U\nX1 1\nX10 1 \nX2 1 \nX3 1 \nX4 1 \nX5 1 \nX6 1 \nX7 1 \nX8 1 \nX9 1 \nxi_1 U \nxi_2 U \n\n"+
 	"U xi_1 xi_2\nxi_1 X1 X2 X3 X4 X5\nxi_2 X6 X7 X8 X9 X10\nUa X1 X2\nUb X1 X6")
 		return ""+GraphAnalyzer.vanishingTetrads( g ).length
 	})(), 430 )
 
 	assert.equal((function(){
-		var g = GraphParser.parseGuess("u U\nx U\ny U\nx1 1\nx2 1\nx3 1\nx4 1\ny1 1\ny2 1\ny3 1\ny4 1\n\n"
+		var g = $p("u U\nx U\ny U\nx1 1\nx2 1\nx3 1\nx4 1\ny1 1\ny2 1\ny3 1\ny4 1\n\n"
 			+"u x y\nx x1 x2 x3 x4\ny y1 y2 y3 y4")
 		return GraphAnalyzer.vanishingTetrads( g ).length
 	})(), 138 )
@@ -790,7 +805,7 @@ QUnit.test( "tetrad analysis", function( assert ) {
 
 QUnit.test( "instrumental variables", function( assert ) {
 	assert.equal((function(){
-		var g = GraphParser.parseGuess( "digraph G { u1 [latent] \n u2 [latent] \n"+
+		var g = $p( "digraph G { u1 [latent] \n u2 [latent] \n"+
 			"u2 -> d -> a -> z \n a -> c -> b -> z \n "+
 			"u2 -> y \n b -> u1 -> y \n "+
 			"\n }" )
@@ -800,37 +815,37 @@ QUnit.test( "instrumental variables", function( assert ) {
 	})(), "b,d"  )
 
 	assert.equal((function(){	
-		var g = GraphParser.parseGuess( "digraph G { u [latent] \n x [exposure] \n y [outcome] \n"+
+		var g = $p( "digraph G { u [latent] \n x [exposure] \n y [outcome] \n"+
 			" w -> z -> x -> y \n w -> u -> x \n u -> y \n }" )
 		return iv_2_str( GraphAnalyzer.conditionalInstruments( g ) )
 	})(), "z | w" )
 
 	assert.equal((function(){	
-		var g = GraphParser.parseGuess( "digraph G { u [latent] \n x [exposure] \n y [outcome] \n"+
+		var g = $p( "digraph G { u [latent] \n x [exposure] \n y [outcome] \n"+
 			" z -> x -> y \n u -> x \n u -> y \n }" )
 		return iv_2_str( GraphAnalyzer.conditionalInstruments( g ) )
 	})(), "z" )
 
 	assert.equal((function(){	
-		var g = GraphParser.parseGuess( "digraph G { u \n w -> z -> x -> y \n w -> u -> x \n u -> y }" )
+		var g = $p( "digraph G { u \n w -> z -> x -> y \n w -> u -> x \n u -> y }" )
 		return _(GraphAnalyzer.ancestralInstrument( g, g.getVertex("x"), g.getVertex("y"), 
 			g.getVertex("z") )).pluck("id").join(",")
 	})(), "u" )
 
 	assert.equal((function(){	
-		var g = GraphParser.parseGuess( "digraph G { u \n z -> x -> y \n u -> x \n u -> y \n }" )
+		var g = $p( "digraph G { u \n z -> x -> y \n u -> x \n u -> y \n }" )
 		return ""+_(GraphAnalyzer.ancestralInstrument( g, g.getVertex("x"), g.getVertex("y"), 
 			g.getVertex("z") )).pluck("id").join(",")
 	})(), "" )
 
 	assert.equal((function(){	
-		var g = GraphParser.parseGuess( "digraph G { u [latent] \n w -> z -> x -> y \n w -> u -> x \n u -> y }" )
+		var g = $p( "digraph G { u [latent] \n w -> z -> x -> y \n w -> u -> x \n u -> y }" )
 		return _(GraphAnalyzer.ancestralInstrument( g, g.getVertex("x"), g.getVertex("y"), 
 			g.getVertex("z") )).pluck("id").join(",")
 	})(), "w" )
 
 	assert.equal((function(){	
-		var g = GraphParser.parseGuess( "digraph G { u [latent] \n z -> x -> y \n u -> x \n u -> y \n }" )
+		var g = $p( "digraph G { u [latent] \n z -> x -> y \n u -> x \n u -> y \n }" )
 		return ""+_(GraphAnalyzer.ancestralInstrument( g, g.getVertex("x"), g.getVertex("y"), 
 			g.getVertex("z") )).pluck("id").join(",")
 	})(), ""  )
@@ -838,21 +853,21 @@ QUnit.test( "instrumental variables", function( assert ) {
 
 QUnit.test( "graph validation", function( assert ) {
 	GraphParser.VALIDATE_GRAPH_STRUCTURE = false;
-	assert.equal( GraphAnalyzer.validate( GraphParser.parseGuess(
+	assert.equal( GraphAnalyzer.validate( $p(
 		"dag { x -> y -> z }"
 	)), true )
-	assert.equal( GraphAnalyzer.validate( GraphParser.parseGuess(
+	assert.equal( GraphAnalyzer.validate( $p(
 		"dag { x -> y -> z -> x }"
 	)), false )
 
-	assert.equal( GraphAnalyzer.validate( GraphParser.parseGuess(
+	assert.equal( GraphAnalyzer.validate( $p(
 		"pdag { x -> y -> z }"
 	)), true )
 	
-	assert.equal( GraphAnalyzer.validate( GraphParser.parseGuess(
+	assert.equal( GraphAnalyzer.validate( $p(
 		"dag { x -- y -> z -> x }"
 	)), false )
-	assert.equal( GraphAnalyzer.validate( GraphParser.parseGuess(
+	assert.equal( GraphAnalyzer.validate( $p(
 		"pdag { x -- y -> z }"
 	)), true )
 	GraphParser.VALIDATE_GRAPH_STRUCTURE = true;
@@ -860,10 +875,10 @@ QUnit.test( "graph validation", function( assert ) {
 
 QUnit.test( "graph types", function( assert ) {
 	var graphs = {
-		graph : GraphParser.parseGuess( "graph { x -- y -- z }" ),
-		dag : GraphParser.parseGuess( "dag { x -> y -> z }" ),
-		pdag : GraphParser.parseGuess( "pdag { x -- y -> z }" ),
-		mag : GraphParser.parseGuess( "mag { x <-> y -> z }" )
+		graph : $p( "graph { x -- y -- z }" ),
+		dag : $p( "dag { x -> y -> z }" ),
+		pdag : $p( "pdag { x -- y -> z }" ),
+		mag : $p( "mag { x <-> y -> z }" )
 	};
 	
 	_.each( Object.keys(graphs), function(t){
@@ -902,103 +917,103 @@ QUnit.test( "graph types", function( assert ) {
 
 QUnit.test( "dseparation", function( assert ) {
 	assert.equal((function(){
-		var g = GraphParser.parseGuess( "digraph G { x <-> m -> y }" )
+		var g = $p( "digraph G { x <-> m -> y }" )
 		return GraphAnalyzer.dConnected( g, [g.getVertex("x")], [g.getVertex("y")], 
 			[] )
 	})(), true )
 
 	assert.equal((function(){
-		var g = GraphParser.parseGuess( "digraph G { x <-> m -> y }" )
+		var g = $p( "digraph G { x <-> m -> y }" )
 		return GraphAnalyzer.dConnected( g, [g.getVertex("x")], [g.getVertex("y")], 
 			[g.getVertex("m")] )
 	})(), false )
 
 	assert.equal((function(){
-		var g = GraphParser.parseGuess( "digraph G { x <-> m <-> b <-> y }" )
+		var g = $p( "digraph G { x <-> m <-> b <-> y }" )
 		return GraphAnalyzer.dConnected( g, [g.getVertex("x")], [g.getVertex("y")], 
 			[g.getVertex("m")] )
 	})(), false )
 
 	assert.equal((function(){
-		var g = GraphParser.parseGuess( "digraph G { x <-> m <-> b <-> y }" )
+		var g = $p( "digraph G { x <-> m <-> b <-> y }" )
 		return GraphAnalyzer.dConnected( g, [g.getVertex("x")], [g.getVertex("y")], 
 			[g.getVertex("m"),g.getVertex("b")] )
 	})(), true )
 
 	assert.equal((function(){
-		var g = GraphParser.parseGuess( "digraph G { x -> m -> y }" )
+		var g = $p( "digraph G { x -> m -> y }" )
 		return GraphAnalyzer.dConnected( g, [g.getVertex("x")], [g.getVertex("y")], 
 			[] )
 	})(), true )
 
 	assert.equal((function(){
-		var g = GraphParser.parseGuess( "digraph G { x -> m -> y }" )
+		var g = $p( "digraph G { x -> m -> y }" )
 		return !GraphAnalyzer.dConnected( g, [g.getVertex("x")], [g.getVertex("y")], 
 			[g.getVertex("m")] )
 	})(), true )
 
 	assert.equal((function(){
-		var g = GraphParser.parseGuess( "digraph G { x -> m -> y }" )
+		var g = $p( "digraph G { x -> m -> y }" )
 		return !GraphAnalyzer.dConnected( g, [g.getVertex("x")], [g.getVertex("y")], [] )
 	})(), false )
 
 	assert.equal((function(){
-		var g = GraphParser.parseGuess("dag{R->S->T<-U}")
+		var g = $p("dag{R->S->T<-U}")
 		g = GraphAnalyzer.listPaths( g, false, 1, [g.getVertex("R")], [g.getVertex("U")] )[0]
 		return GraphAnalyzer.dConnected( g, [g.getVertex("R")], [g.getVertex("U")], 
 			g.getVertex(["T"]) )
 	})(), true )
 
 	assert.equal((function(){	
-		var g = GraphParser.parseGuess("dag{ a->x->m<-y m->p }")
+		var g = $p("dag{ a->x->m<-y m->p }")
 		return GraphAnalyzer.dConnected( g, [g.getVertex("a")], [g.getVertex("y")], 
 			g.getVertex(["m"]) )
 	})(), true )
 
 	assert.equal((function(){	
-		var g = GraphParser.parseGuess("dag{ a->x->m<-y m->p }")
+		var g = $p("dag{ a->x->m<-y m->p }")
 		return GraphAnalyzer.dConnected( g, g.getVertex(["x"]), [g.getVertex("y")], 
 			g.getVertex(["m"]), g.getVertices(["x"]) )
 	})(), true )
 
 	assert.equal((function(){	
-		var g = GraphParser.parseGuess("dag{ x->m<-y m->p }")
+		var g = $p("dag{ x->m<-y m->p }")
 		return GraphAnalyzer.dConnected( g, [g.getVertex("x")], [g.getVertex("y")], 
 			[g.getVertex("m")] )
 	})(), true )
 
 	assert.equal((function(){	
-		var g = GraphParser.parseGuess("dag{ x->m<-y m->p }")
+		var g = $p("dag{ x->m<-y m->p }")
 		return GraphAnalyzer.dConnected( g, [g.getVertex("x")], [g.getVertex("y")], 
 			g.getVertex(["p"]), g.getVertex(["m","p"])  )
 	})(), true )
 
 	assert.equal((function(){	
-		var g = GraphParser.parseGuess("dag{ x[e] y[o] x->m<-y m->p }")
+		var g = $p("dag{ x[e] y[o] x->m<-y m->p }")
 		return GraphAnalyzer.dConnected( g, [g.getVertex("x")], [g.getVertex("y")], 
 			g.getVertex([]), [] )
 	})(), false )
 
 	assert.equal((function(){	
-		var g = GraphParser.parseGuess("dag{ x[e] y[o] x->m<-y m->p }")
+		var g = $p("dag{ x[e] y[o] x->m<-y m->p }")
 		return GraphAnalyzer.dConnected( g, [g.getVertex("x")], [g.getVertex("y")], 
 			g.getVertex([]), g.getVertex(["m","p"]) )
 	})(), true )
 
 	assert.equal((function(){	
-		var g = GraphParser.parseGuess("dag{ x->m<-y m->p }")
+		var g = $p("dag{ x->m<-y m->p }")
 		return GraphAnalyzer.dConnected( g, [g.getVertex("x")], [g.getVertex("y")], 
 			[g.getVertex("m")] )
 	})(), true )
 
 	assert.equal((function(){	
-		var g = GraphParser.parseGuess("dag{ x->m<-y m->p }")
+		var g = $p("dag{ x->m<-y m->p }")
 		return GraphAnalyzer.dConnected( g, [g.getVertex("x")], [g.getVertex("y")], 
 			[g.getVertex("p")] )
 	})(), true )
 
 	assert.equal((function(){	
-		var g = GraphParser.parseGuess("dag{ x->m<-y m->p }")
+		var g = $p("dag{ x->m<-y m->p }")
 		return GraphAnalyzer.dConnected( g, [g.getVertex("x")], [g.getVertex("y")], 
 			[] )
 	})(), false )
@@ -1048,7 +1063,7 @@ assert.equal((function(){
    g.addAdjustedNode("WC");
    g.addAdjustedNode("U");
    g = GraphTransformer.activeBiasGraph(g);
-   return GraphSerializer.toDotEdgeStatements(g);
+   return $es(g);
 })(), "A -> PA\nA -> S\nA -> TT\nA -> WC\nPA -> T2DM\nPA -> WC\nS -> T2DM\nS -> TT" )
 
 assert.equal((function(){
@@ -1103,7 +1118,7 @@ assert.equal((function(){
 })(), "A E\nB O\nC 1\nD 1\nE 1\n\nA B\nC A B\nD A C\nE B C" )
 
 assert.equal((function(){
-  var g = GraphTransformer.moralGraph( GraphParser.parseGuess( "x 1\ny 1\nm 1\na 1\nb 1\n\nm x\nm y\na m x\nb m y" ) )
+  var g = GraphTransformer.moralGraph( $p( "x 1\ny 1\nm 1\na 1\nb 1\n\nm x\nm y\na m x\nb m y" ) )
   return _.pluck(GraphAnalyzer.connectedComponentAvoiding( g, 
   	[g.getVertex("x")], [g.getVertex("m"), g.getVertex("b")] ),'id')
     .sort().join(",");
@@ -1111,7 +1126,7 @@ assert.equal((function(){
 
 assert.equal((function(){
 	GraphParser.VALIDATE_GRAPH_STRUCTURE = false;
-   var g = GraphParser.parseGuess( "xobs 1 @0.350,0.000\n"+
+   var g = $p( "xobs 1 @0.350,0.000\n"+
 "y 1 @0.562,0.000\n"+
 "t 1 @0.351,-0.017\n"+
 "\n"+
@@ -1124,7 +1139,7 @@ assert.equal((function(){
 })(), "xobs&rarr;y&rarr;t&rarr;xobs" )
 
 assert.equal((function(){
-   var g = GraphParser.parseGuess( "xobs E @0.350,0.000\n"+
+   var g = $p( "xobs E @0.350,0.000\n"+
 "y O @0.562,0.000\n"+
 "t 1 @0.351,-0.017\n"+
 "u1 1 @0.476,-0.013\n"+
@@ -1193,7 +1208,7 @@ assert.equal((function(){
 })(), "" )
 
 assert.equal((function(){
-  var g = GraphParser.parseGuess("S E @0.395,0.046\n"+
+  var g = $p("S E @0.395,0.046\n"+
 "T O @0.715,0.039\n"+
 "h 1 @0.544,0.017\n"+
 "i 1 @0.544,0.017\n"+
@@ -1229,20 +1244,20 @@ assert.equal((function(){
 })(), "{Allergenexposition, Antibiotika, Begleiterkrankungen, BetreuungKind, Darmflora, Erregerexposition, Geschwister, Hausstaub, Haustiere, Infektionen, RauchenAnderer, RauchenMutter, Stillen}\n{Allergenexposition, Antibiotika, Begleiterkrankungen, Darmflora, Erregerexposition, Geburtsmodus, Hausstaub, Haustiere, Infektionen, RauchenAnderer, RauchenMutter, Stillen}\n{Allergenexposition, Begleiterkrankungen, Darmflora, Erregerexposition, Impfungen, Infektionen, RauchenAnderer, RauchenMutter}" )
 
 assert.equal((function(){
-  var g = GraphTransformer.moralGraph( GraphParser.parseGuess( "x E\ny O\nm\na\nb\n\nm x\nm y\na m x\nb m y" ) )
+  var g = GraphTransformer.moralGraph( $p( "x E\ny O\nm\na\nb\n\nm x\nm y\na m x\nb m y" ) )
   return sep_2_str( GraphAnalyzer.listMinimalSeparators(g) );
 })(), "{a, m}\n{b, m}" )
 
 assert.equal((function(){
   // the function "neighboursOf" should, also when called on a vertex set, 
   // not return any vertices from those sets as neighbours of the set itself
-  var g = GraphTransformer.moralGraph( GraphParser.parseGuess( "x\ny\nm\na\nb\n\nm x\nm y\na m x\nb m y" ) )
+  var g = GraphTransformer.moralGraph( $p( "x\ny\nm\na\nb\n\nm x\nm y\na m x\nb m y" ) )
   return _.pluck(g.neighboursOf( [g.getVertex("m"), g.getVertex("b")] ),'id')
     .sort().join(",");
 })(), "a,x,y" )
 
 assert.equal((function(){
-   var g = GraphParser.parseGuess("E E @-1.897,0.342\n"+
+   var g = $p("E E @-1.897,0.342\n"+
 	"D O @-0.067,0.302\n"+
 	"g A @-0.889,1.191\n"+
 	"\n"+
@@ -1252,7 +1267,7 @@ assert.equal((function(){
 })(), true )
 
 assert.equal((function(){
-   var g = GraphParser.parseGuess("x E @0.083,-0.044\n"+
+   var g = $p("x E @0.083,-0.044\n"+
       "y O @0.571,-0.043\n"+
       "i1 1 @0.331,-0.037\n"+
       "i2 1 @0.328,-0.030\n"+
@@ -1267,7 +1282,7 @@ assert.equal((function(){
 })(), "i1,i2" )
 
 assert.equal((function(){
-   var g = GraphParser.parseGuess("x 1 @0.264,-0.027\n"+
+   var g = $p("x 1 @0.264,-0.027\n"+
       "y 1 @0.537,-0.015\n"+
       "y2 A @0.216,-0.015\n"+
       "\n"+
@@ -1276,7 +1291,7 @@ assert.equal((function(){
 })(), "" )
 
 assert.equal((function(){
-   var g = GraphParser.parseGuess("x E @0.264,-0.027\n"+
+   var g = $p("x E @0.264,-0.027\n"+
 "y O @0.537,-0.015\n"+
 "y2 A @0.216,-0.015\n"+
 "\n"+
@@ -1308,37 +1323,37 @@ assert.equal((function(){
 
 assert.equal((function(){
     // X -> I -> Y, I <- M -> Y, I -> A  = bias
-	var g = GraphParser.parseGuess("X E\nY O\nI 1\nJ A\nM 1\n\nX I\nI J Y\nM I Y")
+	var g = $p("X E\nY O\nI 1\nJ A\nM 1\n\nX I\nI J Y\nM I Y")
 	return GraphTransformer.activeBiasGraph(g).toAdjacencyList()
 })(), "I J Y\nM I Y\nX I" )
 
 assert.equal((function(){
     // X -> I -> Y, I <- M -> Y   = bias
-	var g = GraphParser.parseGuess("X E\nY O\nI A\nM 1\n\nX I\nI Y\nM I Y")
+	var g = $p("X E\nY O\nI A\nM 1\n\nX I\nI Y\nM I Y")
 	return GraphTransformer.activeBiasGraph(g).toAdjacencyList()
 })(), "M I Y\nX I" )
 
 assert.equal((function(){
     // X -> I -> Y, I -> A   = bias
-	var g = GraphParser.parseGuess("X E\nY O\nI 1\nJ A\n\nX I\nI Y J")
+	var g = $p("X E\nY O\nI 1\nJ A\n\nX I\nI Y J")
 	return GraphTransformer.activeBiasGraph(g).toAdjacencyList()
 })(), "I J Y\nX I" )
 
 assert.equal((function(){
     // A <- X -> Y   = no bias
-	var g = GraphParser.parseGuess("X E\nY O\nI A\n\nX Y\nX I")
+	var g = $p("X E\nY O\nI A\n\nX Y\nX I")
 	return GraphTransformer.activeBiasGraph(g).toAdjacencyList()
 })(), "" )
 
 assert.equal((function(){
     // X -> Y -> A   = bias
-	var g = GraphParser.parseGuess("X E\nY O\nI A\n\nX Y\nY I")
+	var g = $p("X E\nY O\nI A\n\nX Y\nY I")
 	return GraphTransformer.activeBiasGraph(g).toAdjacencyList()
 })(), "X Y\nY I" )
 
 assert.equal((function(){
     // X -> A -> Y   = no bias
-	var g = GraphParser.parseGuess("X E\nY O\nI A\n\nX I\nI Y")
+	var g = $p("X E\nY O\nI A\n\nX I\nI Y")
 	return GraphTransformer.activeBiasGraph(g).toAdjacencyList()
 })(), "" )
 
@@ -1347,34 +1362,34 @@ assert.equal((function(){
 })(), "s1 s2 z\ns2 s3\ns3 y\nx s1" )
 
 assert.equal((function(){
-	var g = GraphParser.parseGuess("A E @1,1\nB O @3,1\nC 1 @2,1\n\nA B\nB C")
+	var g = $p("A E @1,1\nB O @3,1\nC 1 @2,1\n\nA B\nB C")
 	return g.hasCompleteLayout()
 })(), true )
 
 assert.equal((function(){
-	var g = GraphParser.parseGuess("A E @1,1\nB O\nC 1 @1,1\n\nA B\nB C")
+	var g = $p("A E @1,1\nB O\nC 1 @1,1\n\nA B\nB C")
 	return g.hasCompleteLayout()
 })(), false )
 
 assert.equal((function(){
-	var g = GraphParser.parseGuess("A E\nB O\nC 1\n\nA B\nB C");
+	var g = $p("A E\nB O\nC 1\n\nA B\nB C");
 	return g.hasCompleteLayout()
 })(), false )
 
 assert.equal((function(){
-	var g = GraphParser.parseGuess("A E\nB O\nC 1\n\nA B\nB C");
+	var g = $p("A E\nB O\nC 1\n\nA B\nB C");
 	g.deleteVertex(g.getVertex("A"));
 	return g.getSources().length;
 })(), 0 )
 
 assert.equal((function(){
-	var g = GraphParser.parseGuess("D O\nD2 O\nE E\nE2 E\n\nD E\nD2 E2")
+	var g = $p("D O\nD2 O\nE E\nE2 E\n\nD E\nD2 E2")
 	//console.log(g.toString())
 	return GraphTransformer.activeBiasGraph(g).toAdjacencyList()
 })(), "D E\nD2 E2" )
 
 assert.equal((function(){
-	var g = GraphParser.parseGuess("ein A 1\n"+
+	var g = $p("ein A 1\n"+
 "ein B 1\n"+
 "\n"+
 "ein A ein B");
@@ -1382,27 +1397,27 @@ assert.equal((function(){
 })(), "ein%20A 1\nein%20B 1\n\nein%20A ein%20B" )
 
 assert.equal((function(){
-	var g = GraphParser.parseGuess("A E\nB O\nE E\nZ\nU\n\nA U\nB Z\nZ E\nU Z");
+	var g = $p("A E\nB O\nE E\nZ\nU\n\nA U\nB Z\nZ E\nU Z");
 	return sep_2_str( GraphAnalyzer.listMsasTotalEffect( g ) );
 })(), "{U, Z}" )
 
 assert.equal((function(){
-	var g = GraphParser.parseGuess("E E\nD O\nA 1\nB U\nZ 1\n\nA E Z\nB D Z\nZ E D\nE D");
+	var g = $p("E E\nD O\nA 1\nB U\nZ 1\n\nA E Z\nB D Z\nZ E D\nE D");
 	return GraphAnalyzer.directEffectEqualsTotalEffect( g )
 })(), true )
 
 assert.equal((function(){
-	var g = GraphParser.parseGuess("E E\nD O\nA 1\nB U\nZ 1\n\nA E Z\nB D Z\nZ D\nE D Z");
+	var g = $p("E E\nD O\nA 1\nB U\nZ 1\n\nA E Z\nB D Z\nZ D\nE D Z");
 	return GraphAnalyzer.directEffectEqualsTotalEffect( g )
 })(), false )
 
 assert.equal((function(){
-	var g = GraphParser.parseGuess("E E\nD O\nA 1\nB U\nZ 1\n\nA E Z\nB D Z\nZ E D");
+	var g = $p("E E\nD O\nA 1\nB U\nZ 1\n\nA E Z\nB D Z\nZ E D");
 	return sep_2_str( GraphAnalyzer.listMsasTotalEffect( g ) );
 })(), "{A, Z}" )
 
 assert.equal((function(){
-	var g = GraphParser.parseGuess("E E\nD O\nA 1\nB U\nZ 1\n\nA E Z\nB D Z\nZ E D");
+	var g = $p("E E\nD O\nA 1\nB U\nZ 1\n\nA E Z\nB D Z\nZ E D");
 	return sep_2_str( GraphAnalyzer.listMinimalSeparators(GraphTransformer.moralGraph(g)) );
 })(), "{A, Z}\n{B, Z}" )
 
@@ -1414,7 +1429,7 @@ assert.equal((function(){;
 })(), "" )
 
 assert.equal((function(){
-   var g = GraphParser.parseGuess("E E @-1.897,0.342\n"+
+   var g = $p("E E @-1.897,0.342\n"+
 "D O @-0.067,0.302\n"+
 "g A @-0.889,1.191\n"+
 "\n"+
@@ -1424,68 +1439,68 @@ assert.equal((function(){
 })(), "g" )
 
 assert.equal((function(){
-	var g = GraphParser.parseGuess("X1 E\nX2 E\nY1 O\nY2 O\nU1 1\nU2 1\n\nU1 X1 X2\nU2 Y1 Y2")
+	var g = $p("X1 E\nX2 E\nY1 O\nY2 O\nU1 1\nU2 1\n\nU1 X1 X2\nU2 Y1 Y2")
 	return GraphTransformer.activeBiasGraph(g).toAdjacencyList()
 })(), "" )
 
 assert.equal((function(){
-	var g = GraphParser.parseGuess("A E\nB O\nC O\nD A\n\nA B\nB C\nC D")
+	var g = $p("A E\nB O\nC O\nD A\n\nA B\nB C\nC D")
 	return GraphTransformer.activeBiasGraph(g).toAdjacencyList()
 })(), "A B\nB C\nC D" )
 
 assert.equal((function(){
-	var g = GraphParser.parseGuess("A E\nB O\nC O\n\nA B\nB C")
+	var g = $p("A E\nB O\nC O\n\nA B\nB C")
 	return GraphTransformer.activeBiasGraph(g).toAdjacencyList()
 })(), "" )
 
 assert.equal((function(){
-	var g = GraphParser.parseGuess("X1 E\nY1 O\nY2 O\nD A\n\nX1 Y1\nY1 Y2\nY2 D")
+	var g = $p("X1 E\nY1 O\nY2 O\nD A\n\nX1 Y1\nY1 Y2\nY2 D")
 	return GraphAnalyzer.directEffectEqualsTotalEffect( g )
 })(), true )
 
 assert.equal((function(){
-	var g = GraphParser.parseGuess("X1 E\nY1 O\nY2 O\nD A\n\nX1 Y1\nY2 D")
+	var g = $p("X1 E\nY1 O\nY2 O\nD A\n\nX1 Y1\nY2 D")
 	return GraphAnalyzer.directEffectEqualsTotalEffect( g )
 })(), true )
 
 assert.equal((function(){
-	var g = GraphParser.parseGuess("X1 E\nY1 O\nY2 O\nD A\n\nX1 Y1\nY1 Y2\nY2 D")
+	var g = $p("X1 E\nY1 O\nY2 O\nD A\n\nX1 Y1\nY1 Y2\nY2 D")
 	return sep_2_str( GraphAnalyzer.listMsasDirectEffect( g ) )
 })(), "" )
 
 assert.equal((function(){
-	var g = GraphParser.parseGuess("X1 E\nY1 O\nY2 O\nD A\n\nX1 Y1\nY2 D")
+	var g = $p("X1 E\nY1 O\nY2 O\nD A\n\nX1 Y1\nY2 D")
 	return sep_2_str( GraphAnalyzer.listMsasDirectEffect( g ) )
 })(), "{D}" )
 
 assert.equal((function(){
-	var g = GraphParser.parseGuess("X1 E\nY1 O\nY2 O\nD A\n\nX1 Y1\nY1 Y2\nY2 D")
+	var g = $p("X1 E\nY1 O\nY2 O\nD A\n\nX1 Y1\nY1 Y2\nY2 D")
 	return GraphTransformer.activeBiasGraph(g).toAdjacencyList()
 })(), "X1 Y1\nY1 Y2\nY2 D" )
 
 assert.equal((function(){
-	var g = GraphParser.parseGuess("X1 E\nY1 O\nY2 O\nD A\n\nX1 Y1\nY2 D")
+	var g = $p("X1 E\nY1 O\nY2 O\nD A\n\nX1 Y1\nY2 D")
 	return GraphTransformer.activeBiasGraph(g).toAdjacencyList()
 })(), "" )
 
 assert.equal((function(){
-	var g = GraphParser.parseGuess("X1 E\nX2 E\nY1 O\nY2 O\n\nX1 Y1 X2\nY2 X2")
+	var g = $p("X1 E\nX2 E\nY1 O\nY2 O\n\nX1 Y1 X2\nY2 X2")
 	//console.log(g.toString())
 	return GraphTransformer.activeBiasGraph(g).toAdjacencyList()
 })(), "Y2 X2" )
 
 assert.equal((function(){
-	var g = GraphParser.parseGuess("X1 E\nX2 E\n\nX1 X2")
+	var g = $p("X1 E\nX2 E\n\nX1 X2")
 	return GraphTransformer.activeBiasGraph(g).toAdjacencyList()
 })(), "" )
 
 assert.equal((function(){
-	var g = GraphParser.parseGuess("X1 E\nX2 E\nY1 O\nY2 O\n\nX1 Y1 X2\nX2 Y2")
+	var g = $p("X1 E\nX2 E\nY1 O\nY2 O\n\nX1 Y1 X2\nX2 Y2")
 	return GraphTransformer.activeBiasGraph(g).toAdjacencyList()
 })(), "" )
 
 assert.equal((function(){
-	var g = GraphParser.parseGuess("X1 E\nX2 E\nY1 O\nY2 O\n\nX1 Y1 X2\nX2 Y2")
+	var g = $p("X1 E\nX2 E\nY1 O\nY2 O\n\nX1 Y1 X2\nX2 Y2")
 	return _.pluck(
 			_.difference(GraphAnalyzer.properPossibleCausalPaths(g),g.getSources()),
 			"id").sort().join(",")
@@ -1494,19 +1509,19 @@ assert.equal((function(){
 
 assert.equal((function(){
     // X -> I -> Y,  I -> A, adjust I  = no bias
-	var g = GraphParser.parseGuess("X E\nY O\nI A\nJ A\n\nX I\nI J Y")
+	var g = $p("X E\nY O\nI A\nJ A\n\nX I\nI J Y")
 	return GraphTransformer.activeBiasGraph(g).toAdjacencyList()
 })(), "" )
 
 assert.equal((function(){
     // X -> I -> Y, I <- M -> Y, I -> A, adjust M, I  = no bias
-	var g = GraphParser.parseGuess("X E\nY O\nI A\nJ A\nM A\n\nX I\nI J Y\nM I Y")
+	var g = $p("X E\nY O\nI A\nJ A\nM A\n\nX I\nI J Y\nM I Y")
 	return GraphTransformer.activeBiasGraph(g).toAdjacencyList()
 })(), "" )
 
 assert.equal((function(){
     // X -> I -> Y, I <- M -> Y, I -> A, adjust M = bias
-	var g = GraphParser.parseGuess("X E\nY O\nI 1\nJ A\nM A\n\nX I\nI J Y\nM I Y")
+	var g = $p("X E\nY O\nI 1\nJ A\nM A\n\nX I\nI J Y\nM I Y")
 	return GraphTransformer.activeBiasGraph(g).toAdjacencyList()
 })(), "I J Y\nX I" )
 
@@ -1525,49 +1540,49 @@ assert.equal((function(){
 })(), "WarmUpExercises Injury 1\nCoach WarmUpExercises 2\nCoach Injury 2\nCoach PreGameProprioception 1\nCoach PreviousInjury 1\nCoach IntraGameProprioception 2\nCoach NeuromuscularFatigue 1\nGenetics WarmUpExercises 1\nGenetics Injury 3\nGenetics PreGameProprioception 1\nGenetics TissueWeakness 1\nGenetics IntraGameProprioception 2\nTeamMotivation Injury 1\nTeamMotivation IntraGameProprioception 1\nPreGameProprioception Injury 1\nPreGameProprioception IntraGameProprioception 1\nConnectiveTissueDisorder Injury 2\nConnectiveTissueDisorder IntraGameProprioception 1\nContactSport Injury 1\nFitnessLevel WarmUpExercises 1\nFitnessLevel Injury 2\nFitnessLevel IntraGameProprioception 2\n" )
 
 assert.equal((function(){
-	var g = GraphParser.parseGuess("X E\nY O\nM 1\nN A\n\nX M\nM N Y")
+	var g = $p("X E\nY O\nM 1\nN A\n\nX M\nM N Y")
 	return GraphTransformer.flowNetwork(g).graph.toAdjacencyList()
 })(), "M N X Y\nN M\nX M __SRC\nY M __SNK\n__SNK Y\n__SRC X" )
 
 assert.equal((function(){
-	var g = GraphParser.parseGuess("X E\nY O\nM 1\nN A\n\nX M\nM N Y")
+	var g = $p("X E\nY O\nM 1\nN A\n\nX M\nM N Y")
 	return GraphTransformer.activeBiasGraph(g).toAdjacencyList()
 })(), "M N Y\nX M" )
 
 assert.equal((function(){
-	var g = GraphParser.parseGuess("X E\nY O\nM 1\nN A\n\nX M\nM N\nY M")
+	var g = $p("X E\nY O\nM 1\nN A\n\nX M\nM N\nY M")
 	return GraphTransformer.activeBiasGraph(g).toAdjacencyList()
 })(), "X M\nY M" )
 
 assert.equal((function(){
 	// our non-X-ancestor MSAS example from the UAI paper w/o causal edge
-	var g = GraphParser.parseGuess("X1 E\nX2 E\nY O\nM1 1\nM2 A\n\nX1 M1\nY M2\nM1 M2\nM2 X2")
+	var g = $p("X1 E\nX2 E\nY O\nM1 1\nM2 A\n\nX1 M1\nY M2\nM1 M2\nM2 X2")
 	return GraphTransformer.activeBiasGraph(g).toAdjacencyList()
 })(), "M1 M2\nX1 M1\nY M2" )
 
 assert.equal((function(){
-	var g = GraphParser.parseGuess("X E\nY O\nM 1\n\nY M\nM X")
+	var g = $p("X E\nY O\nM 1\n\nY M\nM X")
 	return GraphTransformer.activeBiasGraph(g).toAdjacencyList()
 })(), "M X\nY M" )
 
 assert.equal((function(){
-	var g = GraphParser.parseGuess("X E\nY O\n\nY X")
+	var g = $p("X E\nY O\n\nY X")
 	return GraphTransformer.activeBiasGraph(g).toAdjacencyList()
 })(), "Y X" )
 
 assert.equal((function(){
 	// our non-X-ancestor MSAS example from the UAI paper w/o causal edge
-	var g = GraphParser.parseGuess("X1 E\nX2 E\nY O\nM1 1\nM2 1\n\nX1 M1\nY M2\nM1 M2\nM2 X2")
+	var g = $p("X1 E\nX2 E\nY O\nM1 1\nM2 1\n\nX1 M1\nY M2\nM1 M2\nM2 X2")
 	return GraphTransformer.activeBiasGraph(g).toAdjacencyList()
 })(), "M2 X2\nY M2" )
 
 assert.equal((function(){
-	var g = GraphParser.parseGuess("X1 E\nY1 O\nY2 O\nM 1\n\nY1 M\nM Y2")
+	var g = $p("X1 E\nY1 O\nY2 O\nM 1\n\nY1 M\nM Y2")
 	return GraphTransformer.activeBiasGraph(g).toAdjacencyList()
 })(), "" )
 
 assert.equal((function(){
-	var g = GraphParser.parseGuess("X1 E\nX2 E\nY1 O\nY2 O\nU1 1\nU2 1\n\nX1 U1\nU1 X2\nY1 U2\nU2 Y2")
+	var g = $p("X1 E\nX2 E\nY1 O\nY2 O\nU1 1\nU2 1\n\nX1 U1\nU1 X2\nY1 U2\nU2 Y2")
 	return GraphTransformer.activeBiasGraph(g).toAdjacencyList()
 })(), "" )
 
@@ -1580,7 +1595,7 @@ assert.equal((function(){
 })(), 2 )
 
 assert.equal((function(){
-	var g = GraphParser.parseGuess("a 1\nb 1\nc 1\nd 1\ne 1\nm 1\nn 1\np 1\nu 1\nx E\ny O\n\n"
+	var g = $p("a 1\nb 1\nc 1\nd 1\ne 1\nm 1\nn 1\np 1\nu 1\nx E\ny O\n\n"
 		+"a b\nb u\nc u n\nd e\ne c\nm a\nn p\np y\nu y\nx c d m")
 	return GraphAnalyzer.minVertexCut( g, [g.getVertex("x")], [g.getVertex("y")] ) 
 })(), 2 )
@@ -1599,104 +1614,104 @@ assert.equal((function(){
 })(), "A D 2\nB E 1\n" )
 
 assert.equal((function(){
-	var g = GraphParser.parseGuess( 
+	var g = $p( 
 		"digraph G { y -> m \n m -> x }"
 	).addSource("x").addTarget("y")
-	return GraphSerializer.toDotEdgeStatements(GraphTransformer.activeBiasGraph(g))
+	return $es(GraphTransformer.activeBiasGraph(g))
 })(), "m -> x\ny -> m" )
 
 assert.equal((function(){
-	var g = GraphParser.parseGuess( 
+	var g = $p( 
 		"digraph G { x [exposure]\ny [outcome]\na [adjusted]\n"+
 		"x -> a\nu -> x\nu -> y }" )
-	return GraphSerializer.toDotEdgeStatements(GraphTransformer.activeBiasGraph(g))
+	return $es(GraphTransformer.activeBiasGraph(g))
 })(), "u -> x\nu -> y" )
 
 assert.equal((function(){
-	var g = GraphParser.parseGuess( 
+	var g = $p( 
 		"digraph G { x [exposure]\ny [outcome]\na [adjusted]\n b [adjusted]\n"+
 		"x -> a\nx -> b\nb -> a\ny -> b }" )
-	return GraphSerializer.toDotEdgeStatements(GraphTransformer.activeBiasGraph(g))
+	return $es(GraphTransformer.activeBiasGraph(g))
 })(), "x -> b\ny -> b" )
 
 assert.equal((function(){
-    var g = GraphParser.parseGuess( 
+    var g = $p( 
 		"digraph G { x [exposure]\ny [outcome]\nm [adjusted]\nx -> m\ny -> m }" )
 	g = GraphTransformer.canonicalDag( g ).g
 	g = GraphTransformer.ancestorGraph( g )
- 	return ""+GraphSerializer.toDotEdgeStatements(g)
+ 	return ""+$es(g)
 })(), "x -> m\ny -> m" )
 
 assert.equal((function(){
-    var g = GraphParser.parseGuess( 
+    var g = $p( 
 		"digraph G { x [exposure]\ny [outcome]\nm [adjusted]\nx -> m\ny -> m }" )
- 	return GraphSerializer.toDotEdgeStatements(GraphTransformer.ancestorGraph(g))
+ 	return $es(GraphTransformer.ancestorGraph(g))
 })(), "x -> m\ny -> m" )
 
 assert.equal((function(){
-    var g = GraphParser.parseGuess( 
+    var g = $p( 
 		"digraph G { b [exposure]\nc [outcome]\na [adjusted]\na -- b\na -- c }" )
  	return GraphAnalyzer.connectedComponents(g).length
 })(), 1 )
 
 assert.equal((function(){
-    var g = GraphParser.parseGuess( 
+    var g = $p( 
 		"digraph G {a -- b }" )
  	return GraphAnalyzer.connectedComponents(g).length
 })(), 1 )
 
 assert.equal((function(){
-    var g = GraphParser.parseGuess( 
+    var g = $p( 
 		"digraph G {a [exposure]\nb [outcome]\nc [adjusted]\na -> c\nb -> c }" )
- 	return GraphSerializer.toDotEdgeStatements(GraphTransformer.activeBiasGraph(g))
+ 	return $es(GraphTransformer.activeBiasGraph(g))
 })(), "a -> c\nb -> c" )
 
 assert.equal((function(){
-    var g = GraphParser.parseGuess( 
+    var g = $p( 
 		"digraph G {a [exposure]\nb [outcome]\nc [adjusted]\na -> b\nb -> c }" )
- 	return GraphSerializer.toDotEdgeStatements(GraphTransformer.activeBiasGraph(g))
+ 	return $es(GraphTransformer.activeBiasGraph(g))
 })(), "a -> b\nb -> c" )
 
 assert.equal((function(){
    var g = TestGraphs.findExample("Acid")
- 	return GraphSerializer.toDotEdgeStatements(GraphTransformer.activeBiasGraph(g))
+ 	return $es(GraphTransformer.activeBiasGraph(g))
 })(), "x1 -> x3\nx1 -> x4\nx10 -> x15\nx4 -> x5\nx5 -> x7\nx7 -> x9\nx9 -> x10" )
 
 assert.equal((function(){
-    var g = GraphParser.parseGuess( 
+    var g = $p( 
 		"digraph G { a [exposure] \n b [outcome] \n a <-> c \n c -> b }" )
-	return GraphSerializer.toDotEdgeStatements(GraphTransformer.canonicalDag(g).g)
+	return $es(GraphTransformer.canonicalDag(g).g)
 })(), "L1 -> a\nL1 -> c\nc -> b" )
 
 assert.equal((function(){
-    var g = GraphParser.parseGuess( 
+    var g = $p( 
 		"digraph G { a [exposure] \n b [outcome] \n a <-> c \n c -> b }" )
-	return GraphSerializer.toDotEdgeStatements(GraphTransformer.activeBiasGraph(g))	
+	return $es(GraphTransformer.activeBiasGraph(g))	
 })(), "a <-> c\nc -> b" )
 
 assert.equal((function(){
-    var g = GraphParser.parseGuess( "digraph G { a -- b }" )
+    var g = $p( "digraph G { a -- b }" )
     var ids = _.pluck(GraphAnalyzer.connectedComponentAvoiding( g, [g.getVertex("a")] )
     	,"id")
     ids=ids.sort(); return ids.join(" ")
 })(), "a b" )
 
 assert.equal((function(){
-	var g = GraphParser.parseGuess( 
+	var g = $p( 
 		"digraph G { x [source] \n y [outcome] \n a [adjusted] \n "
 		+"a -> x \n b -> a \n b -> y }"
 	)
-	return GraphSerializer.toDotEdgeStatements(GraphTransformer.activeBiasGraph(g))
+	return $es(GraphTransformer.activeBiasGraph(g))
 })(), "" )
 
 
 assert.equal( _.pluck(GraphAnalyzer.dpcp(
-	GraphParser.parseGuess( "digraph{ x [exposure]\n y [outcome]\n x -> y -- z }" ) ),"id").
+	$p( "digraph{ x [exposure]\n y [outcome]\n x -> y -- z }" ) ),"id").
 		sort().join(","),
 	"y,z" )
 
 assert.equal( _.pluck(GraphAnalyzer.dpcp(
-	GraphParser.parseGuess( "digraph{ x [exposure]\n y [outcome]\n x -- y -- z }" ) ),"id").
+	$p( "digraph{ x [exposure]\n y [outcome]\n x -- y -- z }" ) ),"id").
 		sort().join(","),
 	"x,y,z" )
 

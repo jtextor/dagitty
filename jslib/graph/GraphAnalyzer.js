@@ -1409,6 +1409,7 @@ var GraphAnalyzer = {
 				}
 			}
 		}
+		return false
 	},
 	
 	searchCycleFrom: function( v, p ){

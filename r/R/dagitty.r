@@ -1182,6 +1182,35 @@ isAdjustmentSet <- function( x, Z, exposure=NULL, outcome=NULL ){
 	r
 }
 
+#' Test for Cycles
+#'
+#' Returns \code{TRUE} if the given graph does not contain a directed cycle.
+#'
+#' @param x the input graph, of any graph type.
+#'
+#' @details This function will only consider simple directed edges in the
+#' given graph.
+#'
+#' @examples
+#' g1 <- dagitty("dag{X -> Y -> Z}")
+#' stopifnot( isTRUE(isAcyclic( g1 )) )
+#' g2 <- dagitty("dag{X -> Y -> Z -> X}")
+#' stopifnot( isTRUE(!isAcyclic( g2 )) )
+#' g3 <- dagitty("mag{X -- Y -- Z -- X}")
+#' stopifnot( isTRUE(isAcyclic( g3 )) )
+#' @export
+isAcyclic <- function( x ){
+	x <- as.dagitty( x )
+	xv <- .getJSVar()
+	tryCatch({
+		.jsassigngraph( xv, x )
+		.jsassign( xv, .jsp("GraphAnalyzer.containsCycle(",xv,")===false") )
+		r <- .jsget(xv)
+	},finally={
+		.deleteJSVar(xv)
+	})
+	r
+}
 
 #' List Implied Conditional Independencies
 #'
