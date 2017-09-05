@@ -13,4 +13,3 @@ exogenousVariables(x)
 Returns the names of all variables that have no directed arrow pointing to them.
 Note that this does not preclude variables connected to bidirected arrows.
 }
-

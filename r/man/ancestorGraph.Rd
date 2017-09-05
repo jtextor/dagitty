@@ -28,4 +28,3 @@ g <- dagitty("pdag{ z -- x -> y }")
 ancestorGraph( g, "y" ) # includes z
 
 }
-

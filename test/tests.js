@@ -49,6 +49,7 @@ QUnit.test( "graph manipulation", function( assert ) {
 
 QUnit.test( "parsing and serializing", function( assert ) {
 	// GraphParser.VALIDATE_GRAPH_STRUCTURE = false;
+
 	assert.equal( $p( "dag{{x->{a b}}}" ).edges.length, 2 )
 
 	assert.equal( $p( "dag{{x->{a ; b}}}" ).edges.length, 2,
@@ -682,6 +683,28 @@ QUnit.test( "adjustment in other graphs", function( assert ) {
 });
 
 QUnit.test( "PAGs", function( assert ) {
+
+	assert.equal( GraphAnalyzer.listMsasTotalEffect( 
+		TestGraphs.spirtes, [], [], 200 ).length, 200 )
+
+	assert.equal( GraphAnalyzer.violatesAdjustmentCriterion( 
+		TestGraphs.spirtes ), false )
+
+	var gam = GraphTransformer.moralGraph( 
+		GraphTransformer.ancestorGraph( 
+		GraphTransformer.backDoorGraph( TestGraphs.spirtes ) ) )
+
+	assert.equal( gam.edges.length, 302 )
+
+	assert.equal( GraphTransformer.ancestorGraph(
+		GraphTransformer.backDoorGraph(
+			TestGraphs.spirtes ) ).edges.length, 133 )
+
+
+	assert.equal( GraphTransformer.backDoorGraph(
+		TestGraphs.spirtes ).edges.length, 795 )
+
+
 	assert.equal(
 		GraphTransformer.backDoorGraph(
 			$p("pag{ {V2 V1} @-> X -> {V4 @-> Y} <- V3 @-> X X[e] Y[o]}")).

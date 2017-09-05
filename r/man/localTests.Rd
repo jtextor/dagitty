@@ -77,4 +77,3 @@ imp <- Filter(function(x) length(x$Z)<4, impliedConditionalIndependencies(g))
 plotLocalTestResults(localTests( g, d, "cis.loess", R=100, tests=imp, loess.pars=list(span=0.6) ))
 
 }
-

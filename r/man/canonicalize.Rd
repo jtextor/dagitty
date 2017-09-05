@@ -27,4 +27,3 @@ does not check whether the input is actually an ancestral graph.
 \examples{
 canonicalize("mag{x<->y--z}") # introduces two new variables
 }
-

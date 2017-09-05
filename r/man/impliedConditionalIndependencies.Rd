@@ -30,4 +30,3 @@ impliedConditionalIndependencies( g ) # one
 latents( g ) <- c("m")
 impliedConditionalIndependencies( g ) # none
 }
-

@@ -39,4 +39,3 @@ I. Shpitser, T. VanderWeele and J. M. Robins (2010), On the
 validity of covariate adjustment for estimating causal effects. In
 \emph{Proceedings of UAI 2010.}
 }
-

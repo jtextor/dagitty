@@ -42,4 +42,3 @@ plot( x )
 Function \link{graphLayout} for automtically generating layout coordinates, and function
 \link{plot.dagitty} for plotting graphs.
 }
-

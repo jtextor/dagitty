@@ -15,4 +15,3 @@ Get Graph Type
 \examples{
 graphType( "mag{ x<-> y }" ) == "mag"
 }
-

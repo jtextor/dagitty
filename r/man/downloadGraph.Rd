@@ -14,4 +14,3 @@ Downloads a graph that has been built and stored online using the dagitty.net GU
 Users who store graphs online will receive a unique URL for their graph, which
 can be fed into this function to continue working with the graph in R.
 }
-

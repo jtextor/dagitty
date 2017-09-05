@@ -17,4 +17,3 @@ X -> Y -- Z to X -> Y -> Z.
 \examples{
 orientPDAG( "pdag { x -> y -- z }" )
 }
-

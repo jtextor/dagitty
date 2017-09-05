@@ -15,4 +15,3 @@ Generates a complete DAG on the given variable names. The order
 in which the variables are given corresponds to the topological ordering
 of the DAG.
 }
-

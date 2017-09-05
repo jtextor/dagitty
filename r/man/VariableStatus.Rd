@@ -2,14 +2,14 @@
 % Please edit documentation in R/dagitty.r
 \name{VariableStatus}
 \alias{VariableStatus}
-\alias{adjustedNodes}
-\alias{adjustedNodes<-}
 \alias{exposures}
 \alias{exposures<-}
-\alias{latents}
-\alias{latents<-}
 \alias{outcomes}
 \alias{outcomes<-}
+\alias{latents}
+\alias{latents<-}
+\alias{adjustedNodes}
+\alias{adjustedNodes<-}
 \alias{setVariableStatus}
 \title{Variable Statuses}
 \usage{
@@ -61,4 +61,3 @@ outcomes(g) <- "y"
 adjustmentSets(g)
 
 }
-

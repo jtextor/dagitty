@@ -25,4 +25,3 @@ is generated (all variables have variance 1).}
 \description{
 Implied Covariance Matrix of a Gaussian Graphical Model
 }
-

@@ -1034,6 +1034,9 @@ plot.dagitty <- function( x, ... ){
 #' of exposures and outcomes, minus (possible) descendants of nodes on proper causal
 #' paths. This canonical adjustment set is always valid if any valid set exists
 #' at all.
+#' @param max.results integer. The listing of adjustment set is stopped once
+#' this many results have been found. Use \code{Inf} to generate them all. 
+#' This only applys when \code{type="minimal"}.
 #'
 #' @details
 #' If the input graph is a MAG or PAG, then it must not contain any undirected
@@ -1067,7 +1070,8 @@ plot.dagitty <- function( x, ... ){
 #' adjustmentSets( g )
 #' @export
 adjustmentSets <- function( x, exposure=NULL, outcome=NULL, 
-	type=c("minimal","canonical","all"), effect=c("total","direct") ){
+	type=c("minimal","canonical","all"), effect=c("total","direct"),
+	max.results=Inf ){
 	effect <- match.arg( effect )
 	type <- match.arg( type )
 	if( effect == "direct" && type != "minimal" ){
@@ -1087,12 +1091,16 @@ adjustmentSets <- function( x, exposure=NULL, outcome=NULL,
 
 	if( type == "minimal" ){
 		xv <- .getJSVar()
+		command.close <- ")"
+		if( is.finite( max.results ) ){
+			command.close <- paste(",[],[],",as.integer(max.results),")")
+		}
 		tryCatch({
 			.jsassigngraph( xv, x )
 			if( effect=="direct" ){	
-				.jsassign( xv, .jsp("GraphAnalyzer.listMsasDirectEffect(global.",xv,")") )
+				.jsassign( xv, .jsp("GraphAnalyzer.listMsasDirectEffect(global.",xv,command.close) )
 			} else {
-				.jsassign( xv, .jsp("GraphAnalyzer.listMsasTotalEffect(global.",xv,")") )
+				.jsassign( xv, .jsp("GraphAnalyzer.listMsasTotalEffect(global.",xv,command.close) )
 			}
 			.jsassign( xv, .jsp("DagittyR.adj2r(global.",xv,")"))
 			r <- structure( .jsget(xv), class="dagitty.sets" )

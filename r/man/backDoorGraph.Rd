@@ -29,4 +29,3 @@ backDoorGraph( g ) # x->y edge is removed
 J. Zhang (2008), Causal Reasoning with Ancestral Graphs. 
 \emph{Journal of Machine Learning Research} 9: 1437-1474.
 }
-

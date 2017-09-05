@@ -1310,7 +1310,7 @@ var GraphAnalyzer = {
 		return !this.dConnected( gbd, gbd.getSources(), gbd.getTargets(), Z )
 	},
 	
-	listMsasTotalEffect : function( g, must, must_not ){
+	listMsasTotalEffect : function( g, must, must_not, max_nr ){
 		var gtype = g.getType()
 		if( gtype != "dag" && gtype != "pdag" && gtype != "mag" && gtype != "pag" ){
 			throw( "Cannot compute total affect adjustment sets for graph of type "+gtype )
@@ -1333,7 +1333,7 @@ var GraphAnalyzer = {
 		if( must_not )
 			latent_nodes = latent_nodes.concat( must_not )
 		
-		return this.listMinimalSeparators( gam, adjusted_nodes, latent_nodes )
+		return this.listMinimalSeparators( gam, adjusted_nodes, latent_nodes, max_nr )
 	},
 
 	canonicalAdjustmentSet : function( g, Z ){

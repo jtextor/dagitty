@@ -18,4 +18,3 @@ the latent variables, between the observed variables, and
 from latent to observed variables, but no edge between
 a latent L and an observed X may have an arrowhead at L.
 }
-

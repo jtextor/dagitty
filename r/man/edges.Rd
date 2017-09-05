@@ -30,4 +30,3 @@ Extracts edge information from the input graph.
 ## Which kinds of edges are used in the Shrier example?
 levels( edges( getExample("Shrier") )$e )
 }
-

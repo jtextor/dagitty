@@ -55,4 +55,3 @@ The SSQ model of schizophrenic prodromal unfolding revised: An
  analysis of its causal chains based on the language of directed graphs.
 \emph{European Psychiatry}, \bold{29}(7):437--48.
 }
-

@@ -33,4 +33,3 @@ Efficiently Finding Conditional Instruments for Causal Inference.
 In \emph{Proceedings of the 24th International Joint Conference on 
 Artificial Intelligence (IJCAI 2015)}, pp. 3243-3249. AAAI Press, 2015.
 }
-

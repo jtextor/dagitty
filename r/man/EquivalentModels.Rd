@@ -36,4 +36,3 @@ lapply( equivalentDAGs(g), plot )
 # How many edges can be reversed without changing the equivalence class?
 sum(edges(equivalenceClass(g))$e == "--")
 }
-

@@ -23,4 +23,3 @@ g <- dagitty( 'digraph {
 }' )
 names( g )
 }
-

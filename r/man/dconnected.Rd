@@ -42,4 +42,3 @@ dseparated( "dag{x->m->y}", "x", "y", c() ) # TRUE
 dseparated( "dag{x->m->y}", "x", "y", c("m") ) # FALSE
 
 }
-

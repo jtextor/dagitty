@@ -139,4 +139,3 @@ Separators and Adjustment Sets in Markov Equivalent DAGs.
 In \emph{Proceedings of the Thirtieth AAAI Conference on Artificial Intelligence (AAAI'16)}, 
 Phoenix, Arizona, USA.
 }
-

@@ -2,14 +2,14 @@
 % Please edit documentation in R/dagitty.r
 \name{AncestralRelations}
 \alias{AncestralRelations}
-\alias{adjacentNodes}
+\alias{descendants}
 \alias{ancestors}
 \alias{children}
-\alias{descendants}
-\alias{markovBlanket}
-\alias{neighbours}
 \alias{parents}
+\alias{neighbours}
 \alias{spouses}
+\alias{adjacentNodes}
+\alias{markovBlanket}
 \title{Ancestral Relations}
 \usage{
 descendants(x, v)
@@ -63,4 +63,3 @@ parents(g,"x")
 spouses(g,"x") 
 
 }
-

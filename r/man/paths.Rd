@@ -33,4 +33,3 @@ or closed (d-separated).
 sum( paths(backDoorGraph(getExample("Shrier")))$open ) # Any open Back-Door paths?
 
 }
-

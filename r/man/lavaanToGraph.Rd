@@ -32,4 +32,3 @@ C3 ~~ C4 \\n C3 ~~ C5",fixed.x=FALSE)
 plot( graphLayout( lavaanToGraph( mdl ) ) )
 }
 }
-

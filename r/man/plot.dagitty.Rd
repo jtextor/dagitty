@@ -16,4 +16,3 @@ A simple plot method to quickly visualize a graph. This is intended mainly for
 simple visualization purposes and not as a full-fledged graph drawing
 function.
 }
-

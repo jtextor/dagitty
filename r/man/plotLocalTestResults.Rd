@@ -38,4 +38,3 @@ par(mar=c(2,8,1,1)) # so we can see the test names
 plotLocalTestResults(localTests( "dag{ X -> {M1 M2} -> Y }", d, "cis" ))
 
 }
-

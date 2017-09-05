@@ -26,4 +26,3 @@ a decent layout).
 plot( graphLayout( dagitty( "dag { X <- U1 -> M <- U2 -> Y } " ) ) )
 
 }
-

@@ -12,4 +12,3 @@ is.dagitty(x)
 \description{
 A function to check whether an object has class \code{dagitty}.
 }
-

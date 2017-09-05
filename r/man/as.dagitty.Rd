@@ -14,4 +14,3 @@ as.dagitty(x, ...)
 \description{
 Converts its argument to a DAGitty object, if possible.
 }
-

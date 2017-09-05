@@ -23,4 +23,3 @@ moralize( "dag{ x->m<-y }" )
 moralize( "dag{ x -> m1 <-> m2 <-> m3 <-> m4 <- y }" )
 
 }
-
