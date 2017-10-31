@@ -892,15 +892,8 @@ Graph.Edge = Class.extend( {
 		this.layout_pos_y = spec.layout_pos_y
 	},
 	toString : function( ){
-		var edge_join = "->"
-		switch( this.directed ){
-		case Graph.Edgetype.Undirected: edge_join = "--"; break
-		case Graph.Edgetype.Bidirected: edge_join = "<->"; break
-		case Graph.Edgetype.PartDirected: edge_join = "@->"; break
-		case Graph.Edgetype.PartUndirected: edge_join = "@--"; break
-		case Graph.Edgetype.Unspecified: edge_join = "@-@"; break
+		var edge_join = Graph.Edgetype.Symbol[this.directed] 
 
-		}
 		var v1id = GraphSerializer.dotQuoteVid(this.v1.id)
 		var v2id = GraphSerializer.dotQuoteVid(this.v2.id)
 		

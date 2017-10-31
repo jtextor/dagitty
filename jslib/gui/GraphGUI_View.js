@@ -140,8 +140,8 @@ var DAGittyGraphView = Class.extend({
 				this.action_on_click.apply( this )
 			}
 		} else if (this.getCurrentEdgeShape() && !this.isDraggingEdgeShape()) {
-			this.getController().toggleEdge( this.getCurrentEdgeShape().v1.id, 
-			this.getCurrentEdgeShape().v2.id, true )
+			this.getController().toggleEdgeBetween( this.getCurrentEdgeShape().v1.id, 
+				this.getCurrentEdgeShape().v2.id )
 		}
 	},
 	setActionOnClick : function( a ){
@@ -275,6 +275,7 @@ var DAGittyGraphView = Class.extend({
 		
 		this.keydownhandler = function( e ){
 			var v = myself.getCurrentVertex()
+			var es = myself.getCurrentEdgeShape()
 			switch( e.keyCode ){
 			case 65: //a
 				if(v) myself.getController().toggleVertexProperty(v,"adjustedNode")
@@ -301,6 +302,7 @@ var DAGittyGraphView = Class.extend({
 			case 46: //del
 			case 68: //d
 				if(v) myself.getController().deleteVertex(v)
+				if(es) myself.getController().deleteAnyEdge(es.v1.id, es.v2.id)
 				break
 			case 78: //n
 				myself.newVertexDialog()
@@ -406,14 +408,15 @@ var DAGittyGraphView = Class.extend({
 		if( v ){
 			if( v2 ){
 				if( v2 !== v ){
-					this.lastEdge = this.getController().toggleEdge( v2, v )
+					this.lastEdge = this.getController().toggleEdgeFromTo( v2, v )
 				}
 				this.unmarkVertex( v2 )
 			} else {
 				this.markVertex( v )
 			}
-		} else if (this.lastEdge) 
-			this.lastEdge = this.getController().toggleEdge( this.lastEdge.v1.id, this.lastEdge.v2.id, true)
+		} else if (this.lastEdge) {
+			this.lastEdge = this.getController().toggleEdgeBetween( this.lastEdge.v1.id, this.lastEdge.v2.id )
+		}
 	},
 	newVertex : function( n ){
 		if( !n ){

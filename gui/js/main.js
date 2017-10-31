@@ -1,5 +1,5 @@
 /* DAGitty - a browser-based software for causal modelling and analysis
-*   Copyright (C) 2010,2011 Johannes Textor
+*   Copyright (C) 2010,2011,2017 Johannes Textor
 * 
 *   This program is free software; you can redistribute it and/or
 *   modify it under the terms of the GNU General Public License
@@ -421,7 +421,13 @@ function generateSpringLayout(){
 };
 
 function loadExample( nr ){
-	document.getElementById("adj_matrix").value = examples[parseInt(nr)].v+"\n\n"+examples[parseInt(nr)].e;
+	nr = parseInt( nr )
+	if( examples[nr].d ){
+		document.getElementById("adj_matrix").value = examples[nr].d 
+	} else {
+		document.getElementById("adj_matrix").value = 
+			examples[nr].v+"\n\n"+examples[nr].e;
+	}
 	loadDAGFromTextData();
 }
 

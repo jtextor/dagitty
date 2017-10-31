@@ -105,37 +105,82 @@ var DAGittyController = Class.extend({
 		// function "setGraph" (because they might need to be 
 		// changed when a completely new graph is loaded)
 	},
-	toggleEdge : function( v1, v2, onClick ){ 
-		var edgeType = [Graph.Edgetype.Directed, Graph.Edgetype.Bidirected, Graph.Edgetype.Undirected]
-		var e; var e_reverse; var newe
+
+	toggleEdgeFromTo : function( v1, v2 ){
+		var myself = this
+		var done = function( e ){ if(e){
+			myself.getObservedGraph().deleteEdge( e.v1, e.v2, e.directed )
+			myself.graphChanged()
+			return 0
+		} }
+		var e = this.getGraph().getEdge( v1, v2, Graph.Edgetype.Directed )
+		if( e ){
+			return done( e )
+		}
+		e = this.getGraph().getEdge( v1, v2, Graph.Edgetype.Bidirected )
+		if( e ){
+			return done( e )
+		}
+		e = this.getGraph().getEdge( v2, v1, Graph.Edgetype.Directed )
+		if( e ){
+			this.getObservedGraph().addEdge( v1, v2, Graph.Edgetype.Bidirected )
+			return done( e )
+		} else {
+			this.getObservedGraph().addEdge( v1, v2, Graph.Edgetype.Directed )
+			return done()
+		}
+	},
+	/* 
+		Handler that is called when an edge is clicked on. Cycles through the available types of edges.
+		For now, I do not support undirected edges.
+	*/
+	toggleEdgeBetween : function( v1, v2 ){ 
+		var edgeType = [ Graph.Edgetype.Directed, Graph.Edgetype.Bidirected,  Graph.Edgetype.Directed ]
+		var edgeReversed = [false, false, true]
+		var e, newe
 		var i=0
+		var v3
+
+		// Search for already existing edge and delete it
 		for (;i<edgeType.length;i++) {
-			e = this.getGraph().getEdge( v1, v2, edgeType[i])
-			e_reverse = this.getGraph().getEdge( v2, v1, edgeType[i])
-			if (e || e_reverse) {
-				if (e) this.getObservedGraph().deleteEdge( e.v1, e.v2, e.directed )
-				if (e_reverse) this.getObservedGraph().deleteEdge( e_reverse.v1, e_reverse.v2, e_reverse.directed )
-				if (((!e && e_reverse && i == 0) || (i==1)) && !onClick) 
-					newe = this.getObservedGraph().addEdge( v1, v2, i == 0 ? Graph.Edgetype.Bidirected : Graph.Edgetype.Directed )
+			if( edgeReversed[i] ){
+				e = this.getGraph().getEdge( v2, v1, edgeType[i] )
+			} else {
+				e = this.getGraph().getEdge( v1, v2, edgeType[i] )
+			}
+			if( e ){
+				this.getObservedGraph().deleteEdge( e.v1, e.v2, e.directed )
 				break
 			}
 		}
 		
-		if (!newe) {
-			if (i >= edgeType.length) {
-				newe = this.getObservedGraph().addEdge( v1, v2, Graph.Edgetype.Directed )
-			} else if (onClick) {
-				newe = this.getObservedGraph().addEdge( v2, v1, edgeType[(i+1) % edgeType.length] )
+		// No previous edge; just add directed edge
+		if (i >= edgeType.length) {
+			newe = this.getObservedGraph().addEdge( v1, v2, Graph.Edgetype.Directed )
+		} else {
+			// previous edge exists, add new edge
+			if( edgeReversed[(i+1) % edgeType.length] ){
+				v3 = v1; v1 = v2; v2 = v3
 			}
+			newe = this.getObservedGraph().addEdge( v1, v2, edgeType[(i+1) % edgeType.length] )
 		}
 		
-		if (!e && e_reverse) e = e_reverse
 		if (newe && e) {
 			newe.layout_pos_x = e.layout_pos_x
 			newe.layout_pos_y = e.layout_pos_y
 			this.graphChanged()
 		}
 		return newe
+	},
+	deleteAnyEdge : function( v1, v2 ){
+		var edgeType = [ Graph.Edgetype.Directed,  Graph.Edgetype.Bidirected ]
+		var i, et, any = false
+		for( i = 0 ; i < edgeType.length ; i++ ){
+			et = edgeType[i]
+			any = any || this.getObservedGraph().deleteEdge( v1, v2, et )
+			any = any || this.getObservedGraph().deleteEdge( v2, v1, et )
+		}
+		if( any ){ this.graphChanged() }
 	},
 	deleteVertex : function( v ){
 		if( this.getGraph().getVertex(v) ){
