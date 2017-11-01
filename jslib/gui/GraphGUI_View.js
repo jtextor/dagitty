@@ -242,9 +242,16 @@ var DAGittyGraphView = Class.extend({
 			myself.startDragging(myself.pointerX(e) - myself.getContainer().offsetLeft, 
 				myself.pointerY(e) - myself.getContainer().offsetTop)
 		}
-		this.getContainer().addEventListener( "mousedown", mdownhandler )
+		this.getContainer().addEventListener( "mousedown", function(e){
+			mdownhandler(e)
+		} )
 		this.getContainer().addEventListener( "touchstart",
-			function(e){ mdownhandler(e.changedTouches[0]) } )
+			function(e){
+				if( e.target.nodeName == "path" ){
+					mdownhandler(e.changedTouches[0])
+					e.preventDefault()
+				}
+			} )
 		
 		this.getContainer().addEventListener( "dblclick", function(e){
 			myself.dblclickHandler( e )
@@ -254,9 +261,14 @@ var DAGittyGraphView = Class.extend({
 			myself.clickHandler( e )
 		} )
 		
-		this.getContainer().addEventListener( "mousemove", movehandler )
+		this.getContainer().addEventListener( "mousemove", function(e){
+			movehandler(e) 
+		} )
 		this.getContainer().addEventListener( "touchmove", 
-			function(e){ movehandler(e.changedTouches[0]) } )
+			function(e){ 
+				movehandler(e.changedTouches[0])
+			} 
+		)
 		
 		var muphandler = function(e){
 			if( !myself.draggingActive ){
@@ -268,8 +280,13 @@ var DAGittyGraphView = Class.extend({
 			}
 			myself.stopDragging()
 		}
-		this.getContainer().addEventListener( "mouseup", muphandler )
-		this.getContainer().addEventListener( "touchend", muphandler )
+		this.getContainer().addEventListener( "mouseup", 
+			function(e){ muphandler(e) } )
+		
+		this.getContainer().addEventListener( "touchend",
+		       function(e){ 
+			       muphandler(e.changedTouches[0]);
+		       } )
 		
 		if( autofocus ){
 			var f = _.bind( this.getContainer().focus, this.getContainer() )
@@ -491,6 +508,7 @@ var DAGittyGraphView = Class.extend({
 		if( button_text ){
 			qform.appendChild(el("br"))
 			qf = el("button")
+			qf.setAttribute( "type", "button" )
 			txt(qf,"OK")
 			qf.onclick = function(){myself.closeDialog()}
 			qform.appendChild(document.createTextNode(" "))
@@ -520,6 +538,7 @@ var DAGittyGraphView = Class.extend({
 		qform.appendChild(qf)
 		qform.appendChild(el("br"))
 		qf = el("button")
+		qf.setAttribute("type","button")
 		txt(qf,"OK")
 		qf.onclick = function(){myself.closeDialog()}
 		qform.appendChild(document.createTextNode(" "))
@@ -573,12 +592,14 @@ var DAGittyGraphView = Class.extend({
 		qform.appendChild( qferr )
 		qform.appendChild(el("br"))
 		qf = el("button")
+		qf.setAttribute("type","button")
 		txt(qf,"OK")
 		qf.onclick = function(){ 
 			f.call(myself,qfin.value)
 		}
 		qform.appendChild(qf)
 		qf = el("button")
+		qf.setAttribute("type","button")
 		txt(qf,"Cancel")
 		qf.onclick = function(){myself.closeDialog()}
 		qform.appendChild(document.createTextNode(" "))
