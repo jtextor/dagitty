@@ -191,7 +191,8 @@ var DAGittyGraphView = Class.extend({
 			myself.mouse_x = myself.pointerX(e)-myself.getContainer().offsetLeft
 			myself.mouse_y = myself.pointerY(e)-myself.getContainer().offsetTop
 			if (typeof myself.draggingStartX !== "undefined") {
-				if (Math.abs(myself.draggingStartX - myself.mouse_x) + Math.abs(myself.draggingStartY - myself.mouse_y) > 7 )
+				if (Math.abs(myself.draggingStartX - myself.mouse_x) + 
+					Math.abs(myself.draggingStartY - myself.mouse_y) > 7 )
 					myself.draggingActive = true
 			}
 			var v = myself.isDraggingVertex(), g_coords
@@ -222,18 +223,18 @@ var DAGittyGraphView = Class.extend({
 					es.directed
 				)
 				
-				g_coords = myself.toGraphCoordinate( myself.mouse_x,
-					myself.mouse_y )
-				ed.layout_pos_x = g_coords[0] // changes model
-				ed.layout_pos_y = g_coords[1] // changes model
+				if( ed ){
+					g_coords = myself.toGraphCoordinate( myself.mouse_x,
+						myself.mouse_y )
+					ed.layout_pos_x = g_coords[0] // changes model
+					ed.layout_pos_y = g_coords[1] // changes model
 
-				es.cx = myself.mouse_x
-				es.cy = myself.mouse_y
-				myself.impl.anchorEdgeShape( es )
-				
-				myself.graph_layout_changed = true
-				
-				myself.impl.unsuspendRedraw()
+					es.cx = myself.mouse_x
+					es.cy = myself.mouse_y
+					myself.impl.anchorEdgeShape( es )			
+					myself.graph_layout_changed = true			
+					myself.impl.unsuspendRedraw()
+				}
 			}
 		}
 
@@ -257,7 +258,10 @@ var DAGittyGraphView = Class.extend({
 		this.getContainer().addEventListener( "touchmove", 
 			function(e){ movehandler(e.changedTouches[0]) } )
 		
-		var muphandler = function(){
+		var muphandler = function(e){
+			if( !myself.draggingActive ){
+				myself.dblclickHandler( e )
+			}
 			if( myself.graph_layout_changed ){
 				myself.getController().graphLayoutChanged()
 				myself.graph_layout_changed = false
@@ -423,8 +427,8 @@ var DAGittyGraphView = Class.extend({
 			this.dialogErrorMessage( "Please enter the variable name!")
 			return
 		}
-		// sanitize
-		n = n.replace(/^\s+|\s+$/g,"").replace( /\s+/g, "_" )
+		// sanitize -> no longer needed
+		n = n.replace(/^\s+|\s+$/g,"") //.replace( /\s+/g, "_" )
 		var v = this.graph.getVertex( n )
 		if( v ){
 			this.dialogErrorMessage( "The variable "+n+" already exists!")
@@ -440,8 +444,8 @@ var DAGittyGraphView = Class.extend({
 			return
 		}
 		var v = this.current_dialog.vertex
-		// sanitize
-		n.replace( /\s+/, "_" )
+		// sanitize -> no longer needed
+		//n.replace( /\s+/, "_" )
 		if( !v || (n === v.id) ){ return }
 		if( this.getGraph().getVertex( n ) ){
 			this.dialogErrorMessage( "The variable "+n+" already exists!")
