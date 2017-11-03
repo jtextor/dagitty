@@ -609,7 +609,7 @@ function saveOnline( secret ){
 	DAGitty.Ajax.Request("http://"+hostName()+"/dags/save.php",
 			{
 				method:'POST',
-				parameters: { dag: Model.dag.oldToString(), // TODO change to new syntax after 3.0 release
+				parameters: { dag: Model.dag.toString(), // TODO change to new syntax after 3.0 release
 						email: document.getElementById('modelsavefrm_email').value,
 						name: document.getElementById('modelsavefrm_name').value,
 						desc: document.getElementById('modelsavefrm_desc').value,
@@ -629,7 +629,7 @@ function updateOnline( id, pw ){
 		{
 			method:'POST',
 			parameters: { id:id, pw:pw, 
-				dag:Model.dag.oldToString(), // TODO change to new syntax after 3.0 release
+				dag:Model.dag.toString(), // TODO change to new syntax after 3.0 release
 			 },
 			onFailure: networkFailMsg,
 			onSuccess: function( t ) {

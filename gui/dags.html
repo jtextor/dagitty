@@ -108,6 +108,12 @@ alert("DAGitty requires Internet Explorer 9 or higher.\n"+
 		} else {
 			DAGittyControl.graphChanged();
 		}
+
+		document.onkeydown = function(e){
+			if( e.keyCode == 27 ){
+				DAGittyControl.getView().stopDragging()
+			}
+		}
 	}
 	
 	window.onload = initialize;

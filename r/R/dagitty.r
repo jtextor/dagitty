@@ -216,7 +216,7 @@ simulateSEM <- function( x, b.default=NULL, b.lower=-.6, b.upper=.6, eps=1, N=50
 	}
 	if( verbose ){
 		SigmaC <- Sigma
-		colnames( SigmaC ) <- rownames( SigmaC ) <- ovars
+		colnames( SigmaC ) <- rownames( SigmaC ) <- c(vars,lats)
 		print( SigmaC )
 	}
 	r <- MASS::mvrnorm( N, rep(0,nV+nL), Sigma, empirical=empirical )[,1:nV]
