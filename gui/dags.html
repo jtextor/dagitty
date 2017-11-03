@@ -111,7 +111,8 @@ alert("DAGitty requires Internet Explorer 9 or higher.\n"+
 
 		document.onkeydown = function(e){
 			if( e.keyCode == 27 ){
-				DAGittyControl.getView().stopDragging()
+				DAGittyControl.getView().cancelDragging()
+				DAGittyControl.getView().closeDialog()
 			}
 		}
 	}

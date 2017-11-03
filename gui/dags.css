@@ -177,7 +177,7 @@ form{
 	width: 100%;
 	height: 100%;
 	position: absolute;
-	background-color: #999;
+	background-color: #bbb;
 	text-align: center;
 	top: 0px;
 	left: 0px;
@@ -194,4 +194,8 @@ form{
 
 .dialogwin .err{
 	color: #a00;
+}
+
+.dialogwin p{
+	margin: 2em;
 }

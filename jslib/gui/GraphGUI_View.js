@@ -94,6 +94,12 @@ var DAGittyGraphView = Class.extend({
 			this.edge_shape_being_dragged = es
 		}
 	},
+	cancelDragging : function(){
+		if( this.draggingActive ){
+			this.stopDragging()
+		}
+		this.draggingCanceled = true
+	},
 	stopDragging : function(){
 		delete this.draggingActive
 		delete this.draggingStartX
@@ -115,24 +121,7 @@ var DAGittyGraphView = Class.extend({
 		if (!this.draggingActive) return false
 		return this.vertex_being_dragged
 	},
-	dblclickHandler : function(){
-		var v = this.getCurrentVertex()
-		var es = this.getCurrentEdgeShape()
-		if( v ){
-			this.connectVertex() 
-		} else if( es ){
-			delete es.cx
-			delete es.cy
-			// TODO this assumes at most 1 edge between vertex shapes
-			var ed = this.graph.getEdge( es.v1.id, es.v2.id )
-			delete ed.layout_pos_x
-			delete ed.layout_pos_y
-			this.impl.anchorEdgeShape( es )
-		} else {
-			this.newVertexDialog()
-		}
-	},
-	clickHandler : function(){ 
+	/*clickHandler : function(){ 
 		if( this.action_on_click ){
 			if( typeof this.action_on_click !== "function" ){
 				this.keydownhandler( {keyCode:this.action_on_click} )
@@ -143,7 +132,7 @@ var DAGittyGraphView = Class.extend({
 			this.getController().toggleEdgeBetween( this.getCurrentEdgeShape().v1.id, 
 				this.getCurrentEdgeShape().v2.id )
 		}
-	},
+	},*/
 	setActionOnClick : function( a ){
 		if( typeof a === "function" ){
 			this.action_on_click = a; return
@@ -185,14 +174,14 @@ var DAGittyGraphView = Class.extend({
 	},
 	registerEventListeners : function( autofocus ){
 		/* register event handlers on canvas */
-		var myself = this
+		var myself = this, mycontainer = myself.getContainer()
 		var movehandler = function(e){
 			if( myself.dialogOpen() ){ return }
 			myself.mouse_x = myself.pointerX(e)-myself.getContainer().offsetLeft
 			myself.mouse_y = myself.pointerY(e)-myself.getContainer().offsetTop
 			if (typeof myself.draggingStartX !== "undefined") {
 				if (Math.abs(myself.draggingStartX - myself.mouse_x) + 
-					Math.abs(myself.draggingStartY - myself.mouse_y) > 7 )
+					Math.abs(myself.draggingStartY - myself.mouse_y) > 30 )
 					myself.draggingActive = true
 			}
 			var v = myself.isDraggingVertex(), g_coords
@@ -245,95 +234,135 @@ var DAGittyGraphView = Class.extend({
 		this.getContainer().addEventListener( "mousedown", function(e){
 			mdownhandler(e)
 		} )
+
 		this.getContainer().addEventListener( "touchstart",
-			function(e){
-				if( e.target.nodeName == "path" ){
-					mdownhandler(e.changedTouches[0])
-					e.preventDefault()
-				}
-			} )
+			function(e){ mdownhandler(e.changedTouches[0]) } )
 		
-		this.getContainer().addEventListener( "dblclick", function(e){
-			myself.dblclickHandler( e )
-		} )
-		
-		this.getContainer().addEventListener( "click", function(e){
-			myself.clickHandler( e )
-		} )
+		this.boundClickHandler = _.bind( this.clickHandler, this )
+		this.getContainer().addEventListener( "click", this.boundClickHandler )
 		
 		this.getContainer().addEventListener( "mousemove", function(e){
 			movehandler(e) 
 		} )
 		this.getContainer().addEventListener( "touchmove", 
-			function(e){ 
-				movehandler(e.changedTouches[0])
-			} 
-		)
-		
-		var muphandler = function(e){
-			if( !myself.draggingActive ){
-				myself.dblclickHandler( e )
-			}
-			if( myself.graph_layout_changed ){
-				myself.getController().graphLayoutChanged()
-				myself.graph_layout_changed = false
-			}
-			myself.stopDragging()
-		}
-		this.getContainer().addEventListener( "mouseup", 
-			function(e){ muphandler(e) } )
-		
-		this.getContainer().addEventListener( "touchend",
-		       function(e){ 
-			       muphandler(e.changedTouches[0]);
-		       } )
+			function(e){ movehandler(e.changedTouches[0] ) } )
 		
 		if( autofocus ){
-			var f = _.bind( this.getContainer().focus, this.getContainer() )
+			var f = function(e){ if(!mycontainer.contains( document.activeElement )) mycontainer.focus(); }
 			this.getContainer().addEventListener( "mouseenter", f )
 			this.getContainer().addEventListener( "touchenter", f )
 		}
 		
-		this.keydownhandler = function( e ){
-			var v = myself.getCurrentVertex()
-			var es = myself.getCurrentEdgeShape()
+		this.getContainer().addEventListener( "keydown", function(e){ myself.keydownHandler(e) } )
+
+		this.getContainer().addEventListener( "mouseup", function(e){ myself.mouseupHandler(e) } )
+
+		this.getContainer().addEventListener( "touchend",
+		       function(e){ myself.mouseupHandler( e.changedTouches[0] ) } )
+
+	},
+
+	clickHandler : function(e){
+			// click handler can be set to emulate keypress action
+			// using this function
+			if( this.action_on_click ){
+				if( typeof this.action_on_click !== "function" ){
+					this.keydownHandler( {keyCode:this.action_on_click} )
+				} else {
+					this.action_on_click.apply( this )
+				}
+				return
+			}
+			if( this.clickStopped() ){
+				return
+			}
+			// otherwise, perform default click action
+	
+			var v = this.getCurrentVertex()
+			var es = this.getCurrentEdgeShape()
+			if( v ){
+				this.connectVertex() 
+			} else if( es ){
+				delete es.cx
+				delete es.cy
+				// TODO this assumes at most 1 edge between vertex shapes
+				var ed = this.graph.getEdge( es.v1.id, es.v2.id )
+				// double click removes existing anchor point
+				// -> no longer needed, can be done by single click
+				delete ed.layout_pos_x
+				delete ed.layout_pos_y
+				this.impl.anchorEdgeShape( es )
+			} else {
+				this.newVertexDialog()
+			}
+	},
+
+	mouseupHandler: function(e){
+			if( this.draggingCanceled ){
+				delete this.draggingCanceled				
+				return
+			}
+			if( this.graph_layout_changed ){
+				this.getController().graphLayoutChanged()
+				this.graph_layout_changed = false
+			}
+			if( this.draggingActive ){
+				this.stopNextClick()
+			}
+			this.stopDragging()
+	},
+
+	stopNextClick: function(){
+		this.dostopnextclick = true
+	},
+
+	clickStopped: function(){
+		if( this.dostopnextclick ){
+			delete this.dostopnextclick
+			return true
+		}
+		return false
+	},
+
+	keydownHandler : function(e){
+			var v = this.getCurrentVertex()
+			var es = this.getCurrentEdgeShape()
 			switch( e.keyCode ){
-			case 65: //a
-				if(v) myself.getController().toggleVertexProperty(v,"adjustedNode")
-				break
-			case 67: //c
-				myself.connectVertex()
-				break
-			case 69: //e
-				if(v) myself.getController().toggleVertexProperty(v,"source")
-				break
-			case 82: //r
-				if(v){
-					myself.renameVertexDialog()
+				case 65: //a
+					if(v) this.getController().toggleVertexProperty(v,"adjustedNode")
+					break
+				case 67: //c
+					this.connectVertex()
+					break
+				case 69: //e
+					if(v) this.getController().toggleVertexProperty(v,"source")
+					break
+				case 82: //r
+					if(v){
+						this.renameVertexDialog()
+						e.stopPropagation()
+						e.preventDefault()
+					}
+					break
+				case 85: //u
+					if(v) this.getController().toggleVertexProperty(v,"latentNode")
+					break
+				case 79: //o
+					if(v) this.getController().toggleVertexProperty(v,"target")
+					break
+				case 46: //del
+				case 68: //d
+					if(v) this.getController().deleteVertex(v)
+					if(es) this.getController().deleteAnyEdge(es.v1.id, es.v2.id)
+					break
+				case 78: //n
+					this.newVertexDialog()
 					e.stopPropagation()
 					e.preventDefault()
-				}
-				break
-			case 85: //u
-				if(v) myself.getController().toggleVertexProperty(v,"latentNode")
-				break
-			case 79: //o
-				if(v) myself.getController().toggleVertexProperty(v,"target")
-				break
-			case 46: //del
-			case 68: //d
-				if(v) myself.getController().deleteVertex(v)
-				if(es) myself.getController().deleteAnyEdge(es.v1.id, es.v2.id)
-				break
-			case 78: //n
-				myself.newVertexDialog()
-				e.stopPropagation()
-				e.preventDefault()
-				break
+					break
 			}
-		}
-		this.getContainer().addEventListener( "keydown", this.keydownhandler )
 	},
+
 	initialize : function( el, graph, controller, obj ){
 		// el -> parent element to hook into
 		// graph -> graph object to use (model)
@@ -475,12 +504,6 @@ var DAGittyGraphView = Class.extend({
 		if( this.current_dialog ){
 			this.getContainer().removeChild( this.current_dialog.dom )
 			this.getContainer().focus()
-			if( this.dialogkeydownhandler ){
-				this.getContainer().removeEventListener("keydown",
-					this.dialogkeydownhandler)
-				delete this.dialogkeydownhandler
-			}
-			this.getContainer().addEventListener("keydown",this.keydownhandler)
 		}
 		delete this.current_dialog
 	},
@@ -519,8 +542,7 @@ var DAGittyGraphView = Class.extend({
 		this.current_dialog = { 
 			dom : qdiv
 		}
-		// unregister & save previous keydown handler
-		this.getContainer().removeEventListener("keydown",this.keydownhandler)
+		qdiv.onclick=function(e){e.stopPropagation()}
 	},
 	openAlertDialog : function(t){
 		this.closeDialog()
@@ -540,7 +562,7 @@ var DAGittyGraphView = Class.extend({
 		qf = el("button")
 		qf.setAttribute("type","button")
 		txt(qf,"OK")
-		qf.onclick = function(){myself.closeDialog()}
+		qf.onclick = function(e){myself.closeDialog()}
 		qform.appendChild(document.createTextNode(" "))
 		qform.appendChild(qf)
 		qdiv.appendChild(qform)
@@ -548,10 +570,8 @@ var DAGittyGraphView = Class.extend({
 		this.current_dialog = { 
 			dom : qdiv
 		}
-		// unregister & save previous keydown handler
-		this.getContainer().removeEventListener("keydown",this.keydownhandler)
-		this.dialogkeydownhandler = qf.onclick
-		this.getContainer().removeEventListener("keydown",this.dialogkeydownhandler)
+		qf.focus()
+		qdiv.onclick=function(e){e.stopPropagation()}
 	},
 	// t : text ; v : default value ; f : callback when clicked "OK"
 	openPromptDialog : function(t,v,f){
@@ -610,9 +630,8 @@ var DAGittyGraphView = Class.extend({
 			dom : qdiv,
 			error_message_field : qferr
 		}
-		// unregister & save previous keydown handler
-		this.getContainer().removeEventListener("keydown",this.keydownhandler)
 		qfin.focus()
+		qdiv.onclick=function(e){e.stopPropagation()}
 	},
 	dialogOpen : function(){
 		return this.current_dialog !== undefined
