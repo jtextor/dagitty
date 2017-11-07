@@ -75,11 +75,7 @@ var GraphGUI_SVG = Class.extend({
 		var myself = this
 		
 		el.dom.addEventListener( "mouseover", function(){ myself.element_in_focus=el } )
-		el.dom.addEventListener( "touchstart", function(){ 
-			myself.element_in_focus=el } )
-		
 		el.dom.addEventListener( "mouseout", function(){ myself.element_in_focus=undefined } )
-		el.dom.addEventListener( "touchleave", function(){ myself.element_in_focus=undefined } )
 	},
 	anchorEdgeShape : function( el ){
 		
@@ -184,12 +180,8 @@ var GraphGUI_SVG = Class.extend({
 		var myself = this
 
 		el.dom.addEventListener( "mouseover", function(){ myself.element_in_focus=el } )
-		el.dom.addEventListener( "touchstart", function(){ 
-			myself.element_in_focus=el } 
-		)
-		
+		el.dom.addEventListener( "mousedown", function(){ myself.element_in_focus=el } )
 		el.dom.addEventListener( "mouseout", function(){ myself.element_in_focus=undefined } )
-		el.dom.addEventListener( "touchleave", function(){ myself.element_in_focus=undefined } )
 
 		this.moveVertexShape( el )
 	},

@@ -175,62 +175,12 @@ var DAGittyGraphView = Class.extend({
 	registerEventListeners : function( autofocus ){
 		/* register event handlers on canvas */
 		var myself = this, mycontainer = myself.getContainer()
-		var movehandler = function(e){
-			if( myself.dialogOpen() ){ return }
-			myself.mouse_x = myself.pointerX(e)-myself.getContainer().offsetLeft
-			myself.mouse_y = myself.pointerY(e)-myself.getContainer().offsetTop
-			if (typeof myself.draggingStartX !== "undefined") {
-				if (Math.abs(myself.draggingStartX - myself.mouse_x) + 
-					Math.abs(myself.draggingStartY - myself.mouse_y) > 30 )
-					myself.draggingActive = true
-			}
-			var v = myself.isDraggingVertex(), g_coords
-			if( v ){ // is a vertex
-				myself.unmarkVertex()
-				myself.impl.suspendRedraw( 5000 )
-				var vs = myself.vertex_shapes.get( v.id )
-				vs.x = myself.mouse_x
-				vs.y = myself.mouse_y
-				myself.impl.moveVertexShape( vs )
-				_.each(vs.adjacent_edges,function(es){
-					myself.impl.anchorEdgeShape( es )
-				})
-				g_coords = myself.toGraphCoordinate( vs.x, vs.y )
-				
-				v.layout_pos_x = g_coords[0] // changes model
-				v.layout_pos_y = g_coords[1] // changes model
-				myself.graph_layout_changed = true
-				myself.impl.unsuspendRedraw()
-			}
-			var es = myself.isDraggingEdgeShape()
-			if( es ){ // is an edge
-				myself.impl.suspendRedraw( 5000 )
-
-				var ed = myself.graph.getEdge( 
-					myself.graph.getVertex( es.v1.id ),
-					myself.graph.getVertex( es.v2.id ),
-					es.directed
-				)
-				
-				if( ed ){
-					g_coords = myself.toGraphCoordinate( myself.mouse_x,
-						myself.mouse_y )
-					ed.layout_pos_x = g_coords[0] // changes model
-					ed.layout_pos_y = g_coords[1] // changes model
-
-					es.cx = myself.mouse_x
-					es.cy = myself.mouse_y
-					myself.impl.anchorEdgeShape( es )			
-					myself.graph_layout_changed = true			
-					myself.impl.unsuspendRedraw()
-				}
-			}
-		}
 
 		var mdownhandler = function(e){
 			myself.startDragging(myself.pointerX(e) - myself.getContainer().offsetLeft, 
 				myself.pointerY(e) - myself.getContainer().offsetTop)
 		}
+
 		this.getContainer().addEventListener( "mousedown", function(e){
 			mdownhandler(e)
 		} )
@@ -238,14 +188,13 @@ var DAGittyGraphView = Class.extend({
 		this.getContainer().addEventListener( "touchstart",
 			function(e){ mdownhandler(e.changedTouches[0]) } )
 		
-		this.boundClickHandler = _.bind( this.clickHandler, this )
-		this.getContainer().addEventListener( "click", this.boundClickHandler )
+		var boundClickHandler = _.bind( this.clickHandler, this )
+		this.getContainer().addEventListener( "click", boundClickHandler )
 		
-		this.getContainer().addEventListener( "mousemove", function(e){
-			movehandler(e) 
-		} )
+		var boundMoveHandler = _.bind( this.moveHandler, this )
+		this.getContainer().addEventListener( "mousemove", boundMoveHandler )
 		this.getContainer().addEventListener( "touchmove", 
-			function(e){ movehandler(e.changedTouches[0] ) } )
+			function(e){ boundMoveHandler(e.changedTouches[0] ) } )
 		
 		if( autofocus ){
 			var f = function(e){ if(!mycontainer.contains( document.activeElement )) mycontainer.focus(); }
@@ -259,6 +208,59 @@ var DAGittyGraphView = Class.extend({
 
 		this.getContainer().addEventListener( "touchend",
 		       function(e){ myself.mouseupHandler( e.changedTouches[0] ) } )
+
+	},
+
+	moveHandler : function(e){
+			if( this.dialogOpen() ){ return }
+			this.mouse_x = this.pointerX(e)-this.getContainer().offsetLeft
+			this.mouse_y = this.pointerY(e)-this.getContainer().offsetTop
+			if (typeof this.draggingStartX !== "undefined") {
+				if (Math.abs(this.draggingStartX - this.mouse_x) + 
+					Math.abs(this.draggingStartY - this.mouse_y) > 30 )
+					this.draggingActive = true
+			}
+			var v = this.isDraggingVertex(), g_coords, impl = this.impl
+			if( v ){ // is a vertex
+				this.unmarkVertex()
+				this.impl.suspendRedraw( 5000 )
+				var vs = this.vertex_shapes.get( v.id )
+				vs.x = this.mouse_x
+				vs.y = this.mouse_y
+				this.impl.moveVertexShape( vs )
+				_.each(vs.adjacent_edges,function(es){
+					impl.anchorEdgeShape( es )
+				})
+				g_coords = this.toGraphCoordinate( vs.x, vs.y )
+				
+				v.layout_pos_x = g_coords[0] // changes model
+				v.layout_pos_y = g_coords[1] // changes model
+				this.graph_layout_changed = true
+				this.impl.unsuspendRedraw()
+			}
+			var es = this.isDraggingEdgeShape()
+			if( es ){ // is an edge
+				this.impl.suspendRedraw( 5000 )
+
+				var ed = this.graph.getEdge( 
+					this.graph.getVertex( es.v1.id ),
+					this.graph.getVertex( es.v2.id ),
+					es.directed
+				)
+				
+				if( ed ){
+					g_coords = this.toGraphCoordinate( this.mouse_x,
+						this.mouse_y )
+					ed.layout_pos_x = g_coords[0] // changes model
+					ed.layout_pos_y = g_coords[1] // changes model
+
+					es.cx = this.mouse_x
+					es.cy = this.mouse_y
+					this.impl.anchorEdgeShape( es )			
+					this.graph_layout_changed = true			
+					this.impl.unsuspendRedraw()
+				}
+			}
 
 	},
 
