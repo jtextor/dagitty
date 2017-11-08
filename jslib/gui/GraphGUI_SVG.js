@@ -1,5 +1,5 @@
 
-/* globals DAGitty,Class */
+/* globals DAGitty,Class,_ */
 /* exported GraphGUI_SVG */
 
 var svgns = "http://www.w3.org/2000/svg"
@@ -14,6 +14,9 @@ var GraphGUI_SVG = Class.extend({
 		} else {
 			this.style = DAGitty.stylesheets["default"]
 		}
+	},
+	clear : function(){
+		while( this.svg.firstChild ) this.svg.removeChild( this.svg.firstChild )
 	},
 	/* SVG elements for edges and vertices need to be first "created", and then "anchored".
 	 * This is because SVG supports no real Z index, so we need to first create the edge shapes
@@ -72,10 +75,14 @@ var GraphGUI_SVG = Class.extend({
 
 		this.anchorEdgeShape( el )
 		el.dom.style.cursor = "move"
-		var myself = this
 		
-		el.dom.addEventListener( "mouseover", function(){ myself.element_in_focus=el } )
-		el.dom.addEventListener( "mouseout", function(){ myself.element_in_focus=undefined } )
+		el.dom.addEventListener( "mouseover", _.bind(
+			function(){ this.last_hovered_element={edge:el.e} }, this
+		) )
+
+		el.dom.addEventListener( "mouseout", _.bind(
+			this.unsetLastHoveredElement, this ) )
+
 	},
 	anchorEdgeShape : function( el ){
 		
@@ -177,19 +184,100 @@ var GraphGUI_SVG = Class.extend({
 		}
 		
 		el.dom.style.cursor = "move"
-		var myself = this
 
-		el.dom.addEventListener( "mouseover", function(){ myself.element_in_focus=el } )
-		el.dom.addEventListener( "mousedown", function(){ myself.element_in_focus=el } )
-		el.dom.addEventListener( "mouseout", function(){ myself.element_in_focus=undefined } )
+		//el.dom.addEventListener( "mouseover", function(){ myself.element_in_focus=el } )
+		//el.dom.addEventListener( "mousedown", function(){ myself.element_in_focus=el } )
+		//el.dom.addEventListener( "mouseout", function(){ myself.element_in_focus=undefined } )
+
+		//el.dom.addEventListener( "touchstart",
+		//	function(e){ el.last_touch = e.changedTouches[0].identifier } )
+
+		el.dom.addEventListener( "touchstart",
+			_.bind( function(e){ 
+				this.touchVertexShape( el, e.changedTouches[0] )
+				el.cancel_next_mousedown = true
+			 }, this ) )
+
+		el.dom.addEventListener( "touchend",
+			_.bind( function(e){ 
+				var v = this.getLastTouchedElement()
+				if( v ){
+					for( var i = 0 ; i < e.changedTouches.length ; i ++ ){
+						if( e.changedTouches[i].identifier == v.last_touch ){
+							this.stopMousemove()
+						}
+					}
+				}
+			 }, this ) )
+
+
+
+		el.dom.addEventListener( "mousedown",
+			_.bind( function(e){ 
+				if( el.cancel_next_mousedown ){
+					delete el.cancel_next_mousedown
+					return
+				}
+				this.touchVertexShape( el, e ) 
+			}, this ) )
+
+		el.dom.addEventListener( "mouseover", _.bind(
+			function(){ this.last_hovered_element={vertex:el.v} }, this
+		) )
+
+		el.dom.addEventListener( "mouseout", _.bind(
+			this.unsetLastHoveredElement, this
+		) )
 
 		this.moveVertexShape( el )
 	},
+	touchVertexShape : function( el, e ){
+		this.last_touched_element = {"vertex" : el, "last_touch" : e.identifier}
+		this.start_x = this.pointerX(e)-this.getContainer().offsetLeft
+		this.start_y = this.pointerY(e)-this.getContainer().offsetTop
+		this.cancel_next_click = true
+		this.markVertexShape( el )
+	},
 	markVertexShape : function( el ){
+		if( "marked_vertex_shape" in this ){
+			this.unmarkVertexShape()
+		}
 		el.dom.firstChild.setAttribute( "stroke-width", 5 )
+		el.dom.firstChild.setAttribute( "stroke", "black" )
+		el.previous_stroke  = el.dom.firstChild.getAttribute( "stroke", "black" )
+
+		this.marked_vertex_shape = el
 	},
 	unmarkVertexShape : function( el ){
-		el.dom.firstChild.setAttribute( "stroke-width", 2 )
+		if( !el ) el = this.marked_vertex_shape
+		if( el && el.dom ){
+			el.dom.firstChild.setAttribute( "stroke", el.previous_stroke )
+			el.dom.firstChild.setAttribute( "stroke-width", 2 )
+		}
+		delete this.marked_vertex_shape		
+	},
+	unsetLastHoveredElement : function(){
+		delete this.last_hovered_element
+	},
+	getLastTouchedElement : function(){
+		return this.last_touched_element
+	},
+	getMarkedVertex : function(){
+		if( "marked_vertex_shape" in this ){
+			return this.marked_vertex_shape.v
+		} else {
+			return void(0)
+		}
+	},
+	getMarkedVertexShape : function(){
+		if( "marked_vertex_shape" in this ){
+			return this.marked_vertex_shape
+		} else {
+			return void(0)
+		}
+	},
+	getLastHoveredElement : function(){
+		return this.last_hovered_element
 	},
 	moveVertexShape : function( el ){
 		el.dom.setAttribute( "transform", "translate("+el.x+","+el.y+")" )
@@ -259,6 +347,85 @@ var GraphGUI_SVG = Class.extend({
 		// this is deprecated in SVG2
 		// this.svg.unsuspendRedraw( this.unsuspend_id );
 	},
+
+
+	clickHandler : function( e ){
+		if( "cancel_next_click" in this ){
+			delete this.cancel_next_click
+			e.preventDefault()
+			e.stopPropagation()
+			return
+		}
+		if( this.getMarkedVertex() ){
+			this.unmarkVertexShape()
+			e.preventDefault()
+			e.stopPropagation()
+			return
+		}
+	},
+
+	touchmoveHandler : function( e ){
+		var i
+		var v = this.getLastTouchedElement()
+		if( v ){
+			for( i=0 ; i < e.changedTouches.length ; i ++ ){
+				if( e.changedTouches[i].identifier == 
+					v.last_touch ){
+					this.mousemoveHandler( e.changedTouches[i] ); return
+				}
+			}
+		}
+	},
+
+
+	mousemoveHandler : function( e ){
+		var v	
+		if( !( "start_x" in this ) ){ 
+			return
+		}
+		v =  this.getLastTouchedElement()
+		if( !v ){ 
+			return
+		}
+
+
+
+		ptr_x = this.pointerX(e)-this.getContainer().offsetLeft
+		ptr_y = this.pointerY(e)-this.getContainer().offsetTop
+		
+		if(Math.abs(this.start_x - ptr_x) + 
+			Math.abs(this.start_y - ptr_y) > 30 ){
+			this.dragging = true
+		}
+
+		if( this.dragging ){
+			if( v.vertex ){
+				v = v.vertex
+				v.x = ptr_x
+				v.y = ptr_y
+				this.moveVertexShape(v)
+				_.each(v.adjacent_edges,function(es){
+					this.anchorEdgeShape( es )
+				},this)
+			}
+		}
+	}, 
+
+	stopMousemove : function( e ){
+		delete this.dragging
+		delete this.last_touched_element
+		delete this.start_x
+		delete this.start_y
+	},
+
+	mouseupHandler : function( e ){
+		this.stopMousemove()
+	},
+
+	mouseleaveHandler : function( e ){
+		this.stopMousemove()
+	},
+
 	initialize : function( canvas_element, width, height, style ){
 		if( !style ){
 			style = "default"
@@ -267,16 +434,46 @@ var GraphGUI_SVG = Class.extend({
 		var svg = document.createElementNS( svgns, "svg" ) // don't need to pass in 'true'
 		svg.setAttribute( "width", width )
 		svg.setAttribute( "height", height )
-		svg.setAttribute( "style", "font-family: Arial, sans-serif;" )
+		svg.setAttribute( "style", "font-family: Arial, sans-serif" )
 		canvas_element.appendChild( svg )
-		this.svg = svg
+		this.container = canvas_element
 		this.setStyle(style)
+
+		this.svg = svg
+
+		_.map( ["touchmove","mouseup","mousemove","click"],
+			function(x){ svg.addEventListener( x, _.bind( this[x+"Handler"], this ) ) },
+			this )
 	},
+
+	getContainer : function(){
+		return this.container
+	},
+
 	resize : function( w, h ){
 		var svg = this.svg
 		svg.style.width = w+"px"
 		svg.style.height = h+"px"
 		svg.setAttribute("width", w)
 		svg.setAttribute("height", w)
+	},
+
+
+	pointerX : function(e) {
+		var docElement = document.documentElement,
+			body = document.body || { scrollLeft: 0 }
+
+		return e.pageX || (e.clientX +
+			(docElement.scrollLeft || body.scrollLeft) -
+			(docElement.clientLeft || 0))
+	},
+
+	pointerY : function(e) {
+		var docElement = document.documentElement,
+			body = document.body || { scrollTop: 0 }
+
+		return  e.pageY || (e.clientY +
+			(docElement.scrollTop || body.scrollTop) -
+			(docElement.clientTop || 0))
 	}
 })

@@ -44,7 +44,7 @@ var DAGittyGraphView = Class.extend({
 		if( this.impl ){
 			return this.impl.getStyle()
 		} else {
-			return undefined
+			return null
 		}
 	},
 	getGraph : function(){
@@ -67,33 +67,34 @@ var DAGittyGraphView = Class.extend({
 		this.controller=controller
 	},
 	getCurrentVertex : function(){
-		if( this.impl.element_in_focus &&
-			!this.impl.element_in_focus.v1 ){
-			var v = this.getGraph().getVertex( this.impl.element_in_focus.id )
-			return v || undefined
+		var el = this.impl.getLastHoveredElement()
+		if( el && el.vertex ){
+			return el.vertex
+		} else {
+			return void(0)
 		}
-		return undefined
 	},
-	getCurrentEdgeShape : function(){
-		if( this.impl.element_in_focus &&
-			this.impl.element_in_focus.v1 ){
-			return this.impl.element_in_focus
+	getCurrentEdge : function(){
+		var el = this.impl.getLastHoveredElement()
+		if( el && el.edge ){
+			return el.edge
+		} else {
+			return void(0)
 		}
-		return undefined
 	},
 	startDragging : function(pointerX, pointerY){
 		this.draggingActive = false
 		this.draggingStartX = pointerX
 		this.draggingStartY = pointerY
 		this.startDraggingVertex()
-		this.startDraggingEdgeShape()
+		//this.startDraggingEdgeShape()
 	},
-	startDraggingEdgeShape : function(){
+	/*startDraggingEdgeShape : function(){
 		var es = this.getCurrentEdgeShape()
 		if( es ){
 			this.edge_shape_being_dragged = es
 		}
-	},
+	},*/
 	cancelDragging : function(){
 		if( this.draggingActive ){
 			this.stopDragging()
@@ -212,7 +213,7 @@ var DAGittyGraphView = Class.extend({
 	},
 
 	moveHandler : function(e){
-			if( this.dialogOpen() ){ return }
+			/*if( this.dialogOpen() ){ return }
 			this.mouse_x = this.pointerX(e)-this.getContainer().offsetLeft
 			this.mouse_y = this.pointerY(e)-this.getContainer().offsetTop
 			if (typeof this.draggingStartX !== "undefined") {
@@ -222,7 +223,7 @@ var DAGittyGraphView = Class.extend({
 			}
 			var v = this.isDraggingVertex(), g_coords, impl = this.impl
 			if( v ){ // is a vertex
-				this.unmarkVertex()
+				//this.unmarkVertex()
 				this.impl.suspendRedraw( 5000 )
 				var vs = this.vertex_shapes.get( v.id )
 				vs.x = this.mouse_x
@@ -260,13 +261,17 @@ var DAGittyGraphView = Class.extend({
 					this.graph_layout_changed = true			
 					this.impl.unsuspendRedraw()
 				}
-			}
-
+			}*/
 	},
 
 	clickHandler : function(e){
 			// click handler can be set to emulate keypress action
 			// using this function
+
+			this.last_click_x = this.pointerX(e)-this.getContainer().offsetLeft
+			this.last_click_y = this.pointerY(e)-this.getContainer().offsetTop
+			this.last_click_g_coords = this.toGraphCoordinate( this.last_click_x, this.last_click_y )
+
 			if( this.action_on_click ){
 				if( typeof this.action_on_click !== "function" ){
 					this.keydownHandler( {keyCode:this.action_on_click} )
@@ -278,25 +283,26 @@ var DAGittyGraphView = Class.extend({
 			if( this.clickStopped() ){
 				return
 			}
+
+			this.newVertexDialog() 
+
 			// otherwise, perform default click action
 	
-			var v = this.getCurrentVertex()
-			var es = this.getCurrentEdgeShape()
+			/*var v = this.getCurrentVertex()
+			var es = this.getCurrentEdge()
 			if( v ){
 				this.connectVertex() 
 			} else if( es ){
-				delete es.cx
-				delete es.cy
 				// TODO this assumes at most 1 edge between vertex shapes
-				var ed = this.graph.getEdge( es.v1.id, es.v2.id )
+				//var ed = this.graph.getEdge( es.v1.id, es.v2.id )
 				// double click removes existing anchor point
 				// -> no longer needed, can be done by single click
-				delete ed.layout_pos_x
-				delete ed.layout_pos_y
-				this.impl.anchorEdgeShape( es )
+				delete es.layout_pos_x
+				delete es.layout_pos_y
+				this.drawGraph() //impl.anchorEdgeShape( es )
 			} else {
 				this.newVertexDialog()
-			}
+			}*/
 	},
 
 	mouseupHandler: function(e){
@@ -326,43 +332,55 @@ var DAGittyGraphView = Class.extend({
 		return false
 	},
 
+	toggleVertexProperty : function( v, prop ){
+		// this will trigger a redraw
+		this.getController().toggleVertexProperty( v, prop ) 
+		this.impl.unmarkVertexShape()
+	},
+
 	keydownHandler : function(e){
-			var v = this.getCurrentVertex()
-			var es = this.getCurrentEdgeShape()
-			switch( e.keyCode ){
-				case 65: //a
-					if(v) this.getController().toggleVertexProperty(v,"adjustedNode")
-					break
-				case 67: //c
-					this.connectVertex()
-					break
-				case 69: //e
-					if(v) this.getController().toggleVertexProperty(v,"source")
-					break
-				case 82: //r
-					if(v){
-						this.renameVertexDialog()
-						e.stopPropagation()
-						e.preventDefault()
-					}
-					break
-				case 85: //u
-					if(v) this.getController().toggleVertexProperty(v,"latentNode")
-					break
-				case 79: //o
-					if(v) this.getController().toggleVertexProperty(v,"target")
-					break
-				case 46: //del
-				case 68: //d
-					if(v) this.getController().deleteVertex(v)
-					if(es) this.getController().deleteAnyEdge(es.v1.id, es.v2.id)
-					break
-				case 78: //n
-					this.newVertexDialog()
+		var v = this.getCurrentVertex()
+		var es = this.getCurrentEdge()
+
+		if( typeof v == "undefined" && typeof es == "undefined" ){
+			v = this.impl.getMarkedVertex()
+		}
+
+		switch( e.keyCode ){
+			case 65: //a
+				if(v) this.toggleVertexProperty(v,"adjustedNode")
+				break
+			case 67: //c
+				this.connectVertex()
+				break
+			case 69: //e
+				if(v) this.toggleVertexProperty(v,"source")
+				break
+			case 82: //r
+				if(v){
+					this.renameVertexDialog()
 					e.stopPropagation()
 					e.preventDefault()
-					break
-			}
+				}
+				break
+			case 85: //u
+				if(v) this.toggleVertexProperty(v,"latentNode")
+				break
+			case 79: //o
+				if(v) this.toggleVertexProperty(v,"target")
+				break
+			case 8: // backspace
+			case 46: //del
+			case 68: //d
+				if(v) this.getController().deleteVertex(v)
+				if(es) this.getController().deleteAnyEdge(es.v1.id, es.v2.id)
+				break
+			case 78: //n
+				this.newVertexDialog()
+				e.stopPropagation()
+				e.preventDefault()
+				break
+		}
 	},
 
 	initialize : function( el, graph, controller, obj ){
@@ -421,31 +439,6 @@ var DAGittyGraphView = Class.extend({
 			this.drawGraph()
 		}
 	},
-	markVertex : function( v ){
-		var vs = this.vertex_shapes.get(v.id)
-		if( vs ){
-			this.impl.markVertexShape(vs)
-			this.setMarkedVertex(v)
-		}
-	},
-	unmarkVertex : function( v ){
-		if( !v ){
-			v = this.marked_vertex
-		}
-		if( v ){
-			var vs = this.vertex_shapes.get(v.id)
-			if( vs ){
-				this.impl.unmarkVertexShape(vs)
-				delete this.marked_vertex
-			}
-		}
-	},
-	setMarkedVertex : function( v ){
-		this.marked_vertex = v
-	},
-	getMarkedVertex : function(){
-		return this.marked_vertex
-	},
 	getViewMode : function(){
 		return this.view_mode
 	},
@@ -482,8 +475,7 @@ var DAGittyGraphView = Class.extend({
 			this.dialogErrorMessage( "The variable "+n+" already exists!")
 			return
 		}
-		var g_coords = this.toGraphCoordinate( this.mouse_x, this.mouse_y )
-		this.getController().newVertex( n, g_coords[0], g_coords[1] )
+		this.getController().newVertex( n, this.last_click_g_coords[0], this.last_click_g_coords[1] )
 		this.closeDialog()
 	},
 	renameVertex : function( n ){
@@ -595,7 +587,6 @@ var DAGittyGraphView = Class.extend({
 		qdiv.appendChild( el("p") )
 		var qform = el( "form" )
 		qform.setAttribute( "name", "newvertexform" )
-		qform.onsubmit = function(){return false}
 		var qf = el("label")
 		qf.style.fontFamily = "sans-serif"
 		qf.setAttribute("for","vertexname")
@@ -606,7 +597,10 @@ var DAGittyGraphView = Class.extend({
 		qfin.setAttribute( "type", "text" )
 		qfin.setAttribute( "size", 30 )
 		qfin.setAttribute( "maxlength", 255 )
-		qfin.setAttribute( "value", v )
+		qfin.setAttribute( "value", v )	
+		if( v.length > 0 ){
+			qfin.setSelectionRange( 0, v.length )
+		}
 		qform.appendChild(qfin)
 		qform.appendChild(el("br"))
 		var qferr = el("span")
@@ -614,11 +608,12 @@ var DAGittyGraphView = Class.extend({
 		qform.appendChild( qferr )
 		qform.appendChild(el("br"))
 		qf = el("button")
-		qf.setAttribute("type","button")
+		qf.setAttribute("type","submit")
 		txt(qf,"OK")
 		qf.onclick = function(){ 
 			f.call(myself,qfin.value)
 		}
+		qform.onsubmit = function(){qf.onclick(); return false}
 		qform.appendChild(qf)
 		qf = el("button")
 		qf.setAttribute("type","button")
@@ -639,8 +634,10 @@ var DAGittyGraphView = Class.extend({
 		return this.current_dialog !== undefined
 	},
 	newVertexDialog : function(){
+		var i=1
 		if( !this.dialogOpen() ){
-			this.openPromptDialog( "name of the new variable:", "", this.newVertex )
+			while( this.getGraph().getVertex("v"+i) ) i++;
+			this.openPromptDialog( "name of the new variable:", "v"+i, this.newVertex )
 		}
 	},
 	renameVertexDialog : function(){
@@ -723,10 +720,10 @@ var DAGittyGraphView = Class.extend({
 		
 		var vv = g.getVertices()
 		this.impl.suspendRedraw( 50000 )
-		this.edge_shapes && this.impl.removeShapes( this.edge_shapes.values() )
-		this.vertex_shapes && this.impl.removeShapes( this.vertex_shapes.values() )
-		this.edge_shapes = new Hash()
-		this.vertex_shapes = new Hash()
+		this.impl.clear()
+
+		this.edge_shapes = new Hash()		
+		var vertex_shapes = new Hash()
 		
 		var ean_ids = {}
 		_.each(g_an.ancestorsOf( g_an.getSources() ),function(v){ean_ids[v.id]=1})
@@ -735,7 +732,11 @@ var DAGittyGraphView = Class.extend({
 
 		for( i = 0 ; i < vv.length ; i ++ ){
 			c = this.toScreenCoordinate( vv[i].layout_pos_x, vv[i].layout_pos_y )
-			var vs = { id: vv[i].id, x : c[0], y : c[1], adjacent_edges : [] }
+			var vs = { id: vv[i].id, 
+				x : c[0],
+				y : c[1],
+				adjacent_edges : [],
+				v : vv[i] }
 
 			var vertex_type = ""			
 			if( g.isSource(vv[i]) ){
@@ -756,19 +757,20 @@ var DAGittyGraphView = Class.extend({
 			}
 			
 			this.impl.createVertexShape( vertex_type, vs )
-			this.vertex_shapes.set( vv[i].id, vs )
+			vertex_shapes.set( vv[i].id, vs )
 		}
-		this.impl.appendShapes( this.vertex_shapes.values() )
-		this.impl.appendTextBackgrounds( this.vertex_shapes.values() )
+		this.impl.appendShapes( vertex_shapes.values() )
+		this.impl.appendTextBackgrounds( vertex_shapes.values() )
 		
 		var ee = g.getEdges()
 		for( i = 0 ; i < ee.length ; i ++ ){
 			c = this.toScreenCoordinate( ee[i].v1.layout_pos_x, ee[i].v1.layout_pos_y ) 
 			
 			var es = { 
-				v1 : this.vertex_shapes.get( ee[i].v1.id ), 
-				v2 : this.vertex_shapes.get( ee[i].v2.id ),
-				directed : ee[i].directed
+				v1 : vertex_shapes.get( ee[i].v1.id ), 
+				v2 : vertex_shapes.get( ee[i].v2.id ),
+				directed : ee[i].directed,
+				e: ee[i]
 			}
 
 			if( ee[i].layout_pos_x ){
@@ -807,6 +809,5 @@ var DAGittyGraphView = Class.extend({
 		}
 		this.impl.prependShapes( this.edge_shapes.values() )
 		this.impl.unsuspendRedraw()
-
 	}
 })
