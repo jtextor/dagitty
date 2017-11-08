@@ -432,8 +432,8 @@ function loadExample( nr ){
 }
 
 function newModel(){
-	DAGittyControl.getView().openPromptDialog(
-		"Please enter name of exposure variable","", newModel2 );
+	document.getElementById("adj_matrix").value = 'dag { bb="0,0,1,1" }'
+	loadDAGFromTextData();
 }
 function newModel2(ename){
 	if( ename === null ){ return false; }

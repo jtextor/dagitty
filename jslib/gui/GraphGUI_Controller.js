@@ -61,8 +61,8 @@ var DAGittyController = Class.extend({
 		_.each(this.event_listeners["graphlayoutchange"],
 			function(l){ l( g ) })	
 	},
-	observe : function( event, listener ){
-		this.event_listeners[event].push(listener)
+	observe : function( _event, listener ){
+		this.event_listeners[_event].push(listener)
 	},
 	setActionOnClick : function( a ){
 		if( this.view ){
@@ -72,7 +72,8 @@ var DAGittyController = Class.extend({
 	initialize : function( obj ){
 		this.event_listeners = {
 			"graphchange" : [],
-			"graphlayoutchange" : []
+			"graphlayoutchange" : [],
+			"vertex_marked" : []
 		}
 	
 		// the controller initializes the model ... 
@@ -97,7 +98,11 @@ var DAGittyController = Class.extend({
 				action_on_click : obj.action_on_click
 			} 
 			)
-		
+	
+		this.view.setEventListener( "vertex_marked", 
+			_.bind( function(v){ _.each(this.event_listeners["vertex_marked"],
+					function(l){ l(v) }) }, this ) )
+
 		window.addEventListener( "resize", 
 			_.debounce( _.bind( this.getView().resize, this.getView() ), 300 ) )
 	
@@ -109,10 +114,10 @@ var DAGittyController = Class.extend({
 	toggleEdgeFromTo : function( v1, v2 ){
 		var myself = this
 		var done = function( e ){ if(e){
-			myself.getObservedGraph().deleteEdge( e.v1, e.v2, e.directed )
-			myself.graphChanged()
+				myself.getObservedGraph().deleteEdge( e.v1, e.v2, e.directed )
+			}
 			return 0
-		} }
+		}
 		var e = this.getGraph().getEdge( v1, v2, Graph.Edgetype.Directed )
 		if( e ){
 			return done( e )

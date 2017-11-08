@@ -383,6 +383,23 @@ var DAGittyGraphView = Class.extend({
 		}
 	},
 
+	getImplementation : function(){
+		return this.impl
+	},
+
+	callEventListener : function( event_name, args ){
+		var en = event_name+"_listener"
+		if( typeof this[en] == "function" ){
+			this[en].apply( this, args )
+		}
+	},
+
+	setEventListener : function( event_name, f ){
+		this[event_name+"_listener"] = f
+	},
+
+
+
 	initialize : function( el, graph, controller, obj ){
 		// el -> parent element to hook into
 		// graph -> graph object to use (model)
@@ -416,9 +433,24 @@ var DAGittyGraphView = Class.extend({
 		}
 		
 		el.innerHTML = ""
-		var impl = new GraphGUI_SVG( c, this.width, this.height )
-		this.impl = impl
-		
+		this.impl = new GraphGUI_SVG( c, this.width, this.height )
+
+		this.impl.setEventListener( "vertex_drag", _.bind( function( vs ){
+			var g_coords = this.toGraphCoordinate( vs.x, vs.y )
+			vs.v.layout_pos_x = g_coords[0] // changes model
+			vs.v.layout_pos_y = g_coords[1] // changes model
+		}, this ) )
+
+		this.impl.setEventListener( "drag_end", _.bind( function(){
+			this.getController().graphLayoutChanged()}, this ) )
+
+		this.impl.setEventListener( "vertex_connect", 
+			_.bind( this.connectVertices, this ) )	
+
+		this.impl.setEventListener( "vertex_marked", 
+			_.bind( function(v){ console.log( v ); this.callEventListener( "vertex_marked", [v] ) }, this ) )
+
+
 		this.registerEventListeners( obj?obj.autofocus:false )
 		
 		if( obj && obj.action_on_click ){
@@ -446,10 +478,13 @@ var DAGittyGraphView = Class.extend({
 		this.view_mode = m
 		this.drawGraph()
 	},
-	connectVertex : function(){
+	connectVertices : function( v1, v2 ){
 		if( this.dialogOpen() ){ return }
-		var v = this.getCurrentVertex()
-		var v2 = this.getMarkedVertex()
+		if( v1 == v2 ) return
+
+		this.lastEdge = this.getController().toggleEdgeFromTo( v1, v2 )
+
+		/*
 		if( v ){
 			if( v2 ){
 				if( v2 !== v ){
@@ -461,7 +496,7 @@ var DAGittyGraphView = Class.extend({
 			}
 		} else if (this.lastEdge) {
 			this.lastEdge = this.getController().toggleEdgeBetween( this.lastEdge.v1.id, this.lastEdge.v2.id )
-		}
+		}*/
 	},
 	newVertex : function( n ){
 		if( !n ){

@@ -92,6 +92,22 @@ alert("DAGitty requires Internet Explorer 9 or higher.\n"+
 			}
 		);
 
+		DAGittyControl.observe( 'vertex_marked',
+			function( v ){
+				if( v ){
+					displayShow( 'variable' )
+					document.getElementById("variable_id").value = v.id
+					document.getElementById("variable_label").innerText = v.id
+					document.getElementById("variable_exposure").checked = Model.dag.isSource(v.id)
+					document.getElementById("variable_outcome").checked = Model.dag.isTarget(v.id)
+					document.getElementById("variable_adjusted").checked = Model.dag.isAdjustedNode(v.id)
+					document.getElementById("variable_unobserved").checked = Model.dag.isLatentNode( v.id )
+				} else {
+					displayHide( 'variable' )
+				}
+			}
+		);
+
 		var getid = (function(){
 			var regexS = "[\\?&]id=([^&#]*)";
 			var regex = new RegExp(regexS);
@@ -111,7 +127,7 @@ alert("DAGitty requires Internet Explorer 9 or higher.\n"+
 
 		document.onkeydown = function(e){
 			if( e.keyCode == 27 ){
-				DAGittyControl.getView().cancelDragging()
+				DAGittyControl.getView().getImplementation().stopMousemove()
 				DAGittyControl.getView().closeDialog()
 			}
 		}
@@ -213,26 +229,57 @@ alert("DAGitty requires Internet Explorer 9 or higher.\n"+
       <p id="model_refresh" style="display:none">You have modified the model code. To
       draw the modified model, click here: <a href="#" onclick="loadDAGFromTextData()">Update DAG</a></p>
     </div>
+
+   <h3 onclick="displayToggle('summary')"><img src="images/arrow-down.png" alt="" id="a_summary"> Summary</h3>
+   <div id="summary" style="display:block">
+      <div id="info_cycle"> </div>
+      <table id="info_summary">
+         <tr><td>exposure(s)</td><td class="info" id="info_exposure">not set</td></tr>
+         <tr><td>outcome(s)</td><td class="info" id="info_outcome">not set</td></tr>
+         <tr><td>covariates</td><td class="info" id="info_covariates">0</td></tr>
+         <tr><td>causal paths</td><td class="info" id="info_frontdoor">0</td></tr>
+         <!--<tr><td>open backdoor paths</td><td class="info" id="info_backdoor">0</td></tr>-->
+      </table>
+   </div>
+
    </div>
 
    <div id="llegend">
-   <h3 onclick="displayToggle('dagstyle')"><img src="images/arrow-down.png" alt="" id="a_view">
-   		Diagram style</h3>
-   <div id="dagstyle" style="display:block">
+
+    <h3 onclick="displayToggle('variable')"><img src="images/arrow-down.png" alt="" id="a_variable">
+   		Variable</h3>
+   <div id="variable" style="display:block">
+
       <form autocomplete="off">
-      <p><input type="radio" checked="checked" id="dagstyle_original" name="dagstyle"
-         onclick="GUI.set_style('original')" /> 
-         	<label for="dagstyle_original">classic</label></p>
-      <p><input type="radio" name="dagstyle" id="dagstyle_semlike"
-         onclick="GUI.set_style('semlike')"/>
-         	<label for="dagstyle_semlike">SEM-like</label></p>
+	<p>
+		<span id="variable_label" style="font-weight:bold"></span>
+	</p>
+      <p><input type="checkbox" checked="checked" id="variable_exposure"
+         onclick="gui.set_variable_status('exposure',this.checked)" />
+         	<label for="variable_exposure">exposure</label></p>
+      <p><input type="checkbox" checked="checked" id="variable_outcome"
+         onclick="gui.set_variable_status('outcome',this.checked)" />
+         	<label for="variable_outcome">outcome</label></p>
+      <p><input type="checkbox" checked="checked" id="variable_adjusted"
+         onclick="gui.set_variable_status('adjusted',this.checked)" />
+         	<label for="variable_adjusted">adjusted</label></p>
+      <p><input type="checkbox" checked="checked" id="variable_unobserved"
+         onclick="gui.set_variable_status('unobserved',this.checked)" />
+         	<label for="variable_unobserved">unobserved</label></p>
+
+	<input type="hidden" id="variable_id" value="">
+
       </form>
+
+
+
    </div>
    
   
    <h3 onclick="displayToggle('viewmode')"><img src="images/arrow-down.png" alt="" id="a_view">
    		View mode</h3>
    <div id="viewmode" style="display:block">
+
       <form autocomplete="off">
       <p><input type="radio" checked="checked" id="dagview_dag" name="dagview"
          onclick="GUI.set_view_mode('DAG')" /> 
@@ -247,24 +294,12 @@ alert("DAGitty requires Internet Explorer 9 or higher.\n"+
          onclick="GUI.set_view_mode('equivalence')"/>
          	<label for="dagview_equivalence">equivalence class</label></p>
       </form>
+
    </div>
    
 
 
-   <h3 onclick="displayToggle('coloring')"><img src="images/arrow-down.png" alt="" id="a_view"> Coloring</h3>
-   <div id="coloring" style="display:block">
-      <form autocomplete="off">
-      <p><input type="checkbox" checked="checked" id="highlight_causal"
-         onclick="GUI.set_highlight_causal(this.checked)" />
-         	<label for="highlight_causal">causal paths</label></p>
-      <p><input type="checkbox" checked="checked" id="highlight_biasing"
-         onclick="GUI.set_highlight_biasing(this.checked)"/>
-         	<label for="highlight_biasing">biasing paths</label></p>
-      <p><input type="checkbox" checked="checked" id="highlight_ancestral"
-         onclick="GUI.set_highlight_ancestors(this.checked)"/>
-         	<label for="highlight_ancestral">ancestral structure</label></p>
-      </form>
-   </div>
+
    <h3 onclick="displayToggle('effects')"><img src="images/arrow-down.png" alt="" id="a_effects"> Effect analysis</h3>
    <div id="effects" style="display:block">
       <form autocomplete="off">
@@ -273,6 +308,37 @@ alert("DAGitty requires Internet Explorer 9 or higher.\n"+
          	<label for="highlight_puredirect">atomic direct effects</label></p>
       </form>
    </div>
+
+   <h3 onclick="displayToggle('dagstyle')"><img src="images/arrow-down.png" alt="" id="a_view">
+   		Diagram style</h3>
+   <div id="dagstyle" style="display:block">
+      <form autocomplete="off">
+      <p><input type="radio" checked="checked" id="dagstyle_original" name="dagstyle"
+         onclick="GUI.set_style('original')" /> 
+         	<label for="dagstyle_original">classic</label></p>
+      <p><input type="radio" name="dagstyle" id="dagstyle_semlike"
+         onclick="GUI.set_style('semlike')"/>
+         	<label for="dagstyle_semlike">SEM-like</label></p>
+      </form>
+   </div>
+
+   <h3 onclick="displayToggle('coloring')"><img src="images/arrow-down.png" alt="" id="a_view"> Coloring</h3>
+   <div id="coloring" style="display:block">
+      <form autocomplete="off">
+      <p><input type="checkbox" checked="checked" id="highlight_causal"
+         onclick="gui.set_highlight_causal(this.checked)" />
+         	<label for="highlight_causal">causal paths</label></p>
+      <p><input type="checkbox" checked="checked" id="highlight_biasing"
+         onclick="gui.set_highlight_biasing(this.checked)"/>
+         	<label for="highlight_biasing">biasing paths</label></p>
+      <p><input type="checkbox" checked="checked" id="highlight_ancestral"
+         onclick="gui.set_highlight_ancestors(this.checked)"/>
+         	<label for="highlight_ancestral">ancestral structure</label></p>
+      </form>
+   </div>
+
+
+
    <h3 onclick="displayToggle('legend')"><img src="images/arrow-down.png" alt="" id="a_legend"> Legend</h3>
    <div id="legend" style="display:block">
       <p>
@@ -318,17 +384,7 @@ alert("DAGitty requires Internet Explorer 9 or higher.\n"+
         biasing path
       </p>
    </div>
-   <h3 onclick="displayToggle('summary')"><img src="images/arrow-down.png" alt="" id="a_summary"> Summary</h3>
-   <div id="summary" style="display:block">
-      <div id="info_cycle"> </div>
-      <table id="info_summary">
-         <tr><td>exposure(s)</td><td class="info" id="info_exposure">not set</td></tr>
-         <tr><td>outcome(s)</td><td class="info" id="info_outcome">not set</td></tr>
-         <tr><td>covariates</td><td class="info" id="info_covariates">0</td></tr>
-         <tr><td>causal paths</td><td class="info" id="info_frontdoor">0</td></tr>
-         <!--<tr><td>open backdoor paths</td><td class="info" id="info_backdoor">0</td></tr>-->
-      </table>
-   </div>
+
   </div>
 
    <pre id="canvas" class="dagitty">

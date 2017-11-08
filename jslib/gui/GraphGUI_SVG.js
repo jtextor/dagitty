@@ -17,6 +17,7 @@ var GraphGUI_SVG = Class.extend({
 	},
 	clear : function(){
 		while( this.svg.firstChild ) this.svg.removeChild( this.svg.firstChild )
+		_.defer( _.bind( this.unmarkVertexShape, this ) )
 	},
 	/* SVG elements for edges and vertices need to be first "created", and then "anchored".
 	 * This is because SVG supports no real Z index, so we need to first create the edge shapes
@@ -236,17 +237,26 @@ var GraphGUI_SVG = Class.extend({
 		this.start_x = this.pointerX(e)-this.getContainer().offsetLeft
 		this.start_y = this.pointerY(e)-this.getContainer().offsetTop
 		this.cancel_next_click = true
-		this.markVertexShape( el )
+		if( this.getMarkedVertexShape() == el ){
+			this.unmarkVertexShape()
+		} else{ 
+			this.markVertexShape( el )
+		}
 	},
 	markVertexShape : function( el ){
-		if( "marked_vertex_shape" in this ){
+		var pel = this.getMarkedVertexShape()
+		if( pel ){
+			if( pel != el ){
+				this.callEventListener( "vertex_connect", [pel.v, el.v] )
+			}
 			this.unmarkVertexShape()
+		} else {
+			el.dom.firstChild.setAttribute( "stroke-width", 5 )
+			el.dom.firstChild.setAttribute( "stroke", "black" )
+			el.previous_stroke  = el.dom.firstChild.getAttribute( "stroke", "black" )
+			this.marked_vertex_shape = el
+			this.callEventListener( "vertex_marked", [el.v] )
 		}
-		el.dom.firstChild.setAttribute( "stroke-width", 5 )
-		el.dom.firstChild.setAttribute( "stroke", "black" )
-		el.previous_stroke  = el.dom.firstChild.getAttribute( "stroke", "black" )
-
-		this.marked_vertex_shape = el
 	},
 	unmarkVertexShape : function( el ){
 		if( !el ) el = this.marked_vertex_shape
@@ -254,7 +264,8 @@ var GraphGUI_SVG = Class.extend({
 			el.dom.firstChild.setAttribute( "stroke", el.previous_stroke )
 			el.dom.firstChild.setAttribute( "stroke-width", 2 )
 		}
-		delete this.marked_vertex_shape		
+		delete this.marked_vertex_shape	
+		this.callEventListener( "vertex_marked", [void(0)] )	
 	},
 	unsetLastHoveredElement : function(){
 		delete this.last_hovered_element
@@ -349,6 +360,20 @@ var GraphGUI_SVG = Class.extend({
 	},
 
 
+	callEventListener : function( event_name, args ){
+		var en = event_name+"_listener"
+		if( typeof this[en] == "function" ){
+			this[en].apply( this, args )
+		}
+	},
+
+
+	setEventListener : function( event_name, f ){
+		this[event_name+"_listener"] = f
+	},
+
+
+
 	clickHandler : function( e ){
 		if( "cancel_next_click" in this ){
 			delete this.cancel_next_click
@@ -407,11 +432,20 @@ var GraphGUI_SVG = Class.extend({
 				_.each(v.adjacent_edges,function(es){
 					this.anchorEdgeShape( es )
 				},this)
+				if( typeof this.vertex_drag_listener == "function" ){
+					this.vertex_drag_listener( v )
+				}
 			}
 		}
 	}, 
 
 	stopMousemove : function( e ){
+		if( this.dragging ){
+		       	if( typeof this.drag_end_listener == "function" ){
+				this.drag_end_listener()
+				this.unmarkVertexShape()
+			}
+		}
 		delete this.dragging
 		delete this.last_touched_element
 		delete this.start_x
@@ -426,6 +460,7 @@ var GraphGUI_SVG = Class.extend({
 		this.stopMousemove()
 	},
 
+
 	initialize : function( canvas_element, width, height, style ){
 		if( !style ){
 			style = "default"
@@ -438,12 +473,15 @@ var GraphGUI_SVG = Class.extend({
 		canvas_element.appendChild( svg )
 		this.container = canvas_element
 		this.setStyle(style)
-
 		this.svg = svg
 
-		_.map( ["touchmove","mouseup","mousemove","click"],
+		_.map( ["touchmove","mouseup","mousemove","mouseleave","click"],
 			function(x){ svg.addEventListener( x, _.bind( this[x+"Handler"], this ) ) },
 			this )
+	},
+
+	getController : function(){
+		return this.controller
 	},
 
 	getContainer : function(){
