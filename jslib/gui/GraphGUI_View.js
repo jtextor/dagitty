@@ -67,12 +67,15 @@ var DAGittyGraphView = Class.extend({
 		this.controller=controller
 	},
 	getCurrentVertex : function(){
-		var el = this.impl.getLastHoveredElement()
+		var el = this.getImplementation().getLastHoveredElement()
 		if( el && el.vertex ){
 			return el.vertex
-		} else {
-			return void(0)
+		} 
+		el = this.getImplementation().getMarkedVertex()
+		if( el ){
+			return el
 		}
+		return void(0)
 	},
 	getCurrentEdge : function(){
 		var el = this.impl.getLastHoveredElement()
@@ -339,13 +342,9 @@ var DAGittyGraphView = Class.extend({
 	},
 
 	keydownHandler : function(e){
+		if( this.dialogOpen() ) return
 		var v = this.getCurrentVertex()
 		var es = this.getCurrentEdge()
-
-		if( typeof v == "undefined" && typeof es == "undefined" ){
-			v = this.impl.getMarkedVertex()
-		}
-
 		switch( e.keyCode ){
 			case 65: //a
 				if(v) this.toggleVertexProperty(v,"adjustedNode")
@@ -448,7 +447,7 @@ var DAGittyGraphView = Class.extend({
 			_.bind( this.connectVertices, this ) )	
 
 		this.impl.setEventListener( "vertex_marked", 
-			_.bind( function(v){ console.log( v ); this.callEventListener( "vertex_marked", [v] ) }, this ) )
+			_.bind( function(v){ this.callEventListener( "vertex_marked", [v] ) }, this ) )
 
 
 		this.registerEventListeners( obj?obj.autofocus:false )
@@ -518,7 +517,7 @@ var DAGittyGraphView = Class.extend({
 			this.dialogErrorMessage( "Please enter the variable name!")
 			return
 		}
-		var v = this.current_dialog.vertex
+		var v = this.getCurrentVertex()
 		// sanitize -> no longer needed
 		//n.replace( /\s+/, "_" )
 		if( !v || (n === v.id) ){ return }
@@ -679,7 +678,6 @@ var DAGittyGraphView = Class.extend({
 		var v = this.getCurrentVertex()
 		if( !this.dialogOpen() && v ){
 			this.openPromptDialog( "rename variable:", v.id, this.renameVertex )
-			this.current_dialog.vertex = v
 		}
 	},
 	isCoordinateSystemValid : function(){

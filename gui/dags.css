@@ -168,7 +168,7 @@ form{
 }
 
 #dagstyle, #viewmode, #coloring, #effects, #legend, #summary,
- #causal_effect, #testable_implications, #model_data
+ #causal_effect, #testable_implications, #model_data, #variable
 {
    border-bottom: 1px solid black;
 }

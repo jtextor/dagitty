@@ -70,6 +70,22 @@ var GUI = {
 		view_mode = vm;
 		DAGittyControl && DAGittyControl.setViewMode( view_mode );
 	},
+	refresh_variable_status : function(){
+		var vid = document.getElementById("variable_id").value
+		document.getElementById("variable_label").innerText = vid
+		document.getElementById("variable_exposure").checked = Model.dag.isSource(vid)
+		document.getElementById("variable_outcome").checked = Model.dag.isTarget(vid)
+		document.getElementById("variable_adjusted").checked = Model.dag.isAdjustedNode(vid)
+		document.getElementById("variable_unobserved").checked = Model.dag.isLatentNode( vid )
+	},
+	set_variable_status : function( n, stat ){
+		var vid = document.getElementById("variable_id").value
+		if( stat ){
+			DAGittyControl && DAGittyControl.setVertexProperty( vid, n )
+		} else {
+			DAGittyControl && DAGittyControl.unsetVertexProperty( vid, n )
+		}
+	},
 	set_style : function( s ){
 		DAGitty.stylesheets.default = DAGitty.stylesheets[s]
 		var sty = DAGitty.stylesheets.default.style
@@ -346,7 +362,7 @@ function displayImplicationInfo( full ){
 		imp_html += "</ul>";
 		document.getElementById("testable_implications").innerHTML = imp_html +
 			(more_link?'<p><a href="javascript:void(0)" onclick="displayImplicationInfo( true )">Show all ...</a></p>':'')+
-			('<p><a href="javascript:void(0)" onclick="exportImplicationTests()">Export R code</a></p>');
+			('<p><button onclick="exportImplicationTests()">Export R code</button></p>');
 	} else {
 		document.getElementById("testable_implications").innerHTML = 
 		"<p>Either the model does not imply any conditional independencies "

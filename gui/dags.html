@@ -80,9 +80,10 @@ alert("DAGitty requires Internet Explorer 9 or higher.\n"+
 			function(g){
 				Model.dag = g;
 				document.getElementById("adj_matrix").value = g.toString();
-				displayImplicationInfo( false );
-				causalEffectEstimates();
-				displayGeneralInfo();
+				displayImplicationInfo( false )
+				causalEffectEstimates()
+				displayGeneralInfo()
+				GUI.refresh_variable_status()
 			}
 		);
 		
@@ -97,13 +98,11 @@ alert("DAGitty requires Internet Explorer 9 or higher.\n"+
 				if( v ){
 					displayShow( 'variable' )
 					document.getElementById("variable_id").value = v.id
-					document.getElementById("variable_label").innerText = v.id
-					document.getElementById("variable_exposure").checked = Model.dag.isSource(v.id)
-					document.getElementById("variable_outcome").checked = Model.dag.isTarget(v.id)
-					document.getElementById("variable_adjusted").checked = Model.dag.isAdjustedNode(v.id)
-					document.getElementById("variable_unobserved").checked = Model.dag.isLatentNode( v.id )
+					GUI.refresh_variable_status()
 				} else {
-					displayHide( 'variable' )
+					if( !Model.dag.getVertex(document.getElementById("variable_id").value) ){
+						displayHide( 'variable' )
+					}
 				}
 			}
 		);
@@ -227,7 +226,7 @@ alert("DAGitty requires Internet Explorer 9 or higher.\n"+
          onkeydown="if(this.value != Model.dag_model_text_data){ displayShow('model_refresh');this.style.backgroundColor='#fec'; }"></textarea>
       </form>
       <p id="model_refresh" style="display:none">You have modified the model code. To
-      draw the modified model, click here: <a href="#" onclick="loadDAGFromTextData()">Update DAG</a></p>
+      draw the modified model, click here: <button onclick="loadDAGFromTextData()">Update DAG</button></p>
     </div>
 
    <h3 onclick="displayToggle('summary')"><img src="images/arrow-down.png" alt="" id="a_summary"> Summary</h3>
@@ -255,19 +254,24 @@ alert("DAGitty requires Internet Explorer 9 or higher.\n"+
 		<span id="variable_label" style="font-weight:bold"></span>
 	</p>
       <p><input type="checkbox" checked="checked" id="variable_exposure"
-         onclick="gui.set_variable_status('exposure',this.checked)" />
+         onclick="GUI.set_variable_status('source',this.checked)" />
          	<label for="variable_exposure">exposure</label></p>
       <p><input type="checkbox" checked="checked" id="variable_outcome"
-         onclick="gui.set_variable_status('outcome',this.checked)" />
+         onclick="GUI.set_variable_status('target',this.checked)" />
          	<label for="variable_outcome">outcome</label></p>
       <p><input type="checkbox" checked="checked" id="variable_adjusted"
-         onclick="gui.set_variable_status('adjusted',this.checked)" />
+         onclick="GUI.set_variable_status('adjustedNode',this.checked)" />
          	<label for="variable_adjusted">adjusted</label></p>
       <p><input type="checkbox" checked="checked" id="variable_unobserved"
-         onclick="gui.set_variable_status('unobserved',this.checked)" />
+         onclick="GUI.set_variable_status('latentNode',this.checked)" />
          	<label for="variable_unobserved">unobserved</label></p>
 
 	<input type="hidden" id="variable_id" value="">
+
+	<p>
+		<button type="button" onclick="DAGittyControl.deleteVertex(document.getElementById('variable_id').value)">delete</button>
+		<button type="button" onclick="DAGittyControl.getView().renameVertexDialog()">rename</button>
+	</p>
 
       </form>
 
