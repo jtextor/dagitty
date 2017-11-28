@@ -708,7 +708,7 @@ function loadOnline( url ){
 				}
 				DAGittyControl.getView().closeDialog()
 				if( t.responseText ){
-					document.getElementById("adj_matrix").value = B64.decode( t.responseText )
+					document.getElementById("adj_matrix").value = B64.decode( t.responseText ).replace(/\0*$/g,'')
 					Model.uniqid=graphid
 					loadDAGFromTextData()
 				} else {

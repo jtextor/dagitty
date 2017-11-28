@@ -23,8 +23,8 @@ var Base = {
 	nodelabel : { y: 0, dy : ".3em", "text-anchor": "middle"  },
 	nodelabelbg : { "fill" : "none", "stroke" : "none"  }, 
 	path : { stroke : "black", "fill" : "none" },
-	causalpath : { stroke : "green" },
-	biasingpath : { stroke : "red" },
+	causalpath : { stroke : "#4dac26" },
+	biasingpath : { stroke : "#d01c8b" },
 	puredirectpath_inactive : { "stroke-width": 3 },
 }
 

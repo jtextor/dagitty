@@ -16,8 +16,8 @@ DAGitty.stylesheets.original = {
 				nodelabel : { y: 35, "text-anchor" : "middle" },
 				nodelabelbg : { fill: "#ffffff" },
 				path : { stroke : "black", "stroke-width": 1.5, fill : "none" },
-				causalpath : { stroke : "green" },
-				biasingpath : { stroke : "red" },
+				causalpath : { stroke : "#4dac26" },
+				biasingpath : { stroke : "#d01c8b" },
 				puredirectpath_inactive : { "stroke-width": 3 }
 			},
 			decoration : {
