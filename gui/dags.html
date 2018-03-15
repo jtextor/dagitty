@@ -130,6 +130,9 @@ alert("DAGitty requires Internet Explorer 9 or higher.\n"+
 				DAGittyControl.getView().closeDialog()
 			}
 		}
+		
+		// Attempt to load DAG from the URL parameter "adjmatrix"
+		loadDagFromUrlParameter();
 	}
 	
 	window.onload = initialize;
