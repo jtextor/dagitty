@@ -37,14 +37,8 @@
 	<script type="text/javascript" src="https://www.google.com/recaptcha/api.js?render=explicit" 
 		async defer></script>
 
-<!--[if lt IE 9]>
-<script type="text/javascript">
-alert("DAGitty requires Internet Explorer 9 or higher.\n"+
-"You can only use the old DAGitty version 1.1:\n http://dagitty.net/history/v1.1/dags.html\n"+
-"If you see this message in IE 9 or higher, please disable compatibility mode.");
-</script>
-<![endif]-->
-	
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+
 	<script type="text/javascript">
 	var redraw;
 	var renderer;
@@ -138,7 +132,10 @@ alert("DAGitty requires Internet Explorer 9 or higher.\n"+
 	
 </head>
 <body>
-    <ul id="menu" style="display:block">
+
+<main>
+
+    <ul id="menu">
       <li><a href="javascript:void(0)" id="menu_model_title">Model</a>
          <ul id="menu_model">
             <li><a href="#" onclick="newModel();displayHide('menu_model')">New model</a></li>
@@ -196,52 +193,22 @@ alert("DAGitty requires Internet Explorer 9 or higher.\n"+
       <li style="float:none; overflow: hidden; border-right: none;"> &nbsp;</li>
    </ul>
 
-   <div id="rlegend">
-		<h3 onclick="displayToggle('causal_effect')">
-			<img src="images/arrow-down.png" alt="" id="a_causal_effect" />
-			Causal effect identification
-		</h3>
-		<p>
-			<select id="causal_effect_kind" onchange="causalEffectEstimates()">
-				<option value="adj_total">Adjustment (total effect)</option>
-				<option value="adj_direct">Adjustment (direct effect)</option>
-				<option value="instrument">Instrumental variable</option>
-			</select>
-		</p>
+   <div id="canvas" class="dagitty">
+A 1 @-2.200,-1.520
+B 1 @1.400,-1.460
+D O @1.400,1.621
+E E @-2.200,1.597
+Z 1 @-0.300,-0.082
 
-    <div id="causal_effect" style="display:block">
-
-    </div>
-
-    <h3 onclick="displayToggle('testable_implications')"><img src="images/arrow-down.png" alt="" id="a_testable_implications" />  Testable implications</h3>
-
-    <div id="testable_implications" style="display:block">
-
-    </div>
-
-    <h3 onclick="displayToggle('model_data')"><img src="images/arrow-down.png" alt="" id="a_model_data" />  Model code</h3>
-    <div id="model_data" style="display:block">
-      <form name="model_data_frm">
-      <textarea rows="10" cols="35" name="adj_matrix" id="adj_matrix"
-         onkeydown="if(this.value != Model.dag_model_text_data){ displayShow('model_refresh');this.style.backgroundColor='#fec'; }"></textarea>
-      </form>
-      <p id="model_refresh" style="display:none">You have modified the model code. To
-      draw the modified model, click here: <button onclick="loadDAGFromTextData()">Update DAG</button></p>
-    </div>
-
-   <h3 onclick="displayToggle('summary')"><img src="images/arrow-down.png" alt="" id="a_summary"> Summary</h3>
-   <div id="summary" style="display:block">
-      <div id="info_cycle"> </div>
-      <table id="info_summary">
-         <tr><td>exposure(s)</td><td class="info" id="info_exposure">not set</td></tr>
-         <tr><td>outcome(s)</td><td class="info" id="info_outcome">not set</td></tr>
-         <tr><td>covariates</td><td class="info" id="info_covariates">0</td></tr>
-         <tr><td>causal paths</td><td class="info" id="info_frontdoor">0</td></tr>
-         <!--<tr><td>open backdoor paths</td><td class="info" id="info_backdoor">0</td></tr>-->
-      </table>
+A E Z @-0.791,-1.045
+B D Z @0.680,-0.496
+E D
    </div>
 
-   </div>
+</main>
+
+
+<aside>
 
    <div id="llegend">
 
@@ -391,17 +358,58 @@ alert("DAGitty requires Internet Explorer 9 or higher.\n"+
 
   </div>
 
-   <pre id="canvas" class="dagitty">
-A 1 @-2.200,-1.520
-B 1 @1.400,-1.460
-D O @1.400,1.621
-E E @-2.200,1.597
-Z 1 @-0.300,-0.082
 
-A E Z @-0.791,-1.045
-B D Z @0.680,-0.496
-E D
-   </pre>
+
+   <div id="rlegend">
+		<h3 onclick="displayToggle('causal_effect')">
+			<img src="images/arrow-down.png" alt="" id="a_causal_effect" />
+			Causal effect identification
+		</h3>
+		<p>
+			<select id="causal_effect_kind" onchange="causalEffectEstimates()">
+				<option value="adj_total">Adjustment (total effect)</option>
+				<option value="adj_direct">Adjustment (direct effect)</option>
+				<option value="instrument">Instrumental variable</option>
+			</select>
+		</p>
+
+    <div id="causal_effect" style="display:block">
+
+    </div>
+
+    <h3 onclick="displayToggle('testable_implications')"><img src="images/arrow-down.png" alt="" id="a_testable_implications" />  Testable implications</h3>
+
+    <div id="testable_implications" style="display:block">
+
+    </div>
+
+    <h3 onclick="displayToggle('model_data')"><img src="images/arrow-down.png" alt="" id="a_model_data" />  Model code</h3>
+    <div id="model_data" style="display:block">
+      <form name="model_data_frm">
+      <textarea rows="10" cols="35" name="adj_matrix" id="adj_matrix"
+         onkeydown="if(this.value != Model.dag_model_text_data){ displayShow('model_refresh');this.style.backgroundColor='#fec'; }"></textarea>
+      </form>
+      <p id="model_refresh" style="display:none">You have modified the model code. To
+      draw the modified model, click here: <button onclick="loadDAGFromTextData()">Update DAG</button></p>
+    </div>
+
+   <h3 onclick="displayToggle('summary')"><img src="images/arrow-down.png" alt="" id="a_summary"> Summary</h3>
+   <div id="summary" style="display:block">
+      <div id="info_cycle"> </div>
+      <table id="info_summary">
+         <tr><td>exposure(s)</td><td class="info" id="info_exposure">not set</td></tr>
+         <tr><td>outcome(s)</td><td class="info" id="info_outcome">not set</td></tr>
+         <tr><td>covariates</td><td class="info" id="info_covariates">0</td></tr>
+         <tr><td>causal paths</td><td class="info" id="info_frontdoor">0</td></tr>
+      </table>
+   </div>
+
+   </div>
+
+
+</aside>
+
+
    
    <div id="export" style="display: none;">
       <form name="exportform" id="exportform" action="http://www.dagitty.net/pdf/pdf.php" method="POST" target="_blank">

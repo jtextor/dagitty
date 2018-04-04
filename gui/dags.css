@@ -1,17 +1,13 @@
-html , body{
+html, body{
    height: 100%;
-   overflow: hidden;
+   /*overflow: hidden;*/
 }
 
 body{
-   background-color: #eee;
    padding: 0;
    margin: 0;
-}
-
-body{
-   font-family: Verdana, Arial, sans-serif;
-   font-size: 10pt;
+   font-family: sans-serif;
+   font-size: medium;
 }
 
 .dagitty{
@@ -19,43 +15,25 @@ body{
 	font-size: inherit;
 }
 
+main{
+	height: 100%;
+	display: flex;
+	flex-flow: column;
+}
+
 #canvas{
-   display: block;
-   border: 1px solid #333;
    background-color: #eee;
-   border-width: 0px 1px 0px 1px;
-   z-index: 5;
-   position: absolute;
-   top: 0em;
-   left: 15em;
-   right: 18em;
-   bottom: 0em;
-   outline : none;
-   overflow : hidden;
+   outline: none;
+   flex: 1 1 auto;
+   overflow: hidden;
 }
 
 #llegend{
-   width: 15em;
-   position: absolute;
-   left: 0em;
-   top: 0em;
-   border-right: 1px solid #333;
-   z-index: 15;
    background-color: white;
-   overflow-y: auto;
-   height: 100%;
 }
 
 #rlegend{
-   width: 18em;
-   position: absolute;
-   right: 0em;
-   top: 0em;
    background-color: white;
-   border-left: 1px solid #333;
-   z-index: 15;
-   overflow-y: auto;
-   height: 100%;
 }
 
 #legend{
@@ -66,25 +44,21 @@ body{
 }
 
 #menu{
-   position: relative;   
-   left: 0em; top: 0em;
-   margin: 0em 15em 0em 15em;
-   border: 1px solid #333;
-   border-width: 0px 1px 1px 0px;
-   background-color: white;
+   margin: 0em;
    list-style-type:none;
-   padding: .2em 0 .2em 0;
-   z-Index: 11;
-   background-color: #eef; 
+   padding: .5em;
+   display: block;
+   flex: 0 1 auto;
+   background: #ccf;
 }
 #menu li {
     margin: 0; padding: 0em .5em 0em .5em;
     float: left; 
     position: relative; top: 0px; left: 0px; 
-    font-weight: bold;
     border-right: 1px solid #666;
-    z-Index: 11;    
+    z-Index: 15;
 }
+
 #menu li ul{
     position: absolute;
     display: none;
@@ -109,6 +83,11 @@ body{
     color: black;
     text-decoration: none;
 }
+#menu:after {
+    content: '';
+    display: block;
+    clear: both;
+}
 
 .legend{
    font-style: italic;
@@ -117,9 +96,8 @@ body{
 }
 
 h3{
-   margin: 0;
+   margin: 1px 0 0 0;
    font-size: 100%;
-   border-bottom: 1px solid #333;
    background-color: #eef;
    padding: .2em .5em .2em .5em;
    font-weight: normal;
@@ -167,12 +145,6 @@ form{
    padding: 0; margin: 0;
 }
 
-#dagstyle, #viewmode, #coloring, #effects, #legend, #summary,
- #causal_effect, #testable_implications, #model_data, #variable
-{
-   border-bottom: 1px solid black;
-}
-
 .dialogwin{
 	width: 100%;
 	height: 100%;
@@ -199,3 +171,29 @@ form{
 .dialogwin p{
 	margin: 2em;
 }
+
+@media screen and (min-width: 40em) and (max-width: 60em) {
+	aside {
+		position: absolute; top: 0; left: 0; width: 15em;
+	}
+	main{
+		margin-left: 15.1em;
+	}
+}
+
+
+@media screen and (min-width: 60em) {
+	#llegend {
+		position: absolute; top: 0; left: 0; width: 15em;
+	}
+	#rlegend {
+		position: absolute; top: 0; right: 0; width: 15em;
+
+	}
+	main{
+		margin-left: 15.1em;
+		margin-right: 15.1em;
+	}
+}
+
+

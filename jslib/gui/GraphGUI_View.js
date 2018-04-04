@@ -512,12 +512,12 @@ var DAGittyGraphView = Class.extend({
 		this.getController().newVertex( n, this.last_click_g_coords[0], this.last_click_g_coords[1] )
 		this.closeDialog()
 	},
-	renameVertex : function( n ){
+	renameVertex : function( n, v ){
 		if( !n ){
 			this.dialogErrorMessage( "Please enter the variable name!")
 			return
 		}
-		var v = this.getCurrentVertex()
+		// var v = this.getCurrentVertex()
 		// sanitize -> no longer needed
 		//n.replace( /\s+/, "_" )
 		if( !v || (n === v.id) ){ return }
@@ -602,7 +602,7 @@ var DAGittyGraphView = Class.extend({
 		qdiv.onclick=function(e){e.stopPropagation()}
 	},
 	// t : text ; v : default value ; f : callback when clicked "OK"
-	openPromptDialog : function(t,v,f){
+	openPromptDialog : function(t,v,f,donotclose){
 		this.closeDialog()
 		var el = function(n){return document.createElement(n)}
 		var txt = function(el,t){el.appendChild( document.createTextNode(t) ) }
@@ -652,7 +652,11 @@ var DAGittyGraphView = Class.extend({
 		qf = el("button")
 		qf.setAttribute("type","button")
 		txt(qf,"Cancel")
-		qf.onclick = function(){myself.closeDialog()}
+		if( donotclose ){
+			qf.onclick = function(){}
+		} else {
+			qf.onclick = function(){myself.closeDialog()}
+		}
 		qform.appendChild(document.createTextNode(" "))
 		qform.appendChild(qf)
 		qdiv.appendChild(qform)
@@ -675,9 +679,9 @@ var DAGittyGraphView = Class.extend({
 		}
 	},
 	renameVertexDialog : function(){
-		var v = this.getCurrentVertex()
+		var v = this.getCurrentVertex(), myself=this
 		if( !this.dialogOpen() && v ){
-			this.openPromptDialog( "rename variable:", v.id, this.renameVertex )
+			this.openPromptDialog( "rename variable:", v.id, function(n){ myself.renameVertex( n, v ) }, true )
 		}
 	},
 	isCoordinateSystemValid : function(){
