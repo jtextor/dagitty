@@ -375,7 +375,7 @@ var GraphAnalyzer = {
 		return this.listMinimalSeparators( gam, adjusted_nodes, latent_nodes, max_nr )
 	},
 
-	canonicalAdjustmentSet : function( g, Z ){
+	canonicalAdjustmentSet : function( g ){
 		var Z = _.difference( g.anteriorsOf( _.union(g.getSources(), g.getTargets() ) ),
 			_.union( g.getLatentNodes(),
 				g.getSources(), g.getTargets(),
@@ -433,7 +433,6 @@ var GraphAnalyzer = {
 	listBasisImplications : function( g ){
 		var r = []
 		var vv = g.vertices.values()
-		var i
 		_.each( vv, function(v){
 			var nondescendants = _.difference( vv, g.descendantsOf( [v] ) )
 			var parents = g.parentsOf( [v] )
@@ -539,7 +538,7 @@ var GraphAnalyzer = {
 		taken by default.
 	 */	
 	properPossibleCausalPaths : function( g, X, Y ){
-		var i, in_X = [], in_Y = [], visited = {}, reaches_target = {}, r = [],
+		var i, in_X = [], visited = {}, r = [],
 			possible = true // this should become a parameter
 		if( arguments.length == 1 ){
 			X = g.getSources()
