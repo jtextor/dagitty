@@ -97,7 +97,7 @@ BAREWORD
 
 STRING
   = '"' '"' _ {return "";}
-  / v:('"' chars ("\\" [\r\n]+ chars)? '"' _ ) rest:('+' _ v:STRING {return v})? 
+  / v:('"' chars ("\\" [\r\n]+ chars)? '"' _ ) rest:('+' _ v2:STRING {return v2})? 
   	{ return rest === null ? v[1] : (v[1] + rest); }
 
 chars

@@ -1,4 +1,4 @@
 all : GraphDotParser.js
 
 GraphDotParser.js : GraphDotParser.pegjs
-	pegjs -e GraphDotParser $<
+	pegjs --format globals -e GraphDotParser $<
