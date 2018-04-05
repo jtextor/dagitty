@@ -76,6 +76,33 @@ var GraphGUI_SVG = Class.extend({
 
 		this.anchorEdgeShape( el )
 		el.dom.style.cursor = "move"
+
+		el.dom.addEventListener( "touchstart",
+			_.bind( function(e){ 
+				this.touchEdgeShape( el, e.changedTouches[0] )
+				el.cancel_next_mousedown = true
+			}, this ) )
+
+		el.dom.addEventListener( "touchend",
+			_.bind( function(e){ 
+				var v = this.getLastTouchedElement()
+				if( v ){
+					for( var i = 0 ; i < e.changedTouches.length ; i ++ ){
+						if( e.changedTouches[i].identifier == v.last_touch ){
+							this.stopMousemove()
+						}
+					}
+				}
+			}, this ) )
+
+		el.dom.addEventListener( "mousedown",
+			_.bind( function(e){ 
+				if( el.cancel_next_mousedown ){
+					delete el.cancel_next_mousedown
+					return
+				}
+				this.touchEdgeShape( el, e ) 
+			}, this ) )
 		
 		el.dom.addEventListener( "mouseover", _.bind(
 			function(){ this.last_hovered_element={edge:el.e} }, this
@@ -86,7 +113,6 @@ var GraphGUI_SVG = Class.extend({
 
 	},
 	anchorEdgeShape : function( el ){
-		
 		var anchorback = DAGitty.Math.svgEdgeAnchor( el, 0, el.directed )
 		el.x1 = anchorback[0]; el.y1 = anchorback[1]
 		
@@ -186,18 +212,11 @@ var GraphGUI_SVG = Class.extend({
 		
 		el.dom.style.cursor = "move"
 
-		//el.dom.addEventListener( "mouseover", function(){ myself.element_in_focus=el } )
-		//el.dom.addEventListener( "mousedown", function(){ myself.element_in_focus=el } )
-		//el.dom.addEventListener( "mouseout", function(){ myself.element_in_focus=undefined } )
-
-		//el.dom.addEventListener( "touchstart",
-		//	function(e){ el.last_touch = e.changedTouches[0].identifier } )
-
 		el.dom.addEventListener( "touchstart",
 			_.bind( function(e){ 
 				this.touchVertexShape( el, e.changedTouches[0] )
 				el.cancel_next_mousedown = true
-			 }, this ) )
+			}, this ) )
 
 		el.dom.addEventListener( "touchend",
 			_.bind( function(e){ 
@@ -209,9 +228,7 @@ var GraphGUI_SVG = Class.extend({
 						}
 					}
 				}
-			 }, this ) )
-
-
+			}, this ) )
 
 		el.dom.addEventListener( "mousedown",
 			_.bind( function(e){ 
@@ -242,6 +259,13 @@ var GraphGUI_SVG = Class.extend({
 		} else{ 
 			this.markVertexShape( el )
 		}
+	},
+	touchEdgeShape : function( el, e ){
+		this.last_touched_element = {"edge" : el, "last_touch" : e.identifier}
+		this.start_x = this.pointerX(e)-this.getContainer().offsetLeft
+		this.start_y = this.pointerY(e)-this.getContainer().offsetTop
+		this.cancel_next_click = true
+		this.unmarkVertexShape()
 	},
 	markVertexShape : function( el ){
 		var pel = this.getMarkedVertexShape()
@@ -413,10 +437,8 @@ var GraphGUI_SVG = Class.extend({
 			return
 		}
 
-
-
-		ptr_x = this.pointerX(e)-this.getContainer().offsetLeft
-		ptr_y = this.pointerY(e)-this.getContainer().offsetTop
+		var ptr_x = this.pointerX(e)-this.getContainer().offsetLeft
+		var ptr_y = this.pointerY(e)-this.getContainer().offsetTop
 		
 		if(Math.abs(this.start_x - ptr_x) + 
 			Math.abs(this.start_y - ptr_y) > 30 ){
@@ -435,13 +457,21 @@ var GraphGUI_SVG = Class.extend({
 				if( typeof this.vertex_drag_listener == "function" ){
 					this.vertex_drag_listener( v )
 				}
+			} else if ( v.edge ){
+				v = v.edge
+				v.cx = ptr_x
+				v.cy = ptr_y
+				if( typeof this.edge_drag_listener == "function" ){
+					this.edge_drag_listener( v )
+				}
+				this.anchorEdgeShape( v )
 			}
 		}
-	}, 
+	},
 
-	stopMousemove : function( e ){
+	stopMousemove : function(){
 		if( this.dragging ){
-		       	if( typeof this.drag_end_listener == "function" ){
+			if( typeof this.drag_end_listener == "function" ){
 				this.drag_end_listener()
 				this.unmarkVertexShape()
 			}
@@ -452,11 +482,11 @@ var GraphGUI_SVG = Class.extend({
 		delete this.start_y
 	},
 
-	mouseupHandler : function( e ){
+	mouseupHandler : function(){
 		this.stopMousemove()
 	},
 
-	mouseleaveHandler : function( e ){
+	mouseleaveHandler : function(){
 		this.stopMousemove()
 	},
 

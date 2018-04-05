@@ -113,7 +113,8 @@ var DAGittyController = Class.extend({
 
 	toggleEdgeFromTo : function( v1, v2 ){
 		var myself = this
-		var done = function( e ){ if(e){
+		var done = function( e ){
+			if(e){
 				myself.getObservedGraph().deleteEdge( e.v1, e.v2, e.directed )
 			}
 			return 0

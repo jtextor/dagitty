@@ -74,6 +74,10 @@
 			function(g){
 				Model.dag = g;
 				document.getElementById("adj_matrix").value = g.toString();
+				// if previously highlighted variable no longer exists, fold up this menu
+				if( !g.getVertex(document.getElementById("variable_id").value) ){
+					document.getElementById("variable_id").value = ''
+				}
 				displayImplicationInfo( false )
 				causalEffectEstimates()
 				displayGeneralInfo()
@@ -125,9 +129,7 @@
 			}
 		}
 	}
-	
 	window.onload = initialize;
-
     </script>
 	
 </head>
@@ -170,7 +172,7 @@
          <ul id="menu_howto">
             <li><a href="#" onclick="how('To add a new variable, click on the canvas.')">Add a variable</a></li>
 			<li><a href="#" onclick="how('To rename a variable, move the mouse over it and press the &quot;r&quot; key on your keyboard.')">Rename a variable</a></li>
-            <li><a href="#" onclick="how('To add a new connection, click on the start variable and then on the end variable; or use the &quot;c&quot; key on your keyboard.')">Add a connection</a></li>
+            <li><a href="#" onclick="how('To add a new connection, click on the start variable and then on the end variable.')">Add a connection</a></li>
             <li><a href="#" onclick="how('To delete a variable, move the mouse over it and press the &quot;delete&quot; or the &quot;d&quot; key on your keyboard.')">Delete a variable</a></li>
             <li><a href="#" onclick="how('To delete a connection, click on the start variable and then on the end variable.')">Delete a connection</a></li>   
             <li><a href="#" onclick="how('To save the model, copy-paste the content of the &quot;model code&quot; into your favourite text editor (e.g. &quot;Word&quot;).')">Save a model</a></li>
