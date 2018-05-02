@@ -17,7 +17,7 @@ Constructs a \code{dagitty} graph object from a textual description.
 }
 \details{
 The textual syntax for DAGitty graph is based on the dot language of the 
-graphviz software (\url{http://www.graphviz.org/content/dot-language}). This is a
+graphviz software (\url{https://graphviz.gitlab.io/_pages/doc/info/lang.html}). This is a
 fairly intuitive syntax -- use the examples below and in the other functions to
 get you started. An important difference to graphviz is that the DAGitty language
 supports several types of graphs, which have different semantics. However, many users
