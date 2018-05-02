@@ -1220,6 +1220,26 @@ isAcyclic <- function( x ){
 	r
 }
 
+#' Test for Colliders
+#'
+#' Returns \code{TRUE} if three given variables form a collider in a given graph.
+#'
+#' @param x the input graph, a DAG.
+#' @param u the first endpoint of the putative collider
+#' @param v the midpoint of the putative collider
+#' @param w the second endpoint of the putative collider
+#' @examples
+#' g1 <- dagitty("dag{X -> Y -> Z}")
+#' stopifnot( isTRUE(!isCollider( g1, "X", "Y", "Z" )) )
+#' g2 <- dagitty("dag{X -> Y <- Z }")
+#' stopifnot( isTRUE(isCollider( g2, "X", "Y", "Z" )) )
+#' @export
+isCollider <- function( x, u, v, w ) {
+	x <- as.dagitty( x )
+	.supportsTypes( x, c("dag") )
+	v %in% intersect( children( x, u ), children( x, w ) )
+}
+
 #' List Implied Conditional Independencies
 #'
 #' Generates a list of conditional independence statements that must hold in every
