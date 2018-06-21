@@ -676,6 +676,10 @@ var Graph = Class.extend({
 		c.prototype["add"+pcamel] = function( v ){ return this.addVertexProperty( v, p ) }
 		c.prototype["remove"+pcamel] = function( v ){ return this.removeVertexProperty( v, p ) }
 		c.prototype["get"+pcamel+"s"] = function(){ return this.getVerticesWithProperty( p ) }
+		c.prototype["set"+pcamel+"s"] = function( vs ){ 
+			this.removePropertyFromAllVertices( p )
+			_.each(vs, function(v){ this.addVertexProperty( v, p ) }, this)
+		}
 		c.prototype["removeAll"+pcamel+"s"] = function(){ return this.removePropertyFromAllVertices( p ) }
 	} )
 })(Graph)
