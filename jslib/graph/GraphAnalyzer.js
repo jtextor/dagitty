@@ -430,6 +430,33 @@ var GraphAnalyzer = {
 		return this.listMinimalSeparators( gam, adjusted_nodes, latent_nodes, max_nr )
 	},
 
+	
+	//find one minimal and nearest separator
+	findMinimalSeparator : function( g, x, y, must, must_not ){
+		if (!x) x = g.getSources()
+		if (!y) y = g.getTargets()
+		if (!must) must = []
+		if (!must_not) must_not = []
+		
+		var a = g.anteriorsOf(_.union(x, y, must))
+		
+		var z1 = _.difference(a, x, y, must_not, g.getLatentNodes())
+		
+		function removeUnreachable(x2, y2, oldZ) {			
+			var z = GraphAnalyzer.closeSeparator(g, x2, y2, a, oldZ )
+			if (z === false) return z
+			
+			return _.union(_.intersection(oldZ, z), must)
+		}
+		
+		var z2 = removeUnreachable(x, y, z1)
+		if (z2 === false) return z2
+
+		var z3 = removeUnreachable(y, x, z2)
+		
+		return z3
+	},
+	
 	listBasisImplications : function( g ){
 		var r = []
 		var vv = g.vertices.values()
@@ -679,43 +706,73 @@ var GraphAnalyzer = {
 		return r
 	},
 	
-	closeSeparator : function( g, y, z ){
-		var a = {}
-		_.each(g.anteriorsOf([y,z]), function(v){ a[v.id] = true })
+	
+	closeSeparator : function( g, y, z, anteriors, blockable_nodes ){
+		if (!_.isArray(y)) y = [y]
+		if (!_.isArray(z)) z = [z]
+		if (!anteriors) anteriors = g.anteriorsOf(y.concat(z))
 		
+		var a = {}
+		_.each(anteriors, function(v){ a[v.id] = true })
+		
+		
+		var endOfRoad = {}
+		_.each(z, function(v){ endOfRoad[v.id] = true })
+
+		var blockable_nodes
+		if (blockable_nodes) {
+			var blockable_nodes_hash = {}
+			_.each(blockable_nodes, function(v){ blockable_nodes_hash[v.id] = true })
+			_.each(y, function(v){ blockable_nodes_hash[v.id] = false })
+			isBlockableNode = function(v) { return blockable_nodes_hash[v.id] }
+		} else {
+			var start = {}
+			_.each(y, function(v){ start[v.id] = true })
+			isBlockableNode = function(v) { return !start[v.id] && !g.isLatentNode(v) }
+		}
 		
 		var result = []
 		
-		var q_from_parent = [], q_from_child = [y]
+		function visitFromParentLike(t){
+			if (!visited_from_parent[t.id]) {
+				q_from_parent.push(t)
+				visited_from_parent[t.id] = true
+			}
+		}
+		function visitFromChildLike(t){
+			if (!visited_from_child[t.id]) {
+				q_from_child.push(t)
+				visited_from_child[t.id] = true
+			}
+		}
+		var v, blockedNode
+		function visitEdge(e){
+			var outgoing = e.v1 == v
+			var t = outgoing ? e.v2 : e.v1
+			if (!a[t.id]) return
+			var arrowHeadAtV = (e.directed == Graph.Edgetype.Directed && !outgoing) || e.directed == Graph.Edgetype.Bidirected
+			var arrowHeadAtT = (e.directed == Graph.Edgetype.Directed && outgoing) || e.directed == Graph.Edgetype.Bidirected
+			
+			var visit = !blockedNode || (from_parents && arrowHeadAtV)
+			if (visit) 
+				if (arrowHeadAtT) visitFromParentLike(t)
+				else visitFromChildLike(t)
+
+		}
+		
+		var q_from_parent = [], q_from_child = y
 		var visited_from_parent = {}, visited_from_child = {}
+		var v
+		
 		while (q_from_parent.length > 0 || q_from_child.length > 0) {
 			var from_parents = q_from_parent.length > 0
-			var v = from_parents ? q_from_parent.pop() : q_from_child.pop()
-			if (v == z) return false
-			var visitParents
-			if (!g.isLatentNode( v )) {
+			v = from_parents ? q_from_parent.pop() : q_from_child.pop()
+			if (endOfRoad[v.id]) return false
+			blockedNode = isBlockableNode(v);
+			if (blockedNode) 
 				result.push(v)
-				visitParents = from_parents
-			} else {
-				visitParents = !from_parents
-				//visit children
-				_.each( v.outgoingEdges, function(e) {
-					var t = e.v2
-					if (a[t.id] && !visited_from_parent[t.id]) {
-						q_from_parent.push(t)
-						visited_from_parent[t.id] = true
-					}
-				})
-			}
-			if (visitParents) {
-				_.each( v.incomingEdges, function(e) {
-					var t = e.v1
-					if (a[t.id] && !visited_from_child[t.id]) {
-						q_from_child.push(t)
-						visited_from_child[t.id] = true
-					}
-				})
-			}
+			_.each( v.incomingEdges, visitEdge)
+			_.each( v.outgoingEdges, visitEdge)
 		}
 		return result
 	},
