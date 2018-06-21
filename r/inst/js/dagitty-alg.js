@@ -1634,53 +1634,44 @@ var GraphAnalyzer = {
 	},
 	
 	closeSeparator : function( g, y, z ){
-		var g_m = GraphTransformer.moralGraph(
-			GraphTransformer.ancestorGraph( g, [ y, z ]  ) )
-
-		var r = [], blocked = [], v, w, vN, i, found=true
+		var a = {}
+		_.each(g.anteriorsOf([y,z]), function(v){ a[v.id] = true })
 		
-		y = g_m.getVertex( y.id ); z = g_m.getVertex( z.id )
 		
-		while( found ){
-			var visited = []
-			var discovered_from = {}; discovered_from[y] = false
-			var q = [y]
-			found = false
-			while( q.length > 0 ){
-				v = q.shift()
-				if( v.id == z.id ){
-					found = true; break
-				}
-				if( !visited[v.id] && !blocked[v.id] ){
-					visited[v.id] = true
-					vN = g_m.neighboursOf( [v] )
-					for( i = 0 ; i < vN.length ; i ++ ){
-						w = vN[i]
-						if( w != v && !visited[w.id] ){
-							discovered_from[ w.id ] = v.id
-							q.push( w ) 
-						}
+		var result = []
+		
+		var q_from_parent = [], q_from_child = [y]
+		var visited_from_parent = {}, visited_from_child = {}
+		while (q_from_parent.length > 0 || q_from_child.length > 0) {
+			var from_parents = q_from_parent.length > 0
+			var v = from_parents ? q_from_parent.pop() : q_from_child.pop()
+			if (v == z) return false
+			var visitParents
+			if (!g.isLatentNode( v )) {
+				result.push(v)
+				visitParents = from_parents
+			} else {
+				visitParents = !from_parents
+				//visit children
+				_.each( v.outgoingEdges, function(e) {
+					var t = e.v2
+					if (a[t.id] && !visited_from_parent[t.id]) {
+						q_from_parent.push(t)
+						visited_from_parent[t.id] = true
 					}
-				}
+				})
 			}
-		
-			if( found ) {
-				v = z.id; w = false
-				while( v != y.id ){
-					if( !g_m.isLatentNode( g_m.getVertex( v ) ) ){
-						w = v
+			if (visitParents) {
+				_.each( v.incomingEdges, function(e) {
+					var t = e.v1
+					if (a[t.id] && !visited_from_child[t.id]) {
+						q_from_child.push(t)
+						visited_from_child[t.id] = true
 					}
-					v = discovered_from[v]
-				}
-				if( w === false || w === z.id ){
-					return false
-				}
-				r.push( g.getVertex( w ) )
-				blocked[w] = true
+				})
 			}
 		}
-		
-		return r
+		return result
 	},
 	
 	/** d-Separation test via Shachter's "Bayes-Ball" BFS.
