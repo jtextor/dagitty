@@ -563,6 +563,12 @@ QUnit.test( "graph transformations", function( assert ) {
 		 "dag G { x -> y <- z }",
 		 "graph G { x -- y -- z }",
 
+		 GraphTransformer.dagToMag,
+		 "dag { v1 [latent]     z <- v1 -> v2 -> y    x -> v1}",
+		 "mag { x -> z <-> v2 -> y  x -> v2 }",
+		 "dag { l1 [latent] l2 [latent]  a -> x   l1 -> x  l1 -> z   l2 -> y  l2 -> z  x -> y   z -> x  z -> y}",
+		 "mag { a -> x   a -> y   x -> y   z -> x   z -> y } ",
+
 	];
 	var i = 0; var transfunc;
 	while (i < transformations.length) {

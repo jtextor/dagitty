@@ -1665,32 +1665,31 @@ var GraphAnalyzer = {
 	},
 	
 	
-	closeSeparator : function( g, y, z, anteriors, blockable_nodes ){
-		if (!_.isArray(y)) y = [y]
-		if (!_.isArray(z)) z = [z]
-		if (!anteriors) anteriors = g.anteriorsOf(y.concat(z))
-		
-		var a = {}
-		_.each(anteriors, function(v){ a[v.id] = true })
-		
-		
-		var endOfRoad = {}
-		_.each(z, function(v){ endOfRoad[v.id] = true })
+	/*
+	onCanVisitEdge: function(e, outgoing, from_parents){
+	                  //e: edge
+	                  //outgoing: we are moving from e.v1 to e.v2
+	                    so (outgoing ? e.v1 : e.v2) is the node being left
+	                  //from_parents: if there is an arrow pointing to e.v1 on the previous edge
+	                  //  in a DAG (from_parents && !outgoing) means a collider is left
 
-		var blockable_nodes
-		if (blockable_nodes) {
-			var blockable_nodes_hash = {}
-			_.each(blockable_nodes, function(v){ blockable_nodes_hash[v.id] = true })
-			_.each(y, function(v){ blockable_nodes_hash[v.id] = false })
-			isBlockableNode = function(v) { return blockable_nodes_hash[v.id] }
-		} else {
-			var start = {}
-			_.each(y, function(v){ start[v.id] = true })
-			isBlockableNode = function(v) { return !start[v.id] && !g.isLatentNode(v) }
-		}
-		
-		var result = []
-		
+	                  return if (outgoing ? e.v2 : e.v1) should be visited
+	                }
+	onIsFinalNode: function(v) {
+	               //v: current node
+	               return if search should abort
+	             }
+	*/
+	visitGraph : function (g, startNodes, onCanVisitEdge, onIsFinalNode) {
+		if (!_.isArray(startNodes)) startNodes = [startNodes]
+		if (!onCanVisitEdge) onCanVisitEdge = function(){return true}
+		if (!onIsFinalNode) onIsFinalNode = function(){return false}
+
+		var q_from_parent = [], q_from_child = startNodes
+		var visited_from_parent = {}, visited_from_child = {}
+		var v
+		var from_parents
+
 		function visitFromParentLike(t){
 			if (!visited_from_parent[t.id]) {
 				q_from_parent.push(t)
@@ -1703,35 +1702,67 @@ var GraphAnalyzer = {
 				visited_from_child[t.id] = true
 			}
 		}
-		var v, blockedNode
 		function visitEdge(e){
 			var outgoing = e.v1 == v
 			var t = outgoing ? e.v2 : e.v1
-			if (!a[t.id]) return
-			var arrowHeadAtV = (e.directed == Graph.Edgetype.Directed && !outgoing) || e.directed == Graph.Edgetype.Bidirected
+			if (!onCanVisitEdge(e, outgoing, from_parents)) return
 			var arrowHeadAtT = (e.directed == Graph.Edgetype.Directed && outgoing) || e.directed == Graph.Edgetype.Bidirected
-			
-			var visit = !blockedNode || (from_parents && arrowHeadAtV)
-			if (visit) 
-				if (arrowHeadAtT) visitFromParentLike(t)
-				else visitFromChildLike(t)
-
+			if (arrowHeadAtT) visitFromParentLike(t)
+			else visitFromChildLike(t)
 		}
-		
-		var q_from_parent = [], q_from_child = y
-		var visited_from_parent = {}, visited_from_child = {}
-		var v
-		
+
 		while (q_from_parent.length > 0 || q_from_child.length > 0) {
-			var from_parents = q_from_parent.length > 0
+			from_parents = q_from_parent.length > 0
 			v = from_parents ? q_from_parent.pop() : q_from_child.pop()
-			if (endOfRoad[v.id]) return false
-			blockedNode = isBlockableNode(v);
-			if (blockedNode) 
-				result.push(v)
+			if (!onIsFinalNode(v)) return true
 			_.each( v.incomingEdges, visitEdge)
 			_.each( v.outgoingEdges, visitEdge)
 		}
+		return false
+	},
+
+	closeSeparator : function( g, y, z, anteriors, blockable_nodes ){
+		if (!_.isArray(y)) y = [y]
+		if (!_.isArray(z)) z = [z]
+		if (!anteriors) anteriors = g.anteriorsOf(y.concat(z))
+		
+		var a = {}
+		_.each(anteriors, function(v){ a[v.id] = true })
+		
+		var endOfRoad = {}
+		_.each(z, function(v){ endOfRoad[v.id] = true })
+
+		var isBlockableNode
+		if (blockable_nodes) {
+			var blockable_nodes_hash = {}
+			_.each(blockable_nodes, function(v){ blockable_nodes_hash[v.id] = true })
+			_.each(y, function(v){ blockable_nodes_hash[v.id] = false })
+			isBlockableNode = function(v) { return blockable_nodes_hash[v.id] }
+		} else {
+			var start = {}
+			_.each(y, function(v){ start[v.id] = true })
+			isBlockableNode = function(v) { return !start[v.id] && !g.isLatentNode(v) }
+		}
+		
+		var result = []
+		var blockedNode = false
+		
+		function onCanVisitEdge(e, outgoing, from_parents) {
+			var t = outgoing ? e.v2 : e.v1
+			if (!a[t.id]) return false
+			var arrowHeadAtV = (e.directed == Graph.Edgetype.Directed && !outgoing) || e.directed == Graph.Edgetype.Bidirected
+			//var arrowHeadAtT = (e.directed == Graph.Edgetype.Directed && outgoing) || e.directed == Graph.Edgetype.Bidirected
+			return !blockedNode || (from_parents && arrowHeadAtV)
+		}
+		function visitNode(v){
+			if (endOfRoad[v.id]) return false
+			blockedNode = isBlockableNode(v)
+			if (blockedNode) 
+				result.push(v)
+			return true
+		}
+		
+		if (GraphAnalyzer.visitGraph(g, y, onCanVisitEdge, visitNode)) return false
 		return result
 	},
 	
@@ -3661,6 +3692,59 @@ var GraphTransformer = {
 		} else {
 			rg.setType("mag")
 		}
+		return rg
+	},
+	
+	//algorithms as in "Causal Reasoning with Ancestral Graphs" by Jiji Zhang
+	dagToMag: function( g ){
+		var latent = g.getLatentNodes()
+		var latentSet = {}
+		_.each(latent, function(v){ latentSet[v.id] = true })
+		var V = _.difference(g.getVertices(), latent)
+
+		var ancestors = {}
+		_.each(V, function(v){ 
+			var newHash = {}
+			_.each(g.ancestorsOf( [v] ), function(w){
+				newHash[w.id] = true
+			})
+			ancestors[v.id] = newHash
+		} )
+
+		var rgv = {}
+		var rg = new Graph()
+		_.each(V, function(v){ 
+			rgv[v.id] = rg.addVertex( v.cloneWithoutEdges() ) 
+		} )
+		g.copyAllPropertiesTo( rg )
+		rg.setType("mag")
+
+		_.each(V, function(v){
+			var Av = ancestors[v.id]
+			_.each(V, function(u){
+				if (u.id >= v.id) return
+				var Au = ancestors[u.id]
+
+				var reachable = GraphAnalyzer.visitGraph(g, [v], function(e, outgoing, from_parents){
+					var w = outgoing ? e.v1 : e.v2
+					if (from_parents && !outgoing) {
+						//collider
+						if (!Av[w.id] && !Au[w.id]) return false
+					} else if (w.id != v.id && w.id != u.id && !latentSet[w.id]) return false
+					return true
+				}, function(w){
+					return w != u
+				})
+
+				if (!reachable) return
+
+				var rv = rgv[v.id]
+				var ru = rgv[u.id]
+				if (Au[v.id]) rg.quickAddDirectedEdge( rv, ru )
+				else if (Av[u.id]) rg.quickAddDirectedEdge( ru, rv )
+				else rg.quickAddEdge( ru, rv, Graph.Edgetype.Bidirected )
+			})
+		})
 		return rg
 	},
 	
