@@ -3285,7 +3285,7 @@ var GraphTransformer = {
 		dpcp = GraphAnalyzer.properPossibleCausalPaths( gback, X, Y )
 		_.each( X, function(s){
 			_.each( _.intersection( dpcp, s.getChildren() ), function( c ){
-				if( GraphAnalyzer.isEdgeVisible( gback, gback.getEdge(s.id,c.id)) ){
+				if( GraphAnalyzer.isEdgeVisible( g, g.getEdge(s.id,c.id)) ){
 					gback.deleteEdge( s, c, Graph.Edgetype.Directed )
 				}
 			})
