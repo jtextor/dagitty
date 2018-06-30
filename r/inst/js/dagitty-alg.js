@@ -3696,8 +3696,8 @@ var GraphTransformer = {
 	},
 	
 	//algorithms as in "Causal Reasoning with Ancestral Graphs" by Jiji Zhang
-	dagToMag: function( g ){
-		var latent = g.getLatentNodes()
+	dagToMag: function( g, latent ){
+		if (!latent) latent = g.getLatentNodes()
 		var latentSet = {}
 		_.each(latent, function(v){ latentSet[v.id] = true })
 		var V = _.difference(g.getVertices(), latent)
