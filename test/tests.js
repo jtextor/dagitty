@@ -269,54 +269,77 @@ QUnit.test( "ancestry", function( assert ) {
 });
 
 QUnit.test( "separators", function( assert ) {
-	assert.equal(
-			sep_2_str( GraphAnalyzer.listMinimalSeparators(
-				GraphTransformer.backDoorGraph(TestGraphs.small1())) )
-		, "{}" )
+	var g, gm
+	function verts(a) {
+		return _.isArray(a) ? a.map(function(vid){return g.getVertex(vid)}) : [g.getVertex(a)]
+	}
+	
+	g = GraphTransformer.backDoorGraph(TestGraphs.small1())
+	assert.equal( sep_2_str( GraphAnalyzer.listMinimalSeparators(g) ), "{}" )
+	assert.strictEqual( sep_2_str( [ GraphAnalyzer.findMinimalSeparator(g) ] ) , "{}" )
 
-	assert.equal(
-		(function(){
-			var g = GraphTransformer.moralGraph( 
-				GraphTransformer.ancestorGraph(
-				GraphTransformer.backDoorGraph(TestGraphs.confounding_triangle())))
-		   GraphAnalyzer.listMinimalSeparators(g); // should clean up after itself
-		   return sep_2_str( GraphAnalyzer.listMinimalSeparators(g) )
-		})(), "{C}" )
+	g = GraphTransformer.backDoorGraph(TestGraphs.confounding_triangle())
+	gm = GraphTransformer.moralGraph(GraphTransformer.ancestorGraph(g))
+	assert.equal( sep_2_str( GraphAnalyzer.listMinimalSeparators(gm) ), "{C}" )
+	assert.equal( sep_2_str( [ GraphAnalyzer.findMinimalSeparator(g) ] ), "{C}" )
 		
-	assert.equal(
-		(function(){
-		   var g = GraphTransformer.moralGraph(
-			GraphTransformer.ancestorGraph(
-			GraphTransformer.backDoorGraph(TestGraphs.m_bias_graph())
-			) )
-		   GraphAnalyzer.listMinimalSeparators(g);
-		   return sep_2_str( GraphAnalyzer.listMinimalSeparators(g) );
-		})(), "{}" ) 
+	
+	g = GraphTransformer.backDoorGraph(TestGraphs.m_bias_graph())
+	gm = GraphTransformer.moralGraph(GraphTransformer.ancestorGraph(g))
+	assert.equal( sep_2_str ( GraphAnalyzer.listMinimalSeparators(gm) ), "{}" ) 
+	assert.equal( sep_2_str( [ GraphAnalyzer.findMinimalSeparator(gm)  ] ) , "{}" )
 		 
-	assert.equal(
-		(function(){
-		   var gbd = GraphTransformer.backDoorGraph(TestGraphs.extended_confounding_triangle());
-		   var gan = GraphTransformer.ancestorGraph(gbd);
-		   var gm = GraphTransformer.moralGraph(gan);
-		   return sep_2_str( GraphAnalyzer.listMinimalSeparators(gm) );
-		})(), "{C, D}\n{C, E}") 
+	g = GraphTransformer.backDoorGraph(TestGraphs.extended_confounding_triangle())
+	gm = GraphTransformer.moralGraph(GraphTransformer.ancestorGraph(g))
+	assert.equal(sep_2_str( GraphAnalyzer.listMinimalSeparators(gm) ), "{C, D}\n{C, E}") 
+	assert.equal(sep_2_str( [ GraphAnalyzer.findMinimalSeparator(g) ] ) , "{C, D}") 
 
-	assert.equal(
-		(function(){
-		   var g = GraphTransformer.moralGraph(
-			GraphTransformer.ancestorGraph(
-				GraphTransformer.backDoorGraph(TestGraphs.extended_confounding_triangle())) )
-		   return sep_2_str(GraphAnalyzer.listMinimalSeparators( g, [g.getVertex("D")], [] ) )
-		})(), "{C, D}" ) 
+	assert.equal(sep_2_str(GraphAnalyzer.listMinimalSeparators( gm, verts(["D"]), [] ) ), "{C, D}" ) 
+	assert.equal(sep_2_str( [ GraphAnalyzer.findMinimalSeparator(g, null, null, verts(["D"]), []) ] ) , "{C, D}") 
 
-	assert.equal(
-		(function(){
-		   var g = GraphTransformer.moralGraph(
-				GraphTransformer.ancestorGraph(
-					GraphTransformer.backDoorGraph(TestGraphs.extended_confounding_triangle())) )
-		   return sep_2_str( GraphAnalyzer.listMinimalSeparators(g, [], [g.getVertex("D")] ) )
-		})(), "{C, E}") 
-} )
+	assert.equal(sep_2_str( GraphAnalyzer.listMinimalSeparators(gm, [], [], 1) ), "{C, E}") 
+	assert.equal(sep_2_str( GraphAnalyzer.listMinimalSeparators(gm, [], verts(["D"])) ), "{C, E}") 
+ 	assert.equal(sep_2_str( [ GraphAnalyzer.findMinimalSeparator(g, null, null, [], verts(["D"]) ) ] ) , "{C, E}") 
+	
+	g = $p("digraph {"+
+		"D [outcome] "+
+		"E [exposure] "+
+		"v1 v2 v3 v4 v5 v6 v7 "+
+		"D <-> v5 "+
+		"E -> v1 "+
+		"E -> v6 "+
+		"v1 -> D "+
+		"v2 -> D "+
+		"v2 -> E "+
+		"v3 -> E "+
+		"v3 <-> v4 "+
+		"v4 -> v6 "+
+		"v5 -> v4 "+
+		"v6 -> v7 "+
+		"v7 -> D"+
+		"}")
+
+	gm = GraphTransformer.moralGraph(GraphTransformer.ancestorGraph(g))
+	assert.equal(sep_2_str( GraphAnalyzer.listMinimalSeparators(gm) ), "{v1, v2, v3, v4, v6}\n{v1, v2, v3, v4, v7}\n{v1, v2, v5, v6}\n{v1, v2, v5, v7}")
+	assert.equal(sep_2_str( [ GraphAnalyzer.findMinimalSeparator(g) ] ), "{v1, v2, v3, v4, v6}")
+	assert.equal(sep_2_str( [ GraphAnalyzer.findMinimalSeparator(g, verts("D"), verts("E")) ] ), "{v1, v2, v5, v7}")
+	assert.equal(sep_2_str( [ GraphAnalyzer.findMinimalSeparator(g, null, null, verts("v7")) ] ), "{v1, v2, v3, v4, v7}")
+	assert.equal(sep_2_str( [ GraphAnalyzer.findMinimalSeparator(g, null, null, verts("v5")) ] ), "{v1, v2, v5, v6}")
+	assert.equal(sep_2_str( [ GraphAnalyzer.findMinimalSeparator(g, null, null, verts(["v5","v7"])) ] ), "{v1, v2, v5, v7}")
+	assert.equal(sep_2_str( [ GraphAnalyzer.findMinimalSeparator(g, null, null, [], verts(["v7"])) ] ), "{v1, v2, v3, v4, v6}")
+	assert.equal(sep_2_str( [ GraphAnalyzer.findMinimalSeparator(g, null, null, [], verts(["v6"])) ] ), "{v1, v2, v3, v4, v7}")
+	assert.equal(sep_2_str( [ GraphAnalyzer.findMinimalSeparator(g, null, null, [], verts(["v4"])) ] ), "{v1, v2, v5, v6}")
+	assert.equal(sep_2_str( [ GraphAnalyzer.findMinimalSeparator(g, null, null, [], verts(["v4","v6"])) ] ), "{v1, v2, v5, v7}")
+	assert.strictEqual(GraphAnalyzer.findMinimalSeparator(g, null, null, [], verts(["v2"])) , false)
+	assert.equal(sep_2_str( [ GraphAnalyzer.findMinimalSeparator(g, verts("v4"), verts("v2")) ]) , "{}" )
+	assert.equal(sep_2_str( [ GraphAnalyzer.findMinimalSeparator(g, verts("v4"), verts("v2"), verts("D"), []) ]) , "{D, E, v3, v5, v6}" )
+	assert.equal(sep_2_str( [ GraphAnalyzer.findMinimalSeparator(g, verts("v4"), verts("v2"), verts(["D","v7"]), []) ]) , "{D, E, v3, v5, v7}" )
+	assert.equal(sep_2_str( [ GraphAnalyzer.findMinimalSeparator(g, verts("v4"), verts("v2"), verts("D"), verts("v6")) ]) , "{D, E, v3, v5, v7}" )
+	
+	gm.setSources(verts("v4"))
+	gm.setTargets(verts("v2"))
+	assert.equal(sep_2_str( GraphAnalyzer.listMinimalSeparators(gm, verts("D"), []) ) , "{D, E, v3, v5, v6}\n{D, E, v3, v5, v7}" )
+} );
 
 QUnit.test( "graph analysis", function( assert ) {
 	var g = $p("dag{x->y}")
@@ -539,6 +562,12 @@ QUnit.test( "graph transformations", function( assert ) {
 		 "graph G { x -- y -- z -- x }",
 		 "dag G { x -> y <- z }",
 		 "graph G { x -- y -- z }",
+
+		 GraphTransformer.dagToMag,
+		 "dag { v1 [latent]     z <- v1 -> v2 -> y    x -> v1}",
+		 "mag { x -> z <-> v2 -> y  x -> v2 }",
+		 "dag { l1 [latent] l2 [latent]  a -> x   l1 -> x  l1 -> z   l2 -> y  l2 -> z  x -> y   z -> x  z -> y}",
+		 "mag { a -> x   a -> y   x -> y   z -> x   z -> y } ",
 
 	];
 	var i = 0; var transfunc;

@@ -204,7 +204,7 @@ var GraphTransformer = {
 		dpcp = GraphAnalyzer.properPossibleCausalPaths( gback, X, Y )
 		_.each( X, function(s){
 			_.each( _.intersection( dpcp, s.getChildren() ), function( c ){
-				if( GraphAnalyzer.isEdgeVisible( gback, gback.getEdge(s.id,c.id)) ){
+				if( GraphAnalyzer.isEdgeVisible( g, g.getEdge(s.id,c.id)) ){
 					gback.deleteEdge( s, c, Graph.Edgetype.Directed )
 				}
 			})
@@ -611,6 +611,59 @@ var GraphTransformer = {
 		} else {
 			rg.setType("mag")
 		}
+		return rg
+	},
+	
+	//algorithms as in "Causal Reasoning with Ancestral Graphs" by Jiji Zhang
+	dagToMag: function( g, latent ){
+		if (!latent) latent = g.getLatentNodes()
+		var latentSet = {}
+		_.each(latent, function(v){ latentSet[v.id] = true })
+		var V = _.difference(g.getVertices(), latent)
+
+		var ancestors = {}
+		_.each(V, function(v){ 
+			var newHash = {}
+			_.each(g.ancestorsOf( [v] ), function(w){
+				newHash[w.id] = true
+			})
+			ancestors[v.id] = newHash
+		} )
+
+		var rgv = {}
+		var rg = new Graph()
+		_.each(V, function(v){ 
+			rgv[v.id] = rg.addVertex( v.cloneWithoutEdges() ) 
+		} )
+		g.copyAllPropertiesTo( rg )
+		rg.setType("mag")
+
+		_.each(V, function(v){
+			var Av = ancestors[v.id]
+			_.each(V, function(u){
+				if (u.id >= v.id) return
+				var Au = ancestors[u.id]
+
+				var reachable = GraphAnalyzer.visitGraph(g, [v], function(e, outgoing, from_parents){
+					var w = outgoing ? e.v1 : e.v2
+					if (from_parents && !outgoing) {
+						//collider
+						if (!Av[w.id] && !Au[w.id]) return false
+					} else if (w.id != v.id && w.id != u.id && !latentSet[w.id]) return false
+					return true
+				}, function(w){
+					return w != u
+				})
+
+				if (!reachable) return
+
+				var rv = rgv[v.id]
+				var ru = rgv[u.id]
+				if (Au[v.id]) rg.quickAddDirectedEdge( rv, ru )
+				else if (Av[u.id]) rg.quickAddDirectedEdge( ru, rv )
+				else rg.quickAddEdge( ru, rv, Graph.Edgetype.Bidirected )
+			})
+		})
 		return rg
 	},
 	

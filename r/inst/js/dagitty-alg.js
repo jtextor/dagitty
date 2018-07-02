@@ -792,6 +792,10 @@ var Graph = Class.extend({
 		c.prototype["add"+pcamel] = function( v ){ return this.addVertexProperty( v, p ) }
 		c.prototype["remove"+pcamel] = function( v ){ return this.removeVertexProperty( v, p ) }
 		c.prototype["get"+pcamel+"s"] = function(){ return this.getVerticesWithProperty( p ) }
+		c.prototype["set"+pcamel+"s"] = function( vs ){ 
+			this.removePropertyFromAllVertices( p )
+			_.each(vs, function(v){ this.addVertexProperty( v, p ) }, this)
+		}
 		c.prototype["removeAll"+pcamel+"s"] = function(){ return this.removePropertyFromAllVertices( p ) }
 	} )
 })(Graph)
@@ -1384,6 +1388,33 @@ var GraphAnalyzer = {
 		return this.listMinimalSeparators( gam, adjusted_nodes, latent_nodes, max_nr )
 	},
 
+	
+	//find one minimal and nearest separator
+	findMinimalSeparator : function( g, x, y, must, must_not ){
+		if (!x) x = g.getSources()
+		if (!y) y = g.getTargets()
+		if (!must) must = []
+		if (!must_not) must_not = []
+		
+		var a = g.anteriorsOf(_.union(x, y, must))
+		
+		var z1 = _.difference(a, x, y, must_not, g.getLatentNodes())
+		
+		function removeUnreachable(x2, y2, oldZ) {			
+			var z = GraphAnalyzer.closeSeparator(g, x2, y2, a, oldZ )
+			if (z === false) return z
+			
+			return _.union(_.intersection(oldZ, z), must)
+		}
+		
+		var z2 = removeUnreachable(x, y, z1)
+		if (z2 === false) return z2
+
+		var z3 = removeUnreachable(y, x, z2)
+		
+		return z3
+	},
+	
 	listBasisImplications : function( g ){
 		var r = []
 		var vv = g.vertices.values()
@@ -1633,54 +1664,106 @@ var GraphAnalyzer = {
 		return r
 	},
 	
-	closeSeparator : function( g, y, z ){
-		var g_m = GraphTransformer.moralGraph(
-			GraphTransformer.ancestorGraph( g, [ y, z ]  ) )
+	
+	/*
+	onCanVisitEdge: function(e, outgoing, from_parents){
+	                  //e: edge
+	                  //outgoing: we are moving from e.v1 to e.v2
+	                    so (outgoing ? e.v1 : e.v2) is the node being left
+	                  //from_parents: if there is an arrow pointing to e.v1 on the previous edge
+	                  //  in a DAG (from_parents && !outgoing) means a collider is left
 
-		var r = [], blocked = [], v, w, vN, i, found=true
-		
-		y = g_m.getVertex( y.id ); z = g_m.getVertex( z.id )
-		
-		while( found ){
-			var visited = []
-			var discovered_from = {}; discovered_from[y] = false
-			var q = [y]
-			found = false
-			while( q.length > 0 ){
-				v = q.shift()
-				if( v.id == z.id ){
-					found = true; break
-				}
-				if( !visited[v.id] && !blocked[v.id] ){
-					visited[v.id] = true
-					vN = g_m.neighboursOf( [v] )
-					for( i = 0 ; i < vN.length ; i ++ ){
-						w = vN[i]
-						if( w != v && !visited[w.id] ){
-							discovered_from[ w.id ] = v.id
-							q.push( w ) 
-						}
-					}
-				}
-			}
-		
-			if( found ) {
-				v = z.id; w = false
-				while( v != y.id ){
-					if( !g_m.isLatentNode( g_m.getVertex( v ) ) ){
-						w = v
-					}
-					v = discovered_from[v]
-				}
-				if( w === false || w === z.id ){
-					return false
-				}
-				r.push( g.getVertex( w ) )
-				blocked[w] = true
+	                  return if (outgoing ? e.v2 : e.v1) should be visited
+	                }
+	onIsFinalNode: function(v) {
+	               //v: current node
+	               return if search should abort
+	             }
+	*/
+	visitGraph : function (g, startNodes, onCanVisitEdge, onIsFinalNode) {
+		if (!_.isArray(startNodes)) startNodes = [startNodes]
+		if (!onCanVisitEdge) onCanVisitEdge = function(){return true}
+		if (!onIsFinalNode) onIsFinalNode = function(){return false}
+
+		var q_from_parent = [], q_from_child = startNodes
+		var visited_from_parent = {}, visited_from_child = {}
+		var v
+		var from_parents
+
+		function visitFromParentLike(t){
+			if (!visited_from_parent[t.id]) {
+				q_from_parent.push(t)
+				visited_from_parent[t.id] = true
 			}
 		}
+		function visitFromChildLike(t){
+			if (!visited_from_child[t.id]) {
+				q_from_child.push(t)
+				visited_from_child[t.id] = true
+			}
+		}
+		function visitEdge(e){
+			var outgoing = e.v1 == v
+			var t = outgoing ? e.v2 : e.v1
+			if (!onCanVisitEdge(e, outgoing, from_parents)) return
+			var arrowHeadAtT = (e.directed == Graph.Edgetype.Directed && outgoing) || e.directed == Graph.Edgetype.Bidirected
+			if (arrowHeadAtT) visitFromParentLike(t)
+			else visitFromChildLike(t)
+		}
+
+		while (q_from_parent.length > 0 || q_from_child.length > 0) {
+			from_parents = q_from_parent.length > 0
+			v = from_parents ? q_from_parent.pop() : q_from_child.pop()
+			if (!onIsFinalNode(v)) return true
+			_.each( v.incomingEdges, visitEdge)
+			_.each( v.outgoingEdges, visitEdge)
+		}
+		return false
+	},
+
+	closeSeparator : function( g, y, z, anteriors, blockable_nodes ){
+		if (!_.isArray(y)) y = [y]
+		if (!_.isArray(z)) z = [z]
+		if (!anteriors) anteriors = g.anteriorsOf(y.concat(z))
 		
-		return r
+		var a = {}
+		_.each(anteriors, function(v){ a[v.id] = true })
+		
+		var endOfRoad = {}
+		_.each(z, function(v){ endOfRoad[v.id] = true })
+
+		var isBlockableNode
+		if (blockable_nodes) {
+			var blockable_nodes_hash = {}
+			_.each(blockable_nodes, function(v){ blockable_nodes_hash[v.id] = true })
+			_.each(y, function(v){ blockable_nodes_hash[v.id] = false })
+			isBlockableNode = function(v) { return blockable_nodes_hash[v.id] }
+		} else {
+			var start = {}
+			_.each(y, function(v){ start[v.id] = true })
+			isBlockableNode = function(v) { return !start[v.id] && !g.isLatentNode(v) }
+		}
+		
+		var result = []
+		var blockedNode = false
+		
+		function onCanVisitEdge(e, outgoing, from_parents) {
+			var t = outgoing ? e.v2 : e.v1
+			if (!a[t.id]) return false
+			var arrowHeadAtV = (e.directed == Graph.Edgetype.Directed && !outgoing) || e.directed == Graph.Edgetype.Bidirected
+			//var arrowHeadAtT = (e.directed == Graph.Edgetype.Directed && outgoing) || e.directed == Graph.Edgetype.Bidirected
+			return !blockedNode || (from_parents && arrowHeadAtV)
+		}
+		function visitNode(v){
+			if (endOfRoad[v.id]) return false
+			blockedNode = isBlockableNode(v)
+			if (blockedNode) 
+				result.push(v)
+			return true
+		}
+		
+		if (GraphAnalyzer.visitGraph(g, y, onCanVisitEdge, visitNode)) return false
+		return result
 	},
 	
 	/** d-Separation test via Shachter's "Bayes-Ball" BFS.
@@ -3202,7 +3285,7 @@ var GraphTransformer = {
 		dpcp = GraphAnalyzer.properPossibleCausalPaths( gback, X, Y )
 		_.each( X, function(s){
 			_.each( _.intersection( dpcp, s.getChildren() ), function( c ){
-				if( GraphAnalyzer.isEdgeVisible( gback, gback.getEdge(s.id,c.id)) ){
+				if( GraphAnalyzer.isEdgeVisible( g, g.getEdge(s.id,c.id)) ){
 					gback.deleteEdge( s, c, Graph.Edgetype.Directed )
 				}
 			})
@@ -3609,6 +3692,59 @@ var GraphTransformer = {
 		} else {
 			rg.setType("mag")
 		}
+		return rg
+	},
+	
+	//algorithms as in "Causal Reasoning with Ancestral Graphs" by Jiji Zhang
+	dagToMag: function( g, latent ){
+		if (!latent) latent = g.getLatentNodes()
+		var latentSet = {}
+		_.each(latent, function(v){ latentSet[v.id] = true })
+		var V = _.difference(g.getVertices(), latent)
+
+		var ancestors = {}
+		_.each(V, function(v){ 
+			var newHash = {}
+			_.each(g.ancestorsOf( [v] ), function(w){
+				newHash[w.id] = true
+			})
+			ancestors[v.id] = newHash
+		} )
+
+		var rgv = {}
+		var rg = new Graph()
+		_.each(V, function(v){ 
+			rgv[v.id] = rg.addVertex( v.cloneWithoutEdges() ) 
+		} )
+		g.copyAllPropertiesTo( rg )
+		rg.setType("mag")
+
+		_.each(V, function(v){
+			var Av = ancestors[v.id]
+			_.each(V, function(u){
+				if (u.id >= v.id) return
+				var Au = ancestors[u.id]
+
+				var reachable = GraphAnalyzer.visitGraph(g, [v], function(e, outgoing, from_parents){
+					var w = outgoing ? e.v1 : e.v2
+					if (from_parents && !outgoing) {
+						//collider
+						if (!Av[w.id] && !Au[w.id]) return false
+					} else if (w.id != v.id && w.id != u.id && !latentSet[w.id]) return false
+					return true
+				}, function(w){
+					return w != u
+				})
+
+				if (!reachable) return
+
+				var rv = rgv[v.id]
+				var ru = rgv[u.id]
+				if (Au[v.id]) rg.quickAddDirectedEdge( rv, ru )
+				else if (Av[u.id]) rg.quickAddDirectedEdge( ru, rv )
+				else rg.quickAddEdge( ru, rv, Graph.Edgetype.Bidirected )
+			})
+		})
 		return rg
 	},
 	
