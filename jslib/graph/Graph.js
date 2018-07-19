@@ -49,7 +49,7 @@ var Graph = Class.extend({
 		return this.vertices.size()
 	},
 	getNumberOfEdges : function(){
-		return this.edges.size()
+		return this.edges.length
 	},
 	getVertices : function(){
 		return this.vertices.values()
