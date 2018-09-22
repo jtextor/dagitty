@@ -4,24 +4,27 @@
 \alias{localTests}
 \title{Test Graph against Data}
 \usage{
-localTests(x, data = NULL, type = c("cis", "cis.loess", "tetrads",
-  "tetrads.within", "tetrads.between", "tetrads.epistemic"), tests = NULL,
-  sample.cov = NULL, sample.nobs = NULL, conf.level = 0.95, R = NULL,
-  tol = NULL, loess.pars = NULL)
+localTests(x = NULL, data = NULL, type = c("cis", "cis.loess",
+  "cis.chisq", "tetrads", "tetrads.within", "tetrads.between",
+  "tetrads.epistemic"), tests = NULL, sample.cov = NULL,
+  sample.nobs = NULL, conf.level = 0.95, R = NULL,
+  max.conditioning.variables = NULL, tol = NULL, loess.pars = NULL)
 }
 \arguments{
-\item{x}{the input graph, a DAG, MAG, or PDAG.}
+\item{x}{the input graph, a DAG, MAG, or PDAG. Either an input graph or an explicit
+list of tests needs to be specified.}
 
 \item{data}{matrix or data frame containing the data.}
 
 \item{type}{character indicating which kind of local
 test to perform. Supported values are \code{"cis"} (linear conditional independence),
 \code{"cis.loess"} (conditional independence using loess regression), 
+\code{"cis.chisq"} (for categorical data, based on the chi-square test),
 \code{"tetrads"} and \code{"tetrads.type"}, where "type" is one of the items of the 
 tetrad typology, e.g. \code{"tetrads.within"} (see \code{\link{vanishingTetrads}}).
 Tetrad testing is only implemented for DAGs.}
 
-\item{tests}{optional list of the precise tests to perform. If not given, the list
+\item{tests}{list of the precise tests to perform. If not given, the list
 of tests is automatically derived from the input graph. Can be used to restrict 
 testing to only a certain subset of tests (for instance, to test only those conditional
 independencies for which the conditioning set is of a reasonably low dimension, such
@@ -40,7 +43,14 @@ intervals. If \code{NULL}, then confidence intervals are based on normal
 approximation. For tetrads, the normal approximation is only valid in 
 large samples even if the data are normally distributed.}
 
-\item{tol}{bound value for tolerated deviation from local test value. By default, we perform}
+\item{max.conditioning.variables}{for conditional independence testing, this 
+ parameter can be used to perform only those tests where the number of conditioning
+variables does not exceed the given value. High-dimensional
+conditional independence tests can be very unreliable.}
+
+\item{tol}{bound value for tolerated deviation from local test value. By default, we perform
+a two-sided test of the hypothesis theta=0. If this parameter is given, the test changes
+to abs(theta)=tol versus abs(theta)>tol.}
 
 \item{loess.pars}{list of parameter to be passed on to  \code{\link[stats]{loess}}
 (for \code{type="cis.loess"}), for example the smoothing range.}
@@ -75,5 +85,16 @@ d <- simulateSEM(g,.1,.1)
 # Compute independencies with at most 3 conditioning variables
 imp <- Filter(function(x) length(x$Z)<4, impliedConditionalIndependencies(g))
 plotLocalTestResults(localTests( g, d, "cis.loess", R=100, tests=imp, loess.pars=list(span=0.6) ))
+
+# Test independencies for categorical data
+odds2p <- function(o) exp(o)/(exp(o)+1)
+n <- 500
+X <- rbinom(n,1,.5)
+U1 <- rbinom(n,1,odds2p(4*X-2))
+M2 <- rbinom(n,1,odds2p(4*X-2))
+M1 <- rbinom(n,1,odds2p(2*U1-1))
+Y <- rbinom(n,1,odds2p(2*U1+2*M2))
+d <- data.frame(X,Y,U1,M1,M2)
+localTests("dag{X->{M1 M2}->Y}",data.frame(X,Y,U1,M1,M2),type="cis.chisq")
 
 }

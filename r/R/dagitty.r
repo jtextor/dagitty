@@ -4,7 +4,7 @@
 #' @importFrom grDevices dev.size
 #' @importFrom methods is
 #' @importFrom utils tail
-#' @importFrom stats as.formula coef confint cov cov2cor cor lm pnorm pchisq qnorm quantile runif loess sd
+#' @importFrom stats as.formula coef confint cov cov2cor cor lm pnorm pchisq qnorm quantile runif loess sd weighted.mean complete.cases
 #' @importFrom graphics abline arrows axis lines par plot plot.new segments strheight strwidth text xspline
 NULL
 
@@ -1650,8 +1650,9 @@ downloadGraph <- function(x="dagitty.net/mz-Tuw9"){
 #' Derives testable implications from the given graphical model and tests them against
 #' the given dataset.
 #'
-#' @param x the input graph, a DAG, MAG, or PDAG.
-#' @param tests optional list of the precise tests to perform. If not given, the list
+#' @param x the input graph, a DAG, MAG, or PDAG. Either an input graph or an explicit
+#'  list of tests needs to be specified.
+#' @param tests list of the precise tests to perform. If not given, the list
 #'  of tests is automatically derived from the input graph. Can be used to restrict 
 #'  testing to only a certain subset of tests (for instance, to test only those conditional
 #'  independencies for which the conditioning set is of a reasonably low dimension, such
@@ -1663,6 +1664,7 @@ downloadGraph <- function(x="dagitty.net/mz-Tuw9"){
 #' @param type character indicating which kind of local
 #'  test to perform. Supported values are \code{"cis"} (linear conditional independence),
 #'  \code{"cis.loess"} (conditional independence using loess regression), 
+#'  \code{"cis.chisq"} (for categorical data, based on the chi-square test),
 #'  \code{"tetrads"} and \code{"tetrads.type"}, where "type" is one of the items of the 
 #'  tetrad typology, e.g. \code{"tetrads.within"} (see \code{\link{vanishingTetrads}}).
 #'  Tetrad testing is only implemented for DAGs.
@@ -1671,8 +1673,12 @@ downloadGraph <- function(x="dagitty.net/mz-Tuw9"){
 #'   approximation. For tetrads, the normal approximation is only valid in 
 #'   large samples even if the data are normally distributed.
 #' @param tol bound value for tolerated deviation from local test value. By default, we perform
-#    a two-sided test of the hypothesis theta=0. If this parameter is given, the test changes
-#    to abs(theta)=tol versus abs(theta)>tol.
+#'    a two-sided test of the hypothesis theta=0. If this parameter is given, the test changes
+#'    to abs(theta)=tol versus abs(theta)>tol.
+#' @param max.conditioning.variables for conditional independence testing, this 
+#'    parameter can be used to perform only those tests where the number of conditioning
+#'   variables does not exceed the given value. High-dimensional
+#'   conditional independence tests can be very unreliable.
 #' @param conf.level determines the size of confidence intervals for test
 #'   statistics.
 #' @param loess.pars list of parameter to be passed on to  \code{\link[stats]{loess}}
@@ -1704,20 +1710,38 @@ downloadGraph <- function(x="dagitty.net/mz-Tuw9"){
 #' imp <- Filter(function(x) length(x$Z)<4, impliedConditionalIndependencies(g))
 #' plotLocalTestResults(localTests( g, d, "cis.loess", R=100, tests=imp, loess.pars=list(span=0.6) ))
 #'
+#' # Test independencies for categorical data
+#' odds2p <- function(o) exp(o)/(exp(o)+1)
+#' n <- 500
+#' X <- rbinom(n,1,.5)
+#' U1 <- rbinom(n,1,odds2p(4*X-2))
+#' M2 <- rbinom(n,1,odds2p(4*X-2))
+#' M1 <- rbinom(n,1,odds2p(2*U1-1))
+#' Y <- rbinom(n,1,odds2p(2*U1+2*M2))
+#' d <- data.frame(X,Y,U1,M1,M2)
+#' localTests("dag{X->{M1 M2}->Y}",data.frame(X,Y,U1,M1,M2),type="cis.chisq")
+#'
 #' @export
-localTests <- function(x, data=NULL, 
-	type=c("cis","cis.loess","tetrads","tetrads.within","tetrads.between","tetrads.epistemic"),
+localTests <- function(x=NULL, data=NULL, 
+	type=c("cis","cis.loess","cis.chisq",
+	       "tetrads","tetrads.within","tetrads.between","tetrads.epistemic"),
 	tests=NULL,
 	sample.cov=NULL,sample.nobs=NULL,
 	conf.level=.95,R=NULL,
+	max.conditioning.variables=NULL,
 	tol=NULL,
 	loess.pars=NULL){
-	x <- as.dagitty(x)
+	if( !is.null(x) ){
+		x <- as.dagitty(x)
+		if( type=="cis" ){
+			.supportsTypes(x,c("dag","pdag","mag"))
+		} else {
+			.supportsTypes(x,c("dag"))
+		}
+	}
 	type <- match.arg(type)
-	if( type=="cis" ){
-		.supportsTypes(x,c("dag","pdag","mag"))
-	} else {
-		.supportsTypes(x,c("dag"))
+	if( is.null(x) && is.null(tests) ){
+		stop("Please provide either an input graph or a list of tests")
 	}
 	if( !is.null(sample.cov) && is.null(sample.nobs) ){
 		stop("Please provide sample size (sample.nobs)!")
@@ -1728,19 +1752,25 @@ localTests <- function(x, data=NULL,
 	if( is.null(R) && type=="cis.loess" ){
 		stop("Semi-parametric conditional independence testing requires bootstrapping! Please provide R argument.")
 	}
+	if( type=="cis.chisq" && !is.null(tol) ){
+		stop("Tolerance levels not implemented yet for categorical data!")
+	}
 	if( is.null(data) && is.null(sample.cov) ){
 		stop("Please provide either data or sample covariance matrix!")
 	}
 	if( !is.null(tol) && !is.null(R) ){
 		stop("Bootstrap only computes confidence intervals, so tol parameter cannot be used!")
 	}
-	w <- (1-conf.level)/2
-	if( type %in% c("tetrads","tetrads.within","tetrads.between","tetrads.epistemic") ){
+	type.split <- strsplit(type,"\\.")[[1]]
+	type.prefix  <- type.split[1]
+	type.postfix <- type.split[2]
+	if( type.prefix == "tetrads" ){
+		# Vanishing tetrad testing
 		if( is.null( tests ) ){
 			if( type == "tetrads" ){
 				tests <- vanishingTetrads( x )
 			} else {
-				tests <- vanishingTetrads( x, strsplit(type,"\\.")[[1]][2] )
+				tests <- vanishingTetrads( x, type.postfix )
 			}
 		}
 		if( length(tests) == 0 ){
@@ -1754,6 +1784,7 @@ localTests <- function(x, data=NULL,
 		if( is.null( sample.nobs ) ){
 			sample.nobs <- nrow(data)
 		}
+		w <- (1-conf.level)/2
 		tetrad.values <- .tetradsFromCov(sample.cov,tests)
 		tetrad.sample.sds <- sapply(seq_len(nrow(tests)),
 			function(i) .tetrad.sem(tests[i,],sample.cov,sample.nobs))
@@ -1786,9 +1817,14 @@ localTests <- function(x, data=NULL,
 			colnames(r) <- c("estimate","std.error","p.value",
 				paste0(100*w,"%"),paste0(100*(1-w),"%"))
 		}
-	} else if( type %in% c("cis","cis.loess") ){
+	} else if( type.prefix == "cis" ){
+		# Conditional independence testing
 		if( is.null(tests) ){
 			tests <- impliedConditionalIndependencies( x )
+		}
+		if( !is.null(max.conditioning.variables) ){
+			tests <- Filter(function(x) length(x$Z)<=max.conditioning.variables, 
+					tests)
 		}
 		if( length(tests) == 0 ){
 			return(data.frame())
@@ -1797,30 +1833,35 @@ localTests <- function(x, data=NULL,
 		if( !is.null(R) ){
 			if( type == "cis" ){
 				f <- function(i) .ci.test.lm.perm(data,i,conf.level,R)
-			} else {
+			} else if( type.postfix=="loess" ){
 				f <- function(i) .ci.test.loess.perm(data,i,conf.level,R,loess.pars)
+			} else if( type.postfix=="chisq" ){
+				f <- function(i) .ci.test.chisq.perm(data,i,conf.level,R)
+			} else {
+				stop("Illegal arguments!")
 			}
 			r <- as.data.frame(
 				row.names=row.names,
 				t(sapply( tests, f ))
 			)
-			colnames(r) <- c("estimate","std.error",
-				paste0(100*w,"%"),paste0(100*(1-w),"%"))
 		} else {
-			stopifnot( type=="cis" )
-			if( !is.null(data) ){
-				sample.cov <- cov2cor(cov(data))
-				sample.nobs <- nrow(data)
+			if( type == "cis" ){
+				f <- function(i) 
+					.ci.test.covmat(sample.cov,sample.nobs,i,conf.level,tol)
+				if( !is.null(data) ){
+					sample.cov <- cov2cor(cov(data))
+					sample.nobs <- nrow(data)
+				}
+			} else if( type.postfix == "chisq" ){
+				f <- function(i) 
+					.ci.test.chisq(data,i)
 			}
 			r <- as.data.frame(
 				row.names=row.names,
-				t(sapply( tests, function(i) 
-					.ci.test.covmat(sample.cov,sample.nobs,i,conf.level,tol) ))
+				t(sapply( tests, f ))
 			)
-			colnames(r) <- c("estimate","std.error","p.value",
-				paste0(100*w,"%"),paste0(100*(1-w),"%"))
 		}
-	}
+	} 
 	return(r)
 }
 
