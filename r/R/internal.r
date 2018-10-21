@@ -18,6 +18,10 @@
 	}
 }
 
+.odds2p <- function(x){
+	exp(x)/(exp(x)+1)
+}
+
 .arc <- function( x1, y1, x2, y2, xm, ym, col="gray", length=0.1, code=3, lwd=1 ){
 	x <- c(x1,xm,x2)
 	y <- c(y1,ym,y2)
@@ -218,8 +222,6 @@
 	}, finally={.deleteJSVar(xv);.deleteJSVar(yv)})
 	as.data.frame(r)
 }
-
-
 
 
 

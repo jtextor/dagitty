@@ -2032,6 +2032,9 @@ var GraphAnalyzer = {
 		}
 		var vv = g.vertices.values() 
 		for( var j = 0 ; j < vv.length ; j ++ ){
+			topological_index[vv[j].id] = 0
+		}
+		for( var j = 0 ; j < vv.length ; j ++ ){
 			visit( vv[j] )
 		}
 		return topological_index

@@ -1,0 +1,17 @@
+citHeader("To cite dagitty in publications, please use:")
+
+
+citEntry(entry = "article",
+    title = "Robust causal inference using directed acyclic graphs: the R package 'dagitty'",
+journal = "International Journal of Epidemiology",
+    author = "Johannes Textor, Benito van der Zander, Mark S Gilthorpe, Maciej Liśkiewicz, George TH Ellison",
+volume = "45",
+number = "6",
+pages = "1887--1894",
+year = "2016",
+doi = "10.1093/ije/dyw341",
+   
+    textVersion  = paste("Johannes Textor, Benito van der Zander, Mark K. Gilthorpe, Maciej Liskiewicz, George T.H. Ellison (2016).",
+        "Robust causal inference using directed acyclic graphs: the R package 'dagitty'.",
+        "International Journal of Epidemiology 45(6):1887-1894.")
+)

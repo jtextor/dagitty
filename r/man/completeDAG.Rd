@@ -13,5 +13,5 @@ the variables will be called  x1,...,xN.}
 \description{
 Generates a complete DAG on the given variable names. The order
 in which the variables are given corresponds to the topological ordering
-of the DAG.
+of the DAG. Returns a named list.
 }

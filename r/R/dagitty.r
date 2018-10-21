@@ -4,7 +4,7 @@
 #' @importFrom grDevices dev.size
 #' @importFrom methods is
 #' @importFrom utils tail
-#' @importFrom stats as.formula coef confint cov cov2cor cor lm pnorm pchisq qnorm quantile runif loess sd weighted.mean complete.cases
+#' @importFrom stats as.formula coef confint cov cov2cor cor lm pnorm pchisq qnorm quantile runif loess sd weighted.mean complete.cases rbinom
 #' @importFrom graphics abline arrows axis lines par plot plot.new segments strheight strwidth text xspline
 NULL
 
@@ -225,6 +225,101 @@ simulateSEM <- function( x, b.default=NULL, b.lower=-.6, b.upper=.6, eps=1, N=50
 	r[,setdiff(ovars,latents(x))]
 }
 
+#' Simulate Binary Data from DAG Structure
+#'
+#' Interprets input DAG as a structural description of a logistic
+#' model in which each variable is binary and its log-odds ratio is 
+#' a linear combination of its parent values.
+#'
+#' @param x the input graph, a DAG (which may contain bidirected edges).
+#' @param N number of samples to generate.
+#' @param b.lower lower bound for random path coefficients, applied if \code{b.default=NULL}.
+#' @param b.upper upper bound for path coefficients.
+#' @param b.default default path coefficient applied to arrows for which no coefficient is 
+#'  defined in the model syntax.
+#' @param eps base log-odds ratio.
+#' @param verbose logical. If true, prints the order in which the data are generated (which
+#'  should be a topological order).
+#' 
+#' @export
+simulateLogistic <- function( x, b.default=NULL, 
+	b.lower=-.6, b.upper=.6, eps=0, N=500,
+	verbose=FALSE ){
+	.supportsTypes( x, c("dag") )
+	x <- as.dagitty( x )
+	e <- .edgeAttributes( x, "beta" )
+	e$a <- as.double(as.character(e$a))
+	b.not.set <- is.na(e$a)
+	if( is.null( b.default ) ){
+		e$a[b.not.set] <- runif(sum(b.not.set),b.lower,b.upper)
+	} else {
+		e$a[b.not.set] <- b.default
+	}
+	ovars <- names(x)
+	nV <- length(ovars)
+	nL <- sum(e$e=="<->")
+	lats <- c()
+	vars <- paste0("v",ovars)
+	if( nrow(e) > 0 ){
+		if( nL > 0 ){
+			lats <- paste0("l",seq_len(nL))
+		}
+		Beta <- matrix( 0, nrow=nV+nL, ncol=nV+nL )
+		rownames(Beta) <- colnames(Beta) <- c(vars,lats)
+		cL <- 1
+		for( i in seq_len( nrow(e) ) ){
+			b <- e$a[i]
+			if( e$e[i] == "<->" ){
+				lV <- paste0("l",cL) 
+				lb <- sqrt(abs(b))
+				Beta[lV,paste0("v",e$v[i])] <- lb
+				if( b < 0 ){
+					Beta[lV,paste0("v",e$w[i])] <- -lb
+				} else {
+					Beta[lV,paste0("v",e$w[i])] <- lb
+				}
+				cL <- cL + 1
+			} else if( e$e[i] == "->" ){
+				Beta[paste0("v",e$v[i]),paste0("v",e$w[i])] <- b
+			}
+		}
+	} else {
+		Beta <- diag(1,nV)
+		colnames(Beta) <- vars
+	}
+	if( verbose ){
+		print(Beta)
+	}
+	rootNodes <- which( Beta != 0 )
+	r <- matrix( 0, ncol=ncol(Beta), nrow=N )
+	colnames(r) <- colnames(Beta)
+	roots <- !(colnames(Beta) %in% paste0("v",unique(e$w)))
+
+	for( i in colnames(Beta)[roots] ){
+		if( verbose ){
+			print(paste("Generating",i))
+		}
+		r[,i] <- 2*rbinom( N, 1, .odds2p(eps) )-1
+	}
+	tord <- unlist(topologicalOrdering( x )[ovars])
+	if( verbose ){
+		print("topological ordering: ")
+		print(tord)
+	}
+	for( i in which(!roots)[order(tord[!roots])] ){
+		cn <- colnames(Beta)[i]
+		if( verbose ){
+			print(paste("Generating",cn))
+		}
+		p <- .odds2p( r %*% Beta[,i] )
+		r[,cn] <- 2*rbinom( N, 1, p )-1
+	}
+	r <- r[,1:nV]
+	colnames(r) <- ovars
+	r <- as.data.frame(r)
+	r[,setdiff(ovars,latents(x))]
+}
+
 #' Implied Covariance Matrix of a Gaussian Graphical Model
 #'
 #' @inheritParams simulateSEM
@@ -234,7 +329,7 @@ impliedCovarianceMatrix <- function( x, b.default=NULL, b.lower=-.6, b.upper=.6,
 	if( !requireNamespace( "MASS", quietly=TRUE ) ){
 		stop("This function requires the 'MASS' package!")
 	}
-	.supportsTypes( x, c("dag") )
+	.supportsTypes( x, "dag" )
 	x <- as.dagitty( x )
 	e <- .edgeAttributes( x, "beta" )
 	e$a <- as.double(as.character(e$a))
@@ -462,6 +557,7 @@ equivalentDAGs <- function( x, n=100 ){
 #'
 #' @export
 moralize <- function( x ){
+	x <- as.dagitty( x )
 	.supportsTypes( x, c("dag","mag","pdag") )
 	.graphTransformer( x, "moralGraph" )
 }
@@ -479,6 +575,7 @@ moralize <- function( x ){
 #
 #' @export
 structuralPart <- function( x ){
+	x <- as.dagitty( x )
 	.supportsTypes( x, c("dag","digraph") )
 	.graphTransformer( x, "structuralPart" )
 }
@@ -497,6 +594,7 @@ structuralPart <- function( x ){
 #'
 #' @export
 measurementPart <- function( x ){
+	x <- as.dagitty( x )
 	.supportsTypes( x, c("dag","digraph") )
 	.graphTransformer( x, "measurementPart" )
 }
@@ -1731,6 +1829,7 @@ localTests <- function(x=NULL, data=NULL,
 	max.conditioning.variables=NULL,
 	tol=NULL,
 	loess.pars=NULL){
+	type <- match.arg(type)
 	if( !is.null(x) ){
 		x <- as.dagitty(x)
 		if( type=="cis" ){
@@ -1739,7 +1838,6 @@ localTests <- function(x=NULL, data=NULL,
 			.supportsTypes(x,c("dag"))
 		}
 	}
-	type <- match.arg(type)
 	if( is.null(x) && is.null(tests) ){
 		stop("Please provide either an input graph or a list of tests")
 	}
@@ -1750,7 +1848,8 @@ localTests <- function(x=NULL, data=NULL,
 		stop("Bootstrapping requires raw data!")
 	}
 	if( is.null(R) && type=="cis.loess" ){
-		stop("Semi-parametric conditional independence testing requires bootstrapping! Please provide R argument.")
+		stop(paste("Semi-parametric conditional independence testing",
+			  "requires bootstrapping! Please the argument R"))
 	}
 	if( type=="cis.chisq" && !is.null(tol) ){
 		stop("Tolerance levels not implemented yet for categorical data!")
@@ -2000,6 +2099,30 @@ dconnected <- function(x,X,Y=list(),Z=list()){
 	r
 }
 
+#' Get Topological Ordering of DAG
+#' 
+#' Computes a topological ordering of the nodes, i.e., a number for each node
+#' such that every node's number is smaller than the one of all its descendants.
+#' Bidirected edges (<->) are ignored.
+#'
+#' @param x the input graph, a DAG
+#'
+#' @export
+topologicalOrdering <- function( x ){
+	x <- as.dagitty( x )
+	.supportsTypes( x, "dag" )
+	xv <- .getJSVar()
+	r <- NULL
+	tryCatch({
+		.jsassigngraph( xv, x )
+		.jsassign( xv, .jsp("GraphAnalyzer.topologicalOrdering(global.",xv,")") )
+		r <- .jsget( xv )
+	}, 
+	error=function(e) stop(e),
+	finally={.deleteJSVar(xv)})
+	r
+}
+
 
 #' @rdname dconnected
 #' @export
@@ -2047,7 +2170,7 @@ randomDAG <- function( N, p ){
 #'
 #' Generates a complete DAG on the given variable names. The order
 #' in which the variables are given corresponds to the topological ordering
-#' of the DAG.
+#' of the DAG. Returns a named list.
 #'
 #' @param x variable names. Can also be a positive integer, in which case 
 #' the variables will be called  x1,...,xN.
