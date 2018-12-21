@@ -260,6 +260,11 @@ var DAGittyGraphView = Class.extend({
 			var g_coords = this.toGraphCoordinate( vs.x, vs.y )
 			vs.v.layout_pos_x = g_coords[0] // changes model
 			vs.v.layout_pos_y = g_coords[1] // changes model
+			if( this.getViewMode() != "normal" ){
+				var v = this.getGraph().getVertex(vs.v.id)
+				v.layout_pos_x = g_coords[0]
+				v.layout_pos_y = g_coords[1]
+			}
 		}, this ) )
 
 		this.impl.setEventListener( "edge_drag", _.bind( function( es ){
@@ -284,7 +289,7 @@ var DAGittyGraphView = Class.extend({
 			this.setActionOnClick( obj.action_on_click )
 		}
 		
-		this.display_mode = "normal"
+		this.view_mode = "normal"
 		this.drawGraph()
 	},
 	resize : function(){
