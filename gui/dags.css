@@ -120,6 +120,7 @@ select, button{
 textarea{
    font-family: monospace;
    width: 100%;
+   box-sizing: border-box;
 }
 
 form{

@@ -2588,8 +2588,8 @@ GraphLayouter.prototype = {
 		var ypad = Math.max( (maxy-miny)*.1, .5 )
 		maxy += ypad
 		miny -= ypad
-		this.graph.setBoundingBox([minx.toFixed(3),miny.toFixed(3),
-			maxx.toFixed(3),maxy.toFixed(3)])
+		var trimn = function(n){ return Math.round(n*1e3)/1e3 }
+		this.graph.setBoundingBox([minx,miny,maxx,maxy].map(trimn))
 	}
 }
 

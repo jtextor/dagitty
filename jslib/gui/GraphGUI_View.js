@@ -488,8 +488,13 @@ var DAGittyGraphView = Class.extend({
 			this.openPromptDialog( "name of the new variable:", "v"+i, this.newVertex )
 		}
 	},
-	renameVertexDialog : function(){
-		var v = this.getCurrentVertex(), myself=this
+	renameVertexDialog : function( vid ){
+		var myself = this, v
+		if( vid ){
+			v = this.getGraph().getVertex(vid)
+		} else {
+			v = this.getCurrentVertex()
+		}
 		if( !this.dialogOpen() && v ){
 			this.openPromptDialog( "rename variable:", v.id, function(n){ myself.renameVertex( n, v ) } )
 		}
