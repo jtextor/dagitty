@@ -31,12 +31,17 @@
 
 .ci.test.chisq <- function( x, ind ){
 	if( length(ind$Z) > 0 ){
+	  # Determine sample size per stratum
+	  #rrn <- by(x[,c(ind$X,ind$Y)], x[,ind$Z], nrow)
+	
+	  # Perform separate chi-square tests for each stratum
 		rr <- by(x[,c(ind$X,ind$Y)], x[,ind$Z],
 			 .chisq.test)
 		rr.null <- sapply(rr,is.null)
 		if( any(rr.null) ){
 			rr <- rr[-which(rr.null)]
 		}
+		
 		rmsea <- weighted.mean( sapply( rr, .rmsea ),
 				       weights=sapply(rr,`[[`,'observed') )
 		tst <- list(

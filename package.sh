@@ -6,3 +6,4 @@
 
 ( cd jslib/ ; make )
 ( cd gui ; zip -r ../dagitty.zip * )
+

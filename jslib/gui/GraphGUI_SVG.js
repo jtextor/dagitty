@@ -80,7 +80,7 @@ var GraphGUI_SVG = Class.extend({
 		el.dom.addEventListener( "touchstart",
 			_.bind( function(e){ 
 				this.touchEdgeShape( el, e.changedTouches[0] )
-				el.cancel_next_mousedown = true
+				e.preventDefault()
 			}, this ) )
 
 		el.dom.addEventListener( "touchend",
@@ -97,10 +97,6 @@ var GraphGUI_SVG = Class.extend({
 
 		el.dom.addEventListener( "mousedown",
 			_.bind( function(e){ 
-				if( el.cancel_next_mousedown ){
-					delete el.cancel_next_mousedown
-					return
-				}
 				this.touchEdgeShape( el, e ) 
 			}, this ) )
 		
@@ -211,11 +207,12 @@ var GraphGUI_SVG = Class.extend({
 		}
 		
 		el.dom.style.cursor = "move"
+		el.dom.style.touchAction = "none"
 
 		el.dom.addEventListener( "touchstart",
 			_.bind( function(e){ 
 				this.touchVertexShape( el, e.changedTouches[0] )
-				el.cancel_next_mousedown = true
+				e.preventDefault()
 			}, this ) )
 
 		el.dom.addEventListener( "touchend",
@@ -232,11 +229,7 @@ var GraphGUI_SVG = Class.extend({
 
 		el.dom.addEventListener( "mousedown",
 			_.bind( function(e){ 
-				if( el.cancel_next_mousedown ){
-					delete el.cancel_next_mousedown
-					return
-				}
-				this.touchVertexShape( el, e ) 
+				this.touchVertexShape( el, e )
 			}, this ) )
 
 		el.dom.addEventListener( "mouseover", _.bind(
@@ -420,7 +413,9 @@ var GraphGUI_SVG = Class.extend({
 			for( i=0 ; i < e.changedTouches.length ; i ++ ){
 				if( e.changedTouches[i].identifier == 
 					v.last_touch ){
-					this.mousemoveHandler( e.changedTouches[i] ); return
+					this.mousemoveHandler( e.changedTouches[i] ); 
+					e.preventDefault()
+					return
 				}
 			}
 		}

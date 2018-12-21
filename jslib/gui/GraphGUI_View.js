@@ -132,7 +132,8 @@ var DAGittyGraphView = Class.extend({
 		this.getContainer().addEventListener( "click", boundClickHandler )
 		
 		if( autofocus ){
-			var f = function(){ if(!mycontainer.contains( document.activeElement )){ mycontainer.focus() } }
+			var f = function(){ if(!mycontainer.contains( document.activeElement )){ 
+				mycontainer.focus() } }
 			this.getContainer().addEventListener( "mouseenter", f )
 			this.getContainer().addEventListener( "touchenter", f )
 		}

@@ -35,20 +35,14 @@ GraphLayouter.prototype = {
 			if(y > maxy) maxy = y
 			if(y < miny) miny = y            
 		} )
-		if( maxx-minx>0 ){
-			this.graph.layoutMinX = minx
-			this.graph.layoutMaxX = maxx
-		} else {
-			this.graph.layoutMinX = -.1
-			this.graph.layoutMaxX = .1
-		}
-		if( maxy-miny>0 ){
-			this.graph.layoutMinY = miny
-			this.graph.layoutMaxY = maxy
-		} else {
-			this.graph.layoutMinY = -.1
-			this.graph.layoutMaxY = .1
-		}
+		var xpad = Math.max( (maxx-minx)*.1, .5 )
+		maxx += xpad
+		minx -= xpad
+		var ypad = Math.max( (maxy-miny)*.1, .5 )
+		maxy += ypad
+		miny -= ypad
+		this.graph.setBoundingBox([minx.toFixed(3),miny.toFixed(3),
+			maxx.toFixed(3),maxy.toFixed(3)])
 	}
 }
 
