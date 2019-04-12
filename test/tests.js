@@ -885,9 +885,9 @@ QUnit.test( "instrumental variables", function( assert ) {
 	})(), "u" )
 
 	assert.equal((function(){	
-		var g = $p( "digraph G { u \n z -> x -> y \n u -> x \n u -> y \n }" )
-		return ""+_(GraphAnalyzer.ancestralInstrument( g, g.getVertex("x"), g.getVertex("y"), 
-			g.getVertex("z") )).pluck("id").join(",")
+		var g = $p( "dag{ u \n z -> x -> y \n u -> x \n u -> y \n }" )
+		return ""+_(GraphAnalyzer.conditionalInstruments( g, 
+			g.getVertex("x"), g.getVertex("y"))[0][1]).pluck("id").join(",")
 	})(), "" )
 
 	assert.equal((function(){	

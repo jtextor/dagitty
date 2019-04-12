@@ -938,11 +938,18 @@ var GraphAnalyzer = {
 		}
 		var de_y = g_bd.descendantsOf( [g_bd.getVertex(y)] )
 		for( i = 0 ; i < vv.length ; i ++ ){
-			if( !g.isLatentNode( vv[i] ) && !g.isSelectionNode( vv[i] ) ){
-				W = GraphAnalyzer.ancestralInstrument( g, x, y, vv[i], g_bd, de_y )
-				if( W !== false ){
-					r.push( [vv[i],W] )
-				}				
+			var z = vv[i]
+			if( !g.isLatentNode( z ) && !g.isSelectionNode( z ) ){
+				// First check if z is a valid instrument already
+				if( GraphAnalyzer.dConnected( g, [x], [z], [] ) &&
+					!GraphAnalyzer.dConnected( g_bd, [g_bd.getVertex(y)], [g_bd.getVertex(z)], [] ) ){
+					r.push( [z,[]] )
+				} else {
+					W = GraphAnalyzer.ancestralInstrument( g, x, y, z, g_bd, de_y )
+					if( W !== false ){
+						r.push( [z,W] )
+					}
+				}
 			}
 		}
 		return r
