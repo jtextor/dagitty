@@ -430,7 +430,8 @@ var GraphAnalyzer = {
 		return this.listMinimalSeparators( gam, adjusted_nodes, latent_nodes, max_nr )
 	},
 
-	
+	/* Replaces the old "closeSeparator" function
+	 */
 	//find one minimal and nearest separator
 	findMinimalSeparator : function( g, x, y, must, must_not ){
 		if (!x) x = g.getSources()
@@ -902,7 +903,7 @@ var GraphAnalyzer = {
 		if( arguments.length < 6 ){
 			de_y = g_bd.descendantsOf( [y] )
 		}
-		var W = GraphAnalyzer.closeSeparator( g_bd, y, z )
+		var W = GraphAnalyzer.findMinimalSeparator( g_bd, [y], [z], [], [] )
 		if( W === false ){ return false }
 		if( _.intersection( W, de_y ).length > 0 ){ return false }
 		if( _.intersection( W, [x] ).length === 1 ){ return false }
@@ -940,15 +941,9 @@ var GraphAnalyzer = {
 		for( i = 0 ; i < vv.length ; i ++ ){
 			var z = vv[i]
 			if( !g.isLatentNode( z ) && !g.isSelectionNode( z ) ){
-				// First check if z is a valid instrument already
-				if( GraphAnalyzer.dConnected( g, [x], [z], [] ) &&
-					!GraphAnalyzer.dConnected( g_bd, [g_bd.getVertex(y)], [g_bd.getVertex(z)], [] ) ){
-					r.push( [z,[]] )
-				} else {
-					W = GraphAnalyzer.ancestralInstrument( g, x, y, z, g_bd, de_y )
-					if( W !== false ){
-						r.push( [z,W] )
-					}
+				W = GraphAnalyzer.ancestralInstrument( g, x, y, z, g_bd, de_y )
+				if( W !== false ){
+					r.push( [z,W] )
 				}
 			}
 		}

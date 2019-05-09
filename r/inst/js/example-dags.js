@@ -1,5 +1,5 @@
 /* DAGitty - a browser-based software for causal modelling and analysis
-   Copyright (C) 2010 Johannes Textor
+   Copyright (C) 2010, 2017 Johannes Textor
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License
@@ -15,20 +15,18 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA. */
 
-
 var examples = [ 
 {
-    e: "E D\n"+
-    "A E Z\n"+
-    "B D Z\n",
+	d : "dag { \n"+
+	"bb=\"-3,-0.5,2,1.2\"" +
+	"D [outcome,pos=\"1,1\"] " +
+	"E [exposure,pos=\"-2,1\"] " +
+	"Z [pos=\"-0.5,0.5\"] " +
+	"D <-> Z [pos=\"1,-1\"] " +
+	"E -> D " +
+	"E <-> Z [pos=\"-2,-1\"] }",
 
-    v: "E E @-2.2,1.597\n"+
-"D O @1.4,1.621\n"+
-"A 1 @-2.2,-1.520\n"+
-"B 1 @1.4,-1.460\n"+
-"Z 1 @-0.3,-0.082",
-
-    l: "The M-bias graph"
+	l: "The M-bias graph"
 },
 
 {
@@ -339,8 +337,9 @@ e:"e0 x\n"+
 	"CDR DET\n"+
 	"EGC HOS\n"+
 	"FTW DET EGC\n"+
-	"SAN AFF AIS APA CDR DET\n"+
-	"SUS EGC FTW HOS",
+	"SAN ALN AFF AIS APA CDR\n"+
+	"SUS EGC FTW HOS\n"+
+	"PER DET\n",
 
 	l: "van Kampen, 2014"
 }

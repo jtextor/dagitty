@@ -337,8 +337,9 @@ e:"e0 x\n"+
 	"CDR DET\n"+
 	"EGC HOS\n"+
 	"FTW DET EGC\n"+
-	"SAN AFF AIS APA CDR DET\n"+
-	"SUS EGC FTW HOS",
+	"SAN ALN AFF AIS APA CDR\n"+
+	"SUS EGC FTW HOS\n"+
+	"PER DET\n",
 
 	l: "van Kampen, 2014"
 }
