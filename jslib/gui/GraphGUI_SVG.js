@@ -5,6 +5,25 @@
 var svgns = "http://www.w3.org/2000/svg"
 
 var GraphGUI_SVG = Class.extend({
+	init : function( canvas_element, width, height, style ){
+		if( !style ){
+			style = "default"
+		}
+		// create SVG root element
+		var svg = document.createElementNS( svgns, "svg" ) // don't need to pass in 'true'
+		svg.setAttribute( "width", width )
+		svg.setAttribute( "height", height )
+		svg.setAttribute( "style", "font-family: Arial, sans-serif" )
+		canvas_element.appendChild( svg )
+		this.container = canvas_element
+		this.setStyle(style)
+		this.svg = svg
+
+		_.map( ["touchmove","mouseup","mousemove","mouseleave","click"],
+			function(x){ svg.addEventListener( x, _.bind( this[x+"Handler"], this ) ) },
+			this )
+	},
+
 	getStyle : function(){
 		return this.style
 	},
@@ -483,26 +502,6 @@ var GraphGUI_SVG = Class.extend({
 
 	mouseleaveHandler : function(){
 		this.stopMousemove()
-	},
-
-
-	initialize : function( canvas_element, width, height, style ){
-		if( !style ){
-			style = "default"
-		}
-		// create SVG root element
-		var svg = document.createElementNS( svgns, "svg" ) // don't need to pass in 'true'
-		svg.setAttribute( "width", width )
-		svg.setAttribute( "height", height )
-		svg.setAttribute( "style", "font-family: Arial, sans-serif" )
-		canvas_element.appendChild( svg )
-		this.container = canvas_element
-		this.setStyle(style)
-		this.svg = svg
-
-		_.map( ["touchmove","mouseup","mousemove","mouseleave","click"],
-			function(x){ svg.addEventListener( x, _.bind( this[x+"Handler"], this ) ) },
-			this )
 	},
 
 	getController : function(){

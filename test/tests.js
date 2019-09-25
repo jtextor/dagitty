@@ -733,11 +733,10 @@ QUnit.test( "PAGs", function( assert ) {
 	assert.equal( GraphTransformer.backDoorGraph(
 		TestGraphs.spirtes ).edges.length, 795 )
 
-
 	assert.equal(
 		GraphTransformer.backDoorGraph(
 			$p("pag{ {V2 V1} @-> X -> {V4 @-> Y} <- V3 @-> X X[e] Y[o]}")).
-			getVertex("X").getChildren().length, 0 )
+			getVertex("X").getChildren().length, 0, "No children of X" )
 
 	assert.equal(
 		GraphTransformer.backDoorGraph(
@@ -850,7 +849,7 @@ QUnit.test( "tetrad analysis", function( assert ) {
 	})(), 98 )
 
 	assert.equal((function(){
-		return GraphTransformer.trekGraph( TestGraphs.findExample( "m-bias" ) ).toAdjacencyList()
+		return GraphTransformer.trekGraph( $p("dag {E<-A->Z<-B->D<-E}") ).toAdjacencyList()
 	})(), "dw_A dw_E dw_Z\ndw_B dw_D dw_Z\ndw_E dw_D\nup_A dw_A\nup_B dw_B\nup_D dw_D up_B up_E\nup_E dw_E up_A\nup_Z dw_Z up_A up_B" )
 
 });

@@ -38,15 +38,24 @@ var GraphSerializer = {
 				}
 			}
 			if( properties.length > 0 ){
-				property_string = " ["+properties.join(",")+"]"
+				return GraphSerializer.dotQuoteVid( v.id ) +
+					" ["+properties.join(",")+"]"
+			} else {
+				if( v.getAdjacentNodes().length == 0 ){
+					return GraphSerializer.dotQuoteVid( v.id )
+				} else {
+					return ""
+				}
 			}
-			return GraphSerializer.dotQuoteVid( v.id ) + property_string
 		}
 		var r = ""
 		var ra = []
 		_.each( 
 		g.vertices.values(), function( v ){
-			ra.push(expandLabel( v, g )+"\n")
+			var vl = expandLabel( v, g )
+			if( vl ){
+				ra.push(vl+"\n")
+			}
 		} )
 		ra.sort()
 		return r + ra.join("")

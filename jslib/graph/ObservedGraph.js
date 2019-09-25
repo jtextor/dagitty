@@ -26,22 +26,7 @@
 /* exported ObservedGraph */
 
 var ObservedGraph = Class.extend({
-	event_mapping : {
-		"addVertex" : "change",
-		"renameVertex" : "change",
-		"addEdge" : "change",
-		"deleteVertex" : "change",
-		"deleteEdge" : "change",
-		"addSource" : "change",
-		"removeSource" : "change",
-		"addTarget" : "change",
-		"removeTarget" : "change",
-		"addLatentNode" : "change",
-		"removeLatentNode" : "change",
-		"addAdjustedNode" : "change",
-		"removeAdjustedNode" : "change"
-	},
-	initialize : function( graph ){
+	init : function( graph ){
 		this.graph = graph
 		this.event_listeners = {}
 		_.each(Object.keys( this.event_mapping ),function(k){
@@ -69,6 +54,23 @@ var ObservedGraph = Class.extend({
 			}
 		}
 	},
+
+	event_mapping : {
+		"addVertex" : "change",
+		"renameVertex" : "change",
+		"addEdge" : "change",
+		"deleteVertex" : "change",
+		"deleteEdge" : "change",
+		"addSource" : "change",
+		"removeSource" : "change",
+		"addTarget" : "change",
+		"removeTarget" : "change",
+		"addLatentNode" : "change",
+		"removeLatentNode" : "change",
+		"addAdjustedNode" : "change",
+		"removeAdjustedNode" : "change"
+	},
+
 	observe : function( event, listener ){
 		this.event_listeners[event].push(listener)
 	}

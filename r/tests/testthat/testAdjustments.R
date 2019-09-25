@@ -1,5 +1,6 @@
 
-mbg <- getExample("M-bias")
+mbg <- dagitty("dag {X [exposure] Y [outcome] { A B } -> Z  A -> X B -> Y }")
+getExample("M-bias")
 mbg.a <- setVariableStatus( mbg, "adjustedNode", "A" )
 mbg.z <- setVariableStatus( mbg, "adjustedNode", "Z" )
 

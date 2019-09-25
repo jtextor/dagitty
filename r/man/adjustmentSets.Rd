@@ -4,8 +4,9 @@
 \alias{adjustmentSets}
 \title{Covariate Adjustment Sets}
 \usage{
-adjustmentSets(x, exposure = NULL, outcome = NULL, type = c("minimal",
-  "canonical", "all"), effect = c("total", "direct"), max.results = Inf)
+adjustmentSets(x, exposure = NULL, outcome = NULL,
+  type = c("minimal", "canonical", "all"), effect = c("total",
+  "direct"), max.results = Inf)
 }
 \arguments{
 \item{x}{the input graph, a DAG, MAG, PDAG, or PAG.}

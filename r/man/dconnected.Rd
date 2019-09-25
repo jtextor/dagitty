@@ -38,7 +38,7 @@ x->m--y.
 \examples{
 dconnected( "dag{x->m->y}", "x", "y", c() ) # TRUE
 dconnected( "dag{x->m->y}", "x", "y", c("m") ) # FALSE
-dseparated( "dag{x->m->y}", "x", "y", c() ) # TRUE
-dseparated( "dag{x->m->y}", "x", "y", c("m") ) # FALSE
+dseparated( "dag{x->m->y}", "x", "y", c() ) # FALSE 
+dseparated( "dag{x->m->y}", "x", "y", c("m") ) # TRUE
 
 }

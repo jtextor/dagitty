@@ -12,7 +12,7 @@ var Graph = Class.extend({
 	// see code after definition of this class 
 	managed_vertex_property_names : ["source","target","adjustedNode",
 		"latentNode","selectionNode"],
-	initialize : function(){
+	init : function(){
 		this.vertices = new Hash()
 		this.edges = []
 		this.type = "digraph"
@@ -44,16 +44,28 @@ var Graph = Class.extend({
 	setType : function( type ){
 		this.type = type
 	},
+
+	getEdges : function(){
+		return this.edges
+	},
+
+
+	getVertexIDs : function(){
+		return this.vertices.keys()
+	},
 	
 	getNumberOfVertices : function(){
 		return this.vertices.size()
 	},
+
 	getNumberOfEdges : function(){
 		return this.edges.size()
 	},
+
 	getVertices : function(){
 		return this.vertices.values()
 	},
+
 	getVerticesWithProperty : function( p ){
 		return this.managed_vertex_properties[p].values()
 	},
@@ -268,7 +280,7 @@ var Graph = Class.extend({
 	},
 
 	anteriorsOf : function( vertex_array, clear_visited_function ){
-		return this.transitiveClosureOf( vertex_array, "getParentsAndNeighbours",
+		return this.transitiveClosureOf( vertex_array, "getPossibleParentsAndPossibleNeighbours",
 			clear_visited_function )
 	},
 	
@@ -360,11 +372,6 @@ var Graph = Class.extend({
 		return _.any( _.map( v1.incomingEdges, function(e){ return e.v1 == v2 } ) ) 
 	},
 	
-	nodesOnCausalPaths : function(){
-		return _.intersection( this.descendantsOf( this.getSources() ),
-			this.ancestorsOf( this.getTargets() ) )
-	},
-	
 	/**
 	 *      Graph is assumed to be a tree (not a forest), only
 	 *      undirected edges are considered. */
@@ -418,10 +425,6 @@ var Graph = Class.extend({
 		}
 	},
 	
-	getEdges : function(){
-		return this.edges
-	},
-
 	getEdge : function( v1, v2, edgetype ){
 		v1 = this.getVertex( v1 )
 		v2 = this.getVertex( v2 )
@@ -686,7 +689,7 @@ var Graph = Class.extend({
 
 
 Graph.Vertex = Class.extend({
-	initialize : function( spec ){
+	init : function( spec ){
 		this.id = spec.id
 		this.weight = spec.weight !== undefined ? spec.weight : 1
 		if( spec.layout_pos_x !== undefined ){
@@ -723,6 +726,13 @@ Graph.Vertex = Class.extend({
 	getParentsAndNeighbours : function(){
 		return this.getNeighbours().concat(this.getParents())
 	},
+	getPossibleParentsAndPossibleNeighbours : function(){
+		return this.getPossibleNeighbours().concat(this.getPossibleParents())
+	},
+	getPossibleNeighbours : function(){
+		return this.getKinship( Graph.Edgetype.Undirected ).
+			concat( this.getKinship( Graph.Edgetype.Unspecified ) )
+	},
 	getNeighbours : function(){
 		return this.getKinship( Graph.Edgetype.Undirected )
 	},
@@ -734,6 +744,10 @@ Graph.Vertex = Class.extend({
 	},
 	getParents : function(){
 		return this.getKinship( Graph.Edgetype.Directed, false )
+	},
+	getPossibleParents : function(){
+		return this.getKinship( Graph.Edgetype.Directed, false ).
+			concat( this.getKinship( Graph.Edgetype.PartDirected, false ) )
 	},
 	getAdjacentNodes : function(){
 		return (this.getChildrenAndNeighbours().
@@ -771,7 +785,7 @@ Graph.Vertex.markAsNotVisited = function( v ){
 }
 
 Graph.Edge = Class.extend( {
-	initialize : function( spec ){
+	init : function( spec ){
 		this.v1 = spec.v1
 		this.v2 = spec.v2
 		this.directed = spec.directed
@@ -784,13 +798,14 @@ Graph.Edge = Class.extend( {
 
 		var v1id = GraphSerializer.dotQuoteVid(this.v1.id)
 		var v2id = GraphSerializer.dotQuoteVid(this.v2.id)
-		
-		if( Graph.Edgetype.Symmetric[this.directed] && (v1id.localeCompare( v2id ) > 0) ){
+	
+		if( Graph.Edgetype.Symmetric[this.directed] && 
+			(v1id > v2id) ){
 			var tmp = v1id
 			v1id = v2id
 			v2id = tmp
 		}
-		
+	
 		return v1id + " " + edge_join + " " + v2id
 	}
 } )
@@ -821,21 +836,21 @@ Graph.Edgetype = {
 }
 
 Graph.Edge.Bidirected = Graph.Edge.extend( {
-	initialize : function( spec ){
+	init : function( spec ){
 		this._super( spec )
 		this.directed = Graph.Edgetype.Bidirected
 	}
 } )
 
 Graph.Edge.Directed = Graph.Edge.extend( {
-	initialize : function( spec ){
+	init : function( spec ){
 		this._super( spec )
 		this.directed = Graph.Edgetype.Directed
 	}
 } )
 
 Graph.Edge.Undirected = Graph.Edge.extend( {
-	initialize : function( spec ){
+	init : function( spec ){
 		this._super( spec )
 		this.directed = Graph.Edgetype.Undirected
 	}

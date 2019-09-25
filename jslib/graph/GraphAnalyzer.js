@@ -11,9 +11,59 @@ var GraphAnalyzer = {
 	equals : function( g, h ){
 		if( g == null ){ return h == null }
 		if( h == null ){ return false }
-		return (g.vertices.keys().sort().join("\r") == h.vertices.keys().sort().join("\r") &&
-			g.getEdges().map(function(e){return e.toString()}).sort().join("\r") == 
-			h.getEdges().map(function(e){return e.toString()}).sort().join("\r"))
+		var gva = g.getVertexIDs()
+		var hva = h.getVertexIDs()
+		var i
+		if( gva.length != hva.length ){
+			return false
+		}
+		gva = gva.sort()
+		hva = hva.sort()
+		for( i = 0 ; i < gva.length ; i ++ ){
+			if( gva[i] != hva[i] ){
+				return false
+			}
+		}
+		var gee = g.getEdges(), vee = h.getEdges()
+		if( gee.length != vee.length ){
+			return false
+		}
+		var gel = [], vel = []
+		var acanon = function(a){
+			var tmp
+			if( Graph.Edgetype.Symmetric[ a[2] ] &&
+				a[0] < a[1] ){
+				tmp = a[1]
+				a[1] =  a[0]
+				a[0] =  tmp
+			}
+		}
+		for( i = 0 ; i < gee.length ; i ++ ){
+			gel[i] = [gee[i].v1.id,gee[i].v2.id,gee[i].directed]
+			acanon( gel[i] )
+
+			vel[i] = [vee[i].v1.id,vee[i].v2.id,vee[i].directed]
+			acanon( vel[i] )
+		}
+
+		var edgecompare = function(a,b){
+			for( var i = 0 ; i <= 2 ; i ++ ){
+				if( a[i] != b[i] ){
+					return a[i] < b[i] ? -1 : 1
+				}
+			}
+			return 0
+		}
+
+		gel = gel.sort( edgecompare )
+		vel = vel.sort( edgecompare )
+
+		for( i = 0 ; i < gel.length ; i ++ ){
+			if( edgecompare( gel[i], vel[i] ) != 0 ){
+				return false
+			}
+		}
+		return true
 	},
 	
 	trekRule : function( g, v1, v2, use_ids_as_labels, standardized ){

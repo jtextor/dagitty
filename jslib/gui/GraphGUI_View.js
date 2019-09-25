@@ -19,6 +19,78 @@
 /* exported DAGittyGraphView */
 
 var DAGittyGraphView = Class.extend({
+	init : function( el, graph, controller, obj ){
+		// el -> parent element to hook into
+		// graph -> graph object to use (model)
+		// controller -> controller to send commands to 
+		// obj -> further options
+		//    autofocus -> if true, will set an event handler giving
+		//                 focus to the container on mouse entry
+		//    action_on_click -> which key code to emulate upon mouseclick, or a function
+		//						 to execute.
+		
+		this.setContainer(el)
+		this.setGraph(graph)
+		this.setController(controller)
+		
+		var c = this.getContainer()
+		
+		c.style.userSelect = "none"
+		c.style.whiteSpace="normal"
+		c.style.textAlign="center"
+		this.width = c.offsetWidth-4
+		this.height = c.offsetHeight-4
+		c.setAttribute("tabindex",0)
+
+		c.style.WebkitUserSelect = "none"
+		c.style.MozUserSelect = "none"
+		c.style.MsUserSelect = "none"
+		c.style.UserSelect = "none"
+		
+		if( getComputedStyle( c ).getPropertyValue("position") != "absolute" ){
+			c.style.position = "relative"
+		}
+		
+		el.innerHTML = ""
+		this.impl = new GraphGUI_SVG( c, this.width, this.height )
+
+		this.impl.setEventListener( "vertex_drag", _.bind( function( vs ){
+			var g_coords = this.toGraphCoordinate( vs.x, vs.y )
+			vs.v.layout_pos_x = g_coords[0] // changes model
+			vs.v.layout_pos_y = g_coords[1] // changes model
+			if( this.getViewMode() != "normal" ){
+				var v = this.getGraph().getVertex(vs.v.id)
+				v.layout_pos_x = g_coords[0]
+				v.layout_pos_y = g_coords[1]
+			}
+		}, this ) )
+
+		this.impl.setEventListener( "edge_drag", _.bind( function( es ){
+			var g_coords = this.toGraphCoordinate( es.cx, es.cy )
+			es.e.layout_pos_x = g_coords[0] // changes model
+			es.e.layout_pos_y = g_coords[1] // changes model
+		}, this ) )
+
+		this.impl.setEventListener( "drag_end", _.bind( function(){
+			this.getController().graphLayoutChanged()}, this ) )
+
+		this.impl.setEventListener( "vertex_connect", 
+			_.bind( this.connectVertices, this ) )	
+
+		this.impl.setEventListener( "vertex_marked", 
+			_.bind( function(v){ this.callEventListener( "vertex_marked", [v] ) }, this ) )
+
+
+		this.registerEventListeners( obj?obj.autofocus:false )
+		
+		if( obj && obj.action_on_click ){
+			this.setActionOnClick( obj.action_on_click )
+		}
+		
+		this.view_mode = "normal"
+		this.drawGraph()
+	},
+
 	pointerX : function(e) {
 		var docElement = document.documentElement,
 			body = document.body || { scrollLeft: 0 }
@@ -221,77 +293,7 @@ var DAGittyGraphView = Class.extend({
 		this[event_name+"_listener"] = f
 	},
 
-	initialize : function( el, graph, controller, obj ){
-		// el -> parent element to hook into
-		// graph -> graph object to use (model)
-		// controller -> controller to send commands to 
-		// obj -> further options
-		//    autofocus -> if true, will set an event handler giving
-		//                 focus to the container on mouse entry
-		//    action_on_click -> which key code to emulate upon mouseclick, or a function
-		//						 to execute.
-		
-		this.setContainer(el)
-		this.setGraph(graph)
-		this.setController(controller)
-		
-		var c = this.getContainer()
-		
-		c.style.userSelect = "none"
-		c.style.whiteSpace="normal"
-		c.style.textAlign="center"
-		this.width = c.offsetWidth-4
-		this.height = c.offsetHeight-4
-		c.setAttribute("tabindex",0)
 
-		c.style.WebkitUserSelect = "none"
-		c.style.MozUserSelect = "none"
-		c.style.MsUserSelect = "none"
-		c.style.UserSelect = "none"
-		
-		if( getComputedStyle( c ).getPropertyValue("position") != "absolute" ){
-			c.style.position = "relative"
-		}
-		
-		el.innerHTML = ""
-		this.impl = new GraphGUI_SVG( c, this.width, this.height )
-
-		this.impl.setEventListener( "vertex_drag", _.bind( function( vs ){
-			var g_coords = this.toGraphCoordinate( vs.x, vs.y )
-			vs.v.layout_pos_x = g_coords[0] // changes model
-			vs.v.layout_pos_y = g_coords[1] // changes model
-			if( this.getViewMode() != "normal" ){
-				var v = this.getGraph().getVertex(vs.v.id)
-				v.layout_pos_x = g_coords[0]
-				v.layout_pos_y = g_coords[1]
-			}
-		}, this ) )
-
-		this.impl.setEventListener( "edge_drag", _.bind( function( es ){
-			var g_coords = this.toGraphCoordinate( es.cx, es.cy )
-			es.e.layout_pos_x = g_coords[0] // changes model
-			es.e.layout_pos_y = g_coords[1] // changes model
-		}, this ) )
-
-		this.impl.setEventListener( "drag_end", _.bind( function(){
-			this.getController().graphLayoutChanged()}, this ) )
-
-		this.impl.setEventListener( "vertex_connect", 
-			_.bind( this.connectVertices, this ) )	
-
-		this.impl.setEventListener( "vertex_marked", 
-			_.bind( function(v){ this.callEventListener( "vertex_marked", [v] ) }, this ) )
-
-
-		this.registerEventListeners( obj?obj.autofocus:false )
-		
-		if( obj && obj.action_on_click ){
-			this.setActionOnClick( obj.action_on_click )
-		}
-		
-		this.view_mode = "normal"
-		this.drawGraph()
-	},
 	resize : function(){
 		var newwidth = this.getContainer().offsetWidth-4,
 			newheight = this.getContainer().offsetHeight-4

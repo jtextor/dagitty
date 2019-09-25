@@ -3,6 +3,48 @@
 /* exported DAGittyController */
 
 var DAGittyController = Class.extend({
+	init : function( obj ){
+		this.event_listeners = {
+			"graphchange" : [],
+			"graphlayoutchange" : [],
+			"vertex_marked" : []
+		}
+	
+		// the controller initializes the model ... 
+		if( !obj.canvas ) return
+		if( obj.graph ){
+			this.setGraph( obj.graph )
+		} else {
+			this.setGraph( GraphParser.parseGuess( 
+				obj.canvas.textContent||obj.canvas.innerText
+			) )
+		}
+		
+		// ... creates a simple graph layout if necessary ...
+		if( !this.getGraph().hasCompleteLayout() ){
+			new GraphLayouter.Spring( this.getGraph() ).layout()
+		}
+
+		// ... and creates the view ...
+		this.view = new DAGittyGraphView( obj.canvas, this.getGraph(), this,
+			{ 
+				autofocus : (obj.autofocus !== undefined) ? obj.autofocus : false,
+				action_on_click : obj.action_on_click
+			} 
+			)
+	
+		this.view.setEventListener( "vertex_marked", 
+			_.bind( function(v){ _.each(this.event_listeners["vertex_marked"],
+					function(l){ l(v) }) }, this ) )
+
+		window.addEventListener( "resize", 
+			_.debounce( _.bind( this.getView().resize, this.getView() ), 300 ) )
+	
+		// graph change event listeners are wired in the
+		// function "setGraph" (because they might need to be 
+		// changed when a completely new graph is loaded)
+	},
+
 	getGraph : function(){
 		return this.graph
 	},
@@ -68,47 +110,6 @@ var DAGittyController = Class.extend({
 		if( this.view ){
 			this.view.setActionOnClick( a )
 		}
-	},
-	initialize : function( obj ){
-		this.event_listeners = {
-			"graphchange" : [],
-			"graphlayoutchange" : [],
-			"vertex_marked" : []
-		}
-	
-		// the controller initializes the model ... 
-		if( !obj.canvas ) return
-		if( obj.graph ){
-			this.setGraph( obj.graph )
-		} else {
-			this.setGraph( GraphParser.parseGuess( 
-				obj.canvas.textContent||obj.canvas.innerText
-			) )
-		}
-		
-		// ... creates a simple graph layout if necessary ...
-		if( !this.getGraph().hasCompleteLayout() ){
-			new GraphLayouter.Spring( this.getGraph() ).layout()
-		}
-
-		// ... and creates the view ...
-		this.view = new DAGittyGraphView( obj.canvas, this.getGraph(), this,
-			{ 
-				autofocus : (obj.autofocus !== undefined) ? obj.autofocus : false,
-				action_on_click : obj.action_on_click
-			} 
-			)
-	
-		this.view.setEventListener( "vertex_marked", 
-			_.bind( function(v){ _.each(this.event_listeners["vertex_marked"],
-					function(l){ l(v) }) }, this ) )
-
-		window.addEventListener( "resize", 
-			_.debounce( _.bind( this.getView().resize, this.getView() ), 300 ) )
-	
-		// graph change event listeners are wired in the
-		// function "setGraph" (because they might need to be 
-		// changed when a completely new graph is loaded)
 	},
 
 	toggleEdgeFromTo : function( v1, v2 ){

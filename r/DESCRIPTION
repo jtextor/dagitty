@@ -35,4 +35,4 @@ Suggests:
     base64enc (>= 0.1-3),
     lavaan,
     testthat
-RoxygenNote: 6.0.1
+RoxygenNote: 6.1.1

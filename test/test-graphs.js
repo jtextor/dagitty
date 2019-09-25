@@ -3,7 +3,11 @@ var TestGraphs = {
 findExample : function( s ){
   for( var i = 0 ; i < examples.length ; i++ ){
     if( examples[i].l.toLowerCase().indexOf(s.toLowerCase()) >= 0 ){
-      return GraphParser.parseGuess(examples[i].e,examples[i].v);
+		if( "e" in examples[i] ){
+	    	return GraphParser.parseGuess(examples[i].e,examples[i].v)
+		} else {
+	    	return GraphParser.parseGuess(examples[i].d)
+		}
     }
   }
 },

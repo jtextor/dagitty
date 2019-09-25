@@ -113,7 +113,11 @@ var DagittyR = {
 		'use strict'
 		for( var i = 0 ; i < examples.length ; i++ ){
 			if( examples[i].l.toLowerCase().indexOf(s.toLowerCase()) >= 0 ){
-				return GraphParser.parseGuess(examples[i].e,examples[i].v).toString()
+				if( examples[i].d ){
+					return GraphParser.parseGuess(examples[i].d).toString()
+				} else {
+					return GraphParser.parseGuess(examples[i].e,examples[i].v).toString()
+				}
 			}
 		}
 	}

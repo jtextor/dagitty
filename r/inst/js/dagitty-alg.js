@@ -1,3 +1,73 @@
+/* Simple JavaScript Inheritance for ES 5.1
+ * based on http://ejohn.org/blog/simple-javascript-inheritance/
+ *  (inspired by base2 and Prototype)
+ * MIT Licensed.
+ */
+;(function(global) {
+  "use strict";
+  var fnTest = /xyz/.test(function(){xyz;}) ? /\b_super\b/ : /.*/;
+
+  // The base Class implementation (does nothing)
+  function BaseClass(){}
+
+  // Create a new Class that inherits from this class
+  BaseClass.extend = function(props) {
+    var _super = this.prototype;
+
+    // Set up the prototype to inherit from the base class
+    // (but without running the init constructor)
+    var proto = Object.create(_super);
+
+    // Copy the properties over onto the new prototype
+    for (var name in props) {
+      // Check if we're overwriting an existing function
+      proto[name] = typeof props[name] === "function" && 
+        typeof _super[name] == "function" && fnTest.test(props[name])
+        ? (function(name, fn){
+            return function() {
+              var tmp = this._super;
+
+              // Add a new ._super() method that is the same method
+              // but on the super-class
+              this._super = _super[name];
+
+              // The method only need to be bound temporarily, so we
+              // remove it when we're done executing
+              var ret = fn.apply(this, arguments);        
+              this._super = tmp;
+
+              return ret;
+            };
+          })(name, props[name])
+        : props[name];
+    }
+
+    // The new constructor
+    var newClass = typeof proto.init === "function"
+      ? proto.hasOwnProperty("init")
+        ? proto.init // All construction is actually done in the init method
+        : function SubClass(){ _super.init.apply(this, arguments); }
+      : function EmptyClass(){};
+
+    // Populate our constructed prototype object
+    newClass.prototype = proto;
+
+    // Enforce the constructor to be what we expect
+    proto.constructor = newClass;
+
+    // And make this class extendable
+    newClass.extend = BaseClass.extend;
+
+    return newClass;
+  };
+
+  // export
+  global.Class = BaseClass;
+})(this);
+
+if( typeof module !== 'undefined' && typeof module.exports !== 'undefined' ){
+	global.Class = module.exports.Class
+}
 
 /*  DAGitty - a browser-based software for causal modelling and analysis
  *  Copyright (C) 2010-2015 Johannes Textor, Benito van der Zander
@@ -50,71 +120,7 @@ _.extend( Hash.prototype, {
 	}
 } )
 
-/* Simple JavaScript Inheritance
- * By John Resig http://ejohn.org/
- * MIT Licensed.
- */
-// Inspired by base2 and Prototype
-;(function(){ // eslint-disable-line
-	var initializing = false, 
-		fnTest = /xyz/.test(function(){xyz}) ? /\b_super\b/ : /.*/ //eslint-disable-line
-
-	// The base Class implementation (does nothing)
-	this.Class = function(){}
-
-	// Create a new Class that inherits from this class
-	this.Class.extend = function(prop) {
-		var _super = this.prototype
-
-		// Instantiate a base class (but only create the instance,
-		// don't run the init constructor)
-		initializing = true
-		var prototype = new this()
-		initializing = false
-
-		// Copy the properties over onto the new prototype
-		for (var name in prop) {
-			// Check if we're overwriting an existing function
-			prototype[name] = typeof prop[name] == "function" &&
-			typeof _super[name] == "function" && fnTest.test(prop[name]) ?
-			(function(name, fn){
-				return function() {
-					var tmp = this._super
-
-					// Add a new ._super() method that is the same method
-					// but on the super-class
-					this._super = _super[name]
-
-					// The method only need to be bound temporarily, so we
-					// remove it when we're done executing
-					var ret = fn.apply(this, arguments)      
-					this._super = tmp
-
-					return ret
-				}
-			})(name, prop[name]) :
-			prop[name]
-		}
-
-		// The dummy class constructor
-		function Class() {
-			// All construction is actually done in the init method
-			if ( !initializing && this.initialize )
-				this.initialize.apply(this, arguments)
-		}
-
-		// Populate our constructed prototype object
-		Class.prototype = prototype
-
-		// Enforce the constructor to be what we expect
-		Class.prototype.constructor = Class
-
-		// And make this class extendable
-		Class.extend = arguments.callee
-
-		return Class
-	}
-})()/* This class provides a basic Graph datastructure. Graphs can contain 
+/* This class provides a basic Graph datastructure. Graphs can contain 
  * both directed, undirected, and bidirected edges. 
  *	 
  * TODO: there are still some algorithmic methods in this class, these should
@@ -128,7 +134,7 @@ var Graph = Class.extend({
 	// see code after definition of this class 
 	managed_vertex_property_names : ["source","target","adjustedNode",
 		"latentNode","selectionNode"],
-	initialize : function(){
+	init : function(){
 		this.vertices = new Hash()
 		this.edges = []
 		this.type = "digraph"
@@ -160,16 +166,28 @@ var Graph = Class.extend({
 	setType : function( type ){
 		this.type = type
 	},
+
+	getEdges : function(){
+		return this.edges
+	},
+
+
+	getVertexIDs : function(){
+		return this.vertices.keys()
+	},
 	
 	getNumberOfVertices : function(){
 		return this.vertices.size()
 	},
+
 	getNumberOfEdges : function(){
 		return this.edges.size()
 	},
+
 	getVertices : function(){
 		return this.vertices.values()
 	},
+
 	getVerticesWithProperty : function( p ){
 		return this.managed_vertex_properties[p].values()
 	},
@@ -384,7 +402,7 @@ var Graph = Class.extend({
 	},
 
 	anteriorsOf : function( vertex_array, clear_visited_function ){
-		return this.transitiveClosureOf( vertex_array, "getParentsAndNeighbours",
+		return this.transitiveClosureOf( vertex_array, "getPossibleParentsAndPossibleNeighbours",
 			clear_visited_function )
 	},
 	
@@ -476,11 +494,6 @@ var Graph = Class.extend({
 		return _.any( _.map( v1.incomingEdges, function(e){ return e.v1 == v2 } ) ) 
 	},
 	
-	nodesOnCausalPaths : function(){
-		return _.intersection( this.descendantsOf( this.getSources() ),
-			this.ancestorsOf( this.getTargets() ) )
-	},
-	
 	/**
 	 *      Graph is assumed to be a tree (not a forest), only
 	 *      undirected edges are considered. */
@@ -534,10 +547,6 @@ var Graph = Class.extend({
 		}
 	},
 	
-	getEdges : function(){
-		return this.edges
-	},
-
 	getEdge : function( v1, v2, edgetype ){
 		v1 = this.getVertex( v1 )
 		v2 = this.getVertex( v2 )
@@ -802,7 +811,7 @@ var Graph = Class.extend({
 
 
 Graph.Vertex = Class.extend({
-	initialize : function( spec ){
+	init : function( spec ){
 		this.id = spec.id
 		this.weight = spec.weight !== undefined ? spec.weight : 1
 		if( spec.layout_pos_x !== undefined ){
@@ -839,6 +848,13 @@ Graph.Vertex = Class.extend({
 	getParentsAndNeighbours : function(){
 		return this.getNeighbours().concat(this.getParents())
 	},
+	getPossibleParentsAndPossibleNeighbours : function(){
+		return this.getPossibleNeighbours().concat(this.getPossibleParents())
+	},
+	getPossibleNeighbours : function(){
+		return this.getKinship( Graph.Edgetype.Undirected ).
+			concat( this.getKinship( Graph.Edgetype.Unspecified ) )
+	},
 	getNeighbours : function(){
 		return this.getKinship( Graph.Edgetype.Undirected )
 	},
@@ -850,6 +866,10 @@ Graph.Vertex = Class.extend({
 	},
 	getParents : function(){
 		return this.getKinship( Graph.Edgetype.Directed, false )
+	},
+	getPossibleParents : function(){
+		return this.getKinship( Graph.Edgetype.Directed, false ).
+			concat( this.getKinship( Graph.Edgetype.PartDirected, false ) )
 	},
 	getAdjacentNodes : function(){
 		return (this.getChildrenAndNeighbours().
@@ -887,7 +907,7 @@ Graph.Vertex.markAsNotVisited = function( v ){
 }
 
 Graph.Edge = Class.extend( {
-	initialize : function( spec ){
+	init : function( spec ){
 		this.v1 = spec.v1
 		this.v2 = spec.v2
 		this.directed = spec.directed
@@ -900,13 +920,14 @@ Graph.Edge = Class.extend( {
 
 		var v1id = GraphSerializer.dotQuoteVid(this.v1.id)
 		var v2id = GraphSerializer.dotQuoteVid(this.v2.id)
-		
-		if( Graph.Edgetype.Symmetric[this.directed] && (v1id.localeCompare( v2id ) > 0) ){
+	
+		if( Graph.Edgetype.Symmetric[this.directed] && 
+			(v1id > v2id) ){
 			var tmp = v1id
 			v1id = v2id
 			v2id = tmp
 		}
-		
+	
 		return v1id + " " + edge_join + " " + v2id
 	}
 } )
@@ -937,21 +958,21 @@ Graph.Edgetype = {
 }
 
 Graph.Edge.Bidirected = Graph.Edge.extend( {
-	initialize : function( spec ){
+	init : function( spec ){
 		this._super( spec )
 		this.directed = Graph.Edgetype.Bidirected
 	}
 } )
 
 Graph.Edge.Directed = Graph.Edge.extend( {
-	initialize : function( spec ){
+	init : function( spec ){
 		this._super( spec )
 		this.directed = Graph.Edgetype.Directed
 	}
 } )
 
 Graph.Edge.Undirected = Graph.Edge.extend( {
-	initialize : function( spec ){
+	init : function( spec ){
 		this._super( spec )
 		this.directed = Graph.Edgetype.Undirected
 	}
@@ -969,9 +990,59 @@ var GraphAnalyzer = {
 	equals : function( g, h ){
 		if( g == null ){ return h == null }
 		if( h == null ){ return false }
-		return (g.vertices.keys().sort().join("\r") == h.vertices.keys().sort().join("\r") &&
-			g.getEdges().map(function(e){return e.toString()}).sort().join("\r") == 
-			h.getEdges().map(function(e){return e.toString()}).sort().join("\r"))
+		var gva = g.getVertexIDs()
+		var hva = h.getVertexIDs()
+		var i
+		if( gva.length != hva.length ){
+			return false
+		}
+		gva = gva.sort()
+		hva = hva.sort()
+		for( i = 0 ; i < gva.length ; i ++ ){
+			if( gva[i] != hva[i] ){
+				return false
+			}
+		}
+		var gee = g.getEdges(), vee = h.getEdges()
+		if( gee.length != vee.length ){
+			return false
+		}
+		var gel = [], vel = []
+		var acanon = function(a){
+			var tmp
+			if( Graph.Edgetype.Symmetric[ a[2] ] &&
+				a[0] < a[1] ){
+				tmp = a[1]
+				a[1] =  a[0]
+				a[0] =  tmp
+			}
+		}
+		for( i = 0 ; i < gee.length ; i ++ ){
+			gel[i] = [gee[i].v1.id,gee[i].v2.id,gee[i].directed]
+			acanon( gel[i] )
+
+			vel[i] = [vee[i].v1.id,vee[i].v2.id,vee[i].directed]
+			acanon( vel[i] )
+		}
+
+		var edgecompare = function(a,b){
+			for( var i = 0 ; i <= 2 ; i ++ ){
+				if( a[i] != b[i] ){
+					return a[i] < b[i] ? -1 : 1
+				}
+			}
+			return 0
+		}
+
+		gel = gel.sort( edgecompare )
+		vel = vel.sort( edgecompare )
+
+		for( i = 0 ; i < gel.length ; i ++ ){
+			if( edgecompare( gel[i], vel[i] ) != 0 ){
+				return false
+			}
+		}
+		return true
 	},
 	
 	trekRule : function( g, v1, v2, use_ids_as_labels, standardized ){
@@ -3263,12 +3334,12 @@ var GraphTransformer = {
 	 *
 	 **/
 	backDoorGraph : function( g, X, Y ){
-		var gback, dpcp
+		var gback, dpcp, gtarget = g.clone()
 		if( g.getType() == "pag" ){
 			gback = GraphTransformer.pagToPdag( g )
 			gback.setType("pag")
 		} else {
-			gback = g.clone()
+			gback = gtarget 
 		}
 		if( typeof X == "undefined" ){
 			X = g.getSources()
@@ -3284,12 +3355,12 @@ var GraphTransformer = {
 		dpcp = GraphAnalyzer.properPossibleCausalPaths( gback, X, Y )
 		_.each( X, function(s){
 			_.each( _.intersection( dpcp, s.getChildren() ), function( c ){
-				if( GraphAnalyzer.isEdgeVisible( g, g.getEdge(s.id,c.id)) ){
-					gback.deleteEdge( s, c, Graph.Edgetype.Directed )
+				if( GraphAnalyzer.isEdgeVisible( gback, gback.getEdge(s.id,c.id)) ){
+					gtarget.deleteEdge( s, c, Graph.Edgetype.Directed )
 				}
 			})
 		})
-		return gback
+		return gtarget
 	},
 	
 	/** This is the counterpart of the back-door graph for direct effects.
@@ -3758,6 +3829,10 @@ var GraphTransformer = {
 	 *  (3) all undirected edges are copied		
 	 */
 	moralGraph : function( g ){
+		if( g.getType() == "pag" ){
+			g = GraphTransformer.pagToPdag( g )
+		}
+
 		var mg = new Graph()
 		
 		_.each( g.getVertices(), function( v ){
@@ -4318,22 +4393,7 @@ var GraphGenerator = {
 /* exported ObservedGraph */
 
 var ObservedGraph = Class.extend({
-	event_mapping : {
-		"addVertex" : "change",
-		"renameVertex" : "change",
-		"addEdge" : "change",
-		"deleteVertex" : "change",
-		"deleteEdge" : "change",
-		"addSource" : "change",
-		"removeSource" : "change",
-		"addTarget" : "change",
-		"removeTarget" : "change",
-		"addLatentNode" : "change",
-		"removeLatentNode" : "change",
-		"addAdjustedNode" : "change",
-		"removeAdjustedNode" : "change"
-	},
-	initialize : function( graph ){
+	init : function( graph ){
 		this.graph = graph
 		this.event_listeners = {}
 		_.each(Object.keys( this.event_mapping ),function(k){
@@ -4361,6 +4421,23 @@ var ObservedGraph = Class.extend({
 			}
 		}
 	},
+
+	event_mapping : {
+		"addVertex" : "change",
+		"renameVertex" : "change",
+		"addEdge" : "change",
+		"deleteVertex" : "change",
+		"deleteEdge" : "change",
+		"addSource" : "change",
+		"removeSource" : "change",
+		"addTarget" : "change",
+		"removeTarget" : "change",
+		"addLatentNode" : "change",
+		"removeLatentNode" : "change",
+		"addAdjustedNode" : "change",
+		"removeAdjustedNode" : "change"
+	},
+
 	observe : function( event, listener ){
 		this.event_listeners[event].push(listener)
 	}
@@ -4406,15 +4483,24 @@ var GraphSerializer = {
 				}
 			}
 			if( properties.length > 0 ){
-				property_string = " ["+properties.join(",")+"]"
+				return GraphSerializer.dotQuoteVid( v.id ) +
+					" ["+properties.join(",")+"]"
+			} else {
+				if( v.getAdjacentNodes().length == 0 ){
+					return GraphSerializer.dotQuoteVid( v.id )
+				} else {
+					return ""
+				}
 			}
-			return GraphSerializer.dotQuoteVid( v.id ) + property_string
 		}
 		var r = ""
 		var ra = []
 		_.each( 
 		g.vertices.values(), function( v ){
-			ra.push(expandLabel( v, g )+"\n")
+			var vl = expandLabel( v, g )
+			if( vl ){
+				ra.push(vl+"\n")
+			}
 		} )
 		ra.sort()
 		return r + ra.join("")

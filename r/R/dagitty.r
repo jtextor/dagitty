@@ -314,10 +314,10 @@ simulateLogistic <- function( x, b.default=NULL,
 		p <- .odds2p( r %*% Beta[,i] )
 		r[,cn] <- 2*rbinom( N, 1, p )-1
 	}
-	r <- r[,1:nV]
+	r <- r[,seq(1,nV),drop=FALSE]
 	colnames(r) <- ovars
 	r <- as.data.frame(r)
-	r[,setdiff(ovars,latents(x))]
+	r[,setdiff(ovars,latents(x)),drop=FALSE]
 }
 
 #' Implied Covariance Matrix of a Gaussian Graphical Model
@@ -2072,9 +2072,9 @@ paths <- function(x,from=exposures(x),to=outcomes(x),Z=list(),limit=100,directed
 #' @examples
 #' dconnected( "dag{x->m->y}", "x", "y", c() ) # TRUE
 #' dconnected( "dag{x->m->y}", "x", "y", c("m") ) # FALSE
-#' dseparated( "dag{x->m->y}", "x", "y", c() ) # TRUE
-#' dseparated( "dag{x->m->y}", "x", "y", c("m") ) # FALSE
-#' 
+#' dseparated( "dag{x->m->y}", "x", "y", c() ) # FALSE 
+#' dseparated( "dag{x->m->y}", "x", "y", c("m") ) # TRUE
+#'
 #' @export
 dconnected <- function(x,X,Y=list(),Z=list()){
 	x <- as.dagitty(x)
@@ -2275,7 +2275,7 @@ as.dagitty.default <- function( x, ... ){
 	}
 }
 
-#'@export
+#' @export
 c.dagitty <- function( ... ){
 	args <- list(...)
 	xvs <- replicate( length(args), .getJSVar() )
@@ -2292,4 +2292,10 @@ c.dagitty <- function( ... ){
 		.deleteJSVar( rv )
 	})
 	as.dagitty(r)
+}
+
+#' @export
+print.dagitty <- function( x, ... ){
+	cat(x)
+	invisible(x)
 }

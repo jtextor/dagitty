@@ -183,12 +183,12 @@ var GraphTransformer = {
 	 *
 	 **/
 	backDoorGraph : function( g, X, Y ){
-		var gback, dpcp
+		var gback, dpcp, gtarget = g.clone()
 		if( g.getType() == "pag" ){
 			gback = GraphTransformer.pagToPdag( g )
 			gback.setType("pag")
 		} else {
-			gback = g.clone()
+			gback = gtarget 
 		}
 		if( typeof X == "undefined" ){
 			X = g.getSources()
@@ -204,12 +204,12 @@ var GraphTransformer = {
 		dpcp = GraphAnalyzer.properPossibleCausalPaths( gback, X, Y )
 		_.each( X, function(s){
 			_.each( _.intersection( dpcp, s.getChildren() ), function( c ){
-				if( GraphAnalyzer.isEdgeVisible( g, g.getEdge(s.id,c.id)) ){
-					gback.deleteEdge( s, c, Graph.Edgetype.Directed )
+				if( GraphAnalyzer.isEdgeVisible( gback, gback.getEdge(s.id,c.id)) ){
+					gtarget.deleteEdge( s, c, Graph.Edgetype.Directed )
 				}
 			})
 		})
-		return gback
+		return gtarget
 	},
 	
 	/** This is the counterpart of the back-door graph for direct effects.
@@ -678,6 +678,10 @@ var GraphTransformer = {
 	 *  (3) all undirected edges are copied		
 	 */
 	moralGraph : function( g ){
+		if( g.getType() == "pag" ){
+			g = GraphTransformer.pagToPdag( g )
+		}
+
 		var mg = new Graph()
 		
 		_.each( g.getVertices(), function( v ){
