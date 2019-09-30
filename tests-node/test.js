@@ -23,3 +23,7 @@ test('PAG back door and moral graph', t => {
 		"X -- Y" )
 
 });
+
+test('can we count edges of a graph', t => {
+	t.is( $p("dag{x->y}").getNumberOfEdges(), 1 )
+})
