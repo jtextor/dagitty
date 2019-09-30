@@ -1,8 +1,8 @@
-/* Simple JavaScript Inheritance for ES 5.1
- * based on http://ejohn.org/blog/simple-javascript-inheritance/
- *  (inspired by base2 and Prototype)
- * MIT Licensed.
- */
+
+// Simple JavaScript Inheritance for ES 5.1
+// based on http://ejohn.org/blog/simple-javascript-inheritance/
+//  (inspired by base2 and Prototype)
+// MIT Licensed.
 ;(function(global) {
   "use strict";
   var fnTest = /xyz/.test(function(){xyz;}) ? /\b_super\b/ : /.*/;

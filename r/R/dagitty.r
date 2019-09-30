@@ -1344,14 +1344,18 @@ isCollider <- function( x, u, v, w ) {
 #' probability distribution compatible with the given model.
 #'
 #' @param x the input graph, a DAG, MAG, or PDAG.
-#' @param type can be one of "missing.edge" or "basis.set". With the former, one testable 
-#' implication is returned per missing edge of the graph. With the latter, one testable
+#' @param type can be one of "missing.edge", "basis.set", or "all.pairs". With the first, one or 
+#' more minimal testable implication (with the smallest possible conditioning set)
+#' is returned per missing edge of the graph. With "basis.set", one testable
 #' implication is returned per vertex of the graph that has non-descendants other than
 #' its parents. Basis sets can be smaller, but they involve higher-dimensional independencies,
-#' whereas missing edge sets involve only bivariate independencies.
+#' whereas missing edge sets involve only independencies between two variables at a time.
+#' With "all.pairs", the function will return a list of all implied conditional independencies
+#' between two variables at a time. Beware, because this can be a very long list and it 
+#' may not be feasible to compute this except for small graphs.
 #' @param max.results integer. The listing of conditional independencies is stopped once
 #' this many results have been found. Use \code{Inf} to generate them all. This applies
-#' only when \code{type="missing.edge"}.
+#' only when \code{type="missing.edge"} or \code{type="all"}.
 #' @examples
 #' g <- dagitty( "dag{ x -> m -> y }" )
 #' impliedConditionalIndependencies( g ) # one
@@ -1359,11 +1363,38 @@ isCollider <- function( x, u, v, w ) {
 #' impliedConditionalIndependencies( g ) # none
 #' @export
 impliedConditionalIndependencies <- function( x, type="missing.edge", max.results=Inf ){
-	if( ! type %in% c("missing.edge","basis.set") ){
-		stop("'type' must be one of: missing.edge, basis.set")
-	}
+	type <- match.arg( type, c("missing.edge","basis.set", "all.pairs") )
 	x <- as.dagitty( x )
 	.supportsTypes( x, c("dag","mag","pdag") )
+	if( type == "all.pairs" ){
+		vars <- names( x )
+		if( length(vars) < 2 ){
+			return( structure( list(), class="dagitty.cis" ) )
+		}
+		r <- unlist( combn( vars, 2, FUN=function(v){
+			covariates <- setdiff( vars, v )
+			if( length(covariates) == 0 ){
+				if( dseparated( x, v[1], v[2] ) ){
+					return(list(structure(
+						list(X=v[1],Y=v[2],Z=list()), 
+						class="dagitty.ci")
+					))
+				} else {
+					return(list())
+				}
+			}
+			subsets <- expand.grid( rep( list(c(F,T)),length(covariates)) )
+			wh <- which( apply( subsets, 1, 
+				function( w ) dseparated( x, v[1], v[2], covariates[w] ) ) )
+			if( length(wh) > 0 ){
+				lapply( wh, function(i) structure(
+					list(X=v[1],Y=v[2],Z=unlist(covariates[unlist(subsets[i,])]) ), class="dagitty.ci") )
+			} else {
+				list()
+			}
+		}, simplify=FALSE), recursive=FALSE)
+		return( structure(r, class="dagitty.cis" ) )
+	}
 
 	xv <- .getJSVar()
 	tryCatch({
@@ -2079,6 +2110,9 @@ paths <- function(x,from=exposures(x),to=outcomes(x),Z=list(),limit=100,directed
 dconnected <- function(x,X,Y=list(),Z=list()){
 	x <- as.dagitty(x)
 	.supportsTypes(x,c("dag","pdag","mag"))
+	if( length(Z) == 0 ){
+		Z <- list()
+	}
 	xv <- .getJSVar()
 	Xv <- .getJSVar()
 	Yv <- .getJSVar()
