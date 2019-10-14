@@ -223,6 +223,18 @@
 	as.data.frame(r)
 }
 
+.vertexAttributes <- function( x, a ){
+	x <- as.dagitty( x )
+	xv <- .getJSVar()
+	yv <- .getJSVar()
+	tryCatch({
+		.jsassigngraph( xv, x )
+		.jsassign( yv, a )
+		.jsassign( xv, .jsp("DagittyR.vertexAttributes2r(global.",xv,",global.",yv,")") )
+		r <- .jsget(xv)
+	}, finally={.deleteJSVar(xv);.deleteJSVar(yv)})
+	as.data.frame(r)
+}
 
 
 .tetradsFromData <- function( x, tets, i=seq_len(nrow(x)) ){

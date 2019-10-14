@@ -59,6 +59,16 @@ var DagittyR = {
 		return r
 	},
 
+	vertexAttributes2r : function( g, a ){
+		'use strict'
+		var r = { v : [], a : [] }
+		_.each(g.vertices.values(), function( v ){
+			r.v.push( v.id )
+			r.a.push( v.attributes ? v.attributes[a] : null )
+		} )
+		return r
+	},
+
 	edge2r : function( g ){
 		'use strict'
 		var r = { v : [], w : [], e : [], x : [], y : [] }

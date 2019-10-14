@@ -4668,6 +4668,19 @@ var GraphSerializer = {
 		}
 		return r
 	},
+
+	toBnlearn : function( g ){
+		var vv = g.getVertices(), r = ""
+		_.each( vv, function(v){
+			r += "["+v.id
+			var rpar = _.pluck(v.getParents(),"id").join(":")
+			if( rpar ){
+				r += "|"+rpar
+			}
+			r += "]"
+		} )
+		return r
+	},
 	
 	mathematicaSyntax : function( g, use_ids_as_labels ){
 		var pv = this.polynomialVariety( g, use_ids_as_labels )

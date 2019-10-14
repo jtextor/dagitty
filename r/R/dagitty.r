@@ -166,6 +166,7 @@ simulateSEM <- function( x, b.default=NULL, b.lower=-.6, b.upper=.6, eps=1, N=50
 	.supportsTypes( x, c("dag") )
 	x <- as.dagitty( x )
 	e <- .edgeAttributes( x, "beta" )
+
 	e$a <- as.double(as.character(e$a))
 	b.not.set <- is.na(e$a)
 	if( is.null( b.default ) ){
@@ -173,7 +174,14 @@ simulateSEM <- function( x, b.default=NULL, b.lower=-.6, b.upper=.6, eps=1, N=50
 	} else {
 		e$a[b.not.set] <- b.default
 	}
+
+	v <- .vertexAttributes( x, "eps" )
+	v$a <- as.double(as.character(v$a))
+	v.not.set <- is.na(v$a)
+	v$a[v.not.set] <- eps
+
 	ovars <- names(x)
+	lats <- c()
 	nV <- length(ovars)
 	nL <- sum(e$e=="<->")
 	if( nrow(e) > 0 ){
@@ -208,21 +216,30 @@ simulateSEM <- function( x, b.default=NULL, b.lower=-.6, b.upper=.6, eps=1, N=50
 			Phi <- MASS::ginv( t(Li)^2 ) %*% rep(eps,nrow(Beta))
 			Phi <- diag( c(Phi), nV+nL )
 		} else {
-			Phi <- diag( eps, nV+nL )
+			veps <- rep( eps, nV+nL )
+			veps[1:nV] <- v$a[match(ovars,v$v)]
+			Phi <- diag( veps, nV+nL )
 		}
 		Sigma <- t(Li) %*% Phi %*% Li
 	} else {
-		Sigma <- diag(1,nV+nL)
+		if( standardized == TRUE ){
+			Sigma <- diag(eps,nV+nL)
+		} else {
+			veps <- rep( eps, nV+nL )
+			veps[1:nV] <- v$a[match(ovars,v$v)]
+			Sigma <- diag( veps, nV+nL )
+		}
 	}
 	if( verbose ){
 		SigmaC <- Sigma
-		colnames( SigmaC ) <- rownames( SigmaC ) <- c(vars,lats)
+		colnames( SigmaC ) <- rownames( SigmaC ) <- c(ovars,lats)
+		print( veps )
 		print( SigmaC )
 	}
-	r <- MASS::mvrnorm( N, rep(0,nV+nL), Sigma, empirical=empirical )[,1:nV]
+	r <- MASS::mvrnorm( N, rep(0,nV+nL), Sigma, empirical=empirical )[,1:nV,drop=FALSE]
 	colnames(r) <- ovars
 	r <- as.data.frame(r)
-	r[,setdiff(ovars,latents(x))]
+	r[,setdiff(ovars,latents(x)),drop=FALSE]
 }
 
 #' Simulate Binary Data from DAG Structure
@@ -1574,9 +1591,8 @@ lavaanToGraph <- function( x, ... ){
 #' @export
 toString.dagitty <- function( x, format="dagitty", ... ){
 	x <- as.dagitty( x )
-	if( !format %in% c("dagitty","tikz","lavaan","dagitty.old") ){
-		stop( "Unsupported export format: ", format )
-	}
+	format <- match.arg( format, 
+		c("dagitty","tikz","lavaan","dagitty.old","bnlearn") )
 	r <- NULL
 	if( format == "dagitty" ){
 		r <- as.character( x )
@@ -1589,7 +1605,7 @@ toString.dagitty <- function( x, format="dagitty", ... ){
 		}, error=function(e){
 			stop( e )
 		},finally={.deleteJSVar(xv)})
-	} else if( format %in% c("lavaan","tikz") ){
+	} else if( format %in% c("lavaan","tikz","bnlearn") ){
 		xv <- .getJSVar()
 		tryCatch({
 			.jsassign( xv, as.character(x) )
