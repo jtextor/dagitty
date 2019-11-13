@@ -1013,6 +1013,8 @@ is.dagitty <- function(x) inherits(x,"dagitty")
 #' @examples
 #' ## Generate a layout for the M-bias graph and plot it
 #' plot( graphLayout( dagitty( "dag { X <- U1 -> M <- U2 -> Y } " ) ) )
+#' ## Plot larger graph and abbreviate its variable names.
+#' plot( getExample("Shrier"), abbreviate.names=TRUE )
 #'
 #' @export
 graphLayout <- function( x, method="spring" ){
@@ -1037,17 +1039,24 @@ graphLayout <- function( x, method="spring" ){
 #' function.
 #'
 #' @param x the input graph, a DAG, MAG, or PDAG.
+#' @param abbreviate.names logical. Whether to abbreviate variable names.
 #' @param ... not used.
 #'
 #' @export
-plot.dagitty <- function( x, ... ){	
+plot.dagitty <- function( x, abbreviate.names=FALSE, ... ){	
 	x <- as.dagitty( x )
 	.supportsTypes(x,c("dag","mag","pdag"))
 	coords <- coordinates( x )
         if( any( !is.finite( coords$x ) | !is.finite( coords$y ) ) ){
                 stop("Please supply plot coordinates for graph! See ?coordinates and ?graphLayout.")
         }
-	labels <- names(coords$x)
+	if( abbreviate.names ){
+		labels <- abbreviate(names(coords$x))
+	} else {
+		labels <- names(coords$x)
+	}
+	print( labels )
+	omar <- par("mar")
 	par(mar=rep(0,4))
 	plot.new()
 	par(new=TRUE)
@@ -1122,7 +1131,8 @@ plot.dagitty <- function( x, ... ){
 			col=c("gray","black")[1+(acode[i]==0)], 
 			code=acode[i], length=0.1, lwd=1+(acode[i]==0) )
 	}
-	text( coords$x, -coords$y[labels], labels )
+	text( coords$x, -coords$y, labels )
+	par(mar=omar)
 }
 
 #' Covariate Adjustment Sets
