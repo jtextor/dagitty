@@ -3,7 +3,7 @@
 #' @importFrom MASS ginv
 #' @importFrom grDevices dev.size
 #' @importFrom methods is
-#' @importFrom utils tail
+#' @importFrom utils tail combn
 #' @importFrom stats as.formula coef confint cov cov2cor cor lm pnorm pchisq qnorm quantile runif loess sd weighted.mean complete.cases rbinom
 #' @importFrom graphics abline arrows axis lines par plot plot.new segments strheight strwidth text xspline
 NULL
@@ -2265,9 +2265,13 @@ print.dagitty.sets <- function( x, prefix="", ... ){
 
 #' @export
 as.character.dagitty.ci <- function( x, ... ){
-	r <- paste0( x$X, " _||_ ", paste(x$Y,collapse=", ") )
+	nX <- length(x$X)
+	nY <- length(x$Y)
+	nn <- abbreviate(c(x$X, x$Y, x$Z))
+	r <- paste0( paste(nn[seq_along(x$X)],collapse=", "), " _||_ ", 
+		paste(nn[seq_along(x$Y)+nX],collapse=", ") )
 	if( length( x$Z > 0 ) ){
-		r <- paste0( r, " | ", paste(x$Z,collapse=", ") )
+		r <- paste0( r, " | ", paste(nn[seq_along(x$Z)+nX+nY],collapse=", ") )
 	}
 	r
 }
