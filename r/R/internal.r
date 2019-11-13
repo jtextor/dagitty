@@ -170,6 +170,7 @@
 	if( ! type %in% supported ){
 		stop("Supported kinship types : ",paste(supported,collapse=", ") )
 	}
+	.checkName( x, v )
 	r <- c()
 	xv <- .getJSVar()
 	vv <- .getJSVar()
@@ -270,4 +271,19 @@
 	finally={.deleteJSVar(xv)})
 	structure(r,class="dagitty")
 }
+
+.checkName <- function(x, v) {
+  if (!(v %in% names(x))) 
+    stop(paste(v, "is not a variable in `x`"))
+}
+
+.checkAllNames <- function(x, vv) {
+	nx <- names(x)
+	for( v in vv ){ 
+		if (!(v %in% nx)){
+			stop(paste(v, "is not a variable in `x`"))
+		}
+	}
+}
+
 

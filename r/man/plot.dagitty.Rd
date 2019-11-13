@@ -4,10 +4,12 @@
 \alias{plot.dagitty}
 \title{Plot Graph}
 \usage{
-\method{plot}{dagitty}(x, ...)
+\method{plot}{dagitty}(x, abbreviate.names = FALSE, ...)
 }
 \arguments{
 \item{x}{the input graph, a DAG, MAG, or PDAG.}
+
+\item{abbreviate.names}{logical. Whether to abbreviate variable names.}
 
 \item{...}{not used.}
 }

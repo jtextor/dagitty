@@ -4,7 +4,8 @@
 \alias{instrumentalVariables}
 \title{Find Instrumental Variables}
 \usage{
-instrumentalVariables(x, exposure = NULL, outcome = NULL)
+instrumentalVariables(x, exposure = exposures(x),
+  outcome = outcomes(x))
 }
 \arguments{
 \item{x}{the input graph, a DAG.}

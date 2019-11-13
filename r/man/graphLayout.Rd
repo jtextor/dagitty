@@ -24,5 +24,7 @@ a decent layout).
 \examples{
 ## Generate a layout for the M-bias graph and plot it
 plot( graphLayout( dagitty( "dag { X <- U1 -> M <- U2 -> Y } " ) ) )
+## Plot larger graph and abbreviate its variable names.
+plot( getExample("Shrier"), abbreviate.names=TRUE )
 
 }

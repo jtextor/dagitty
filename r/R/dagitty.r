@@ -671,6 +671,7 @@ ancestorGraph <- function( x, v=NULL ){
 	if( is.null(v) ){
 		v <- c(exposures(x),outcomes(x),adjustedNodes(x))
 	} else {
+		.checkAllNames( x, v )
 		v <- as.list(v)
 	}
 	xv <- .getJSVar()
@@ -770,7 +771,7 @@ setVariableStatus <- function( x, status, value ) {
 	if( !(status %in% allowed.statuses) ){
 		stop( "Status must be one of: ", paste(allowed.statuses,collapse=", ") )
 	}
-	
+	.checkAllNames( x, value )
 	xv <- .getJSVar()
 	vv <- .getJSVar()
 	tryCatch({
@@ -1194,7 +1195,7 @@ plot.dagitty <- function( x, abbreviate.names=FALSE, ... ){
 #' g <- dagitty("pdag { x[e] y[o] a -- {i z b}; {a z i} -> x -> y <- {z b} }")
 #' adjustmentSets( g )
 #' @export
-adjustmentSets <- function( x, exposure=NULL, outcome=NULL, 
+adjustmentSets <- function( x, exposure=exposures(x), outcome=outcomes(x), 
 	type=c("minimal","canonical","all"), effect=c("total","direct"),
 	max.results=Inf ){
 	effect <- match.arg( effect )
@@ -1204,15 +1205,12 @@ adjustmentSets <- function( x, exposure=NULL, outcome=NULL,
 	}
 	x <- as.dagitty( x )
 	.supportsTypes( x, c("dag","mag","pdag","pag") )
-	if( !is.null( exposure ) ){
-		exposures(x) <- exposure
-	}
-	if( !is.null( outcome ) ){
-		outcomes(x) <- outcome
-	}
-	if( length(exposures(x)) == 0 || length(outcomes(x)) == 0 ){
+	.checkAllNames( x, c(exposure, outcome) )
+	if( length(exposure) == 0 || length(outcome) == 0 ){
 		stop("Both exposure(s) and outcome(s) need to be set!")
 	}
+	exposures(x) <- exposure
+	outcomes(x) <- outcome
 
 	if( type == "minimal" ){
 		xv <- .getJSVar()
@@ -1231,7 +1229,7 @@ adjustmentSets <- function( x, exposure=NULL, outcome=NULL,
 			r <- structure( .jsget(xv), class="dagitty.sets" )
 		},finally={.deleteJSVar(xv)})
 	} else if( type == "all" ){
-		covariates <- setdiff( names( x ), c( exposures(x), outcomes(x) ) )
+		covariates <- setdiff( names( x ), c( exposure, outcome ) )
 		subsets <- (expand.grid( rep( list(0:1),length(covariates)) ))
 		r <- lapply( 1:nrow(subsets), function(i){
 			Z <- covariates[as.logical(subsets[i,])]
@@ -1261,8 +1259,7 @@ adjustmentSets <- function( x, exposure=NULL, outcome=NULL,
 #' 
 #' Test whether a set fulfills the adjustment criterion, that means,
 #' it removes all confounding bias when estimating a *total* effect.
-#' This is an extension of Pearl's 
-#' Back-door criterion (Shpitser et al, 2010; van der Zander et al, 
+#' This is an #' Back-door criterion (Shpitser et al, 2010; van der Zander et al, 
 #' 2014; Perkovic et al, 2015) 
 #' which is complete in the sense that either a set
 #' fulfills this criterion, or it does not remove all confounding bias.
@@ -1289,17 +1286,12 @@ adjustmentSets <- function( x, exposure=NULL, outcome=NULL,
 #' \emph{Proceedings of UAI 2010.}
 #'
 #' @export
-isAdjustmentSet <- function( x, Z, exposure=NULL, outcome=NULL ){
+isAdjustmentSet <- function( x, Z, exposure=exposures(x), outcome=outcomes(x) ){
 	x <- as.dagitty( x )
 	.supportsTypes( x, c("dag","mag","pdag","pag") )
 	xv <- .getJSVar()
 	Zv <- .getJSVar()
-	if( !is.null( exposure ) ){
-		exposures(x) <- exposure
-	}
-	if( !is.null( outcome ) ){
-		outcomes(x) <- outcome
-	}
+	.checkAllNames( x, c(Z,exposure,outcome) )
 	if( length(exposures(x)) == 0 || length(outcomes(x)) == 0 ){
 		stop("Both exposure(s) and outcome(s) need to be set!")
 	}
@@ -1362,6 +1354,7 @@ isAcyclic <- function( x ){
 isCollider <- function( x, u, v, w ) {
 	x <- as.dagitty( x )
 	.supportsTypes( x, c("dag") )
+	.checkName( x, v )
 	v %in% intersect( children( x, u ), children( x, w ) )
 }
 
@@ -1472,19 +1465,15 @@ impliedConditionalIndependencies <- function( x, type="missing.edge", max.result
 #' # A conditional instrumental variable
 #' instrumentalVariables( "dag{ i->x->y; x<->y ; y<-z->i }", "x", "y" )
 #' @export
-instrumentalVariables <- function( x, exposure=NULL, outcome=NULL ){
+instrumentalVariables <- function( x, exposure=exposures(x), outcome=outcomes(x) ){
 	x <- as.dagitty( x )
 	.supportsTypes( x, "dag" )
-
-	if( !is.null( exposure ) ){
-		exposures(x) <- exposure
+	.checkAllNames( x, c(exposure, outcome) )
+	if( length(exposure) != 1 || length(outcome) != 1 ){
+		stop("Both exposure(s) and outcome(s) need to be set to exactly one variable!")
 	}
-	if( !is.null( outcome ) ){
-		outcomes(x) <- outcome
-	}
-	if( length(exposures(x)) != 1 || length(outcomes(x)) != 1 ){
-		stop("Both exposure(s) and outcome(s) need to be set!")
-	}
+	exposures(x) <- exposure
+	outcomes(x) <- outcome
 
 	xv <- .getJSVar()
 	tryCatch({
@@ -2085,6 +2074,7 @@ plotLocalTestResults <- function(x,xlab="test statistic (95% CI)",
 paths <- function(x,from=exposures(x),to=outcomes(x),Z=list(),limit=100,directed=FALSE){
 	x <- as.dagitty(x)
 	.supportsTypes(x,c("dag","mag","pdag"))
+	.checkAllNames( x, c(from,to,Z) )
 	xv <- .getJSVar()
 	xv2 <- .getJSVar()
 	exposures(x) <- from
@@ -2139,6 +2129,7 @@ dconnected <- function(x,X,Y=list(),Z=list()){
 	if( length(Z) == 0 ){
 		Z <- list()
 	}
+	.checkAllNames( x, c(X,Y,Z) )
 	xv <- .getJSVar()
 	Xv <- .getJSVar()
 	Yv <- .getJSVar()

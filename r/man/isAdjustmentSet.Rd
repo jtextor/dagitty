@@ -4,7 +4,7 @@
 \alias{isAdjustmentSet}
 \title{Adjustment Criterion}
 \usage{
-isAdjustmentSet(x, Z, exposure = NULL, outcome = NULL)
+isAdjustmentSet(x, Z, exposure = exposures(x), outcome = outcomes(x))
 }
 \arguments{
 \item{x}{the input graph, a DAG, MAG, PDAG, or PAG.}
@@ -20,8 +20,7 @@ not given.}
 \description{
 Test whether a set fulfills the adjustment criterion, that means,
 it removes all confounding bias when estimating a *total* effect.
-This is an extension of Pearl's 
-Back-door criterion (Shpitser et al, 2010; van der Zander et al, 
+This is an #' Back-door criterion (Shpitser et al, 2010; van der Zander et al, 
 2014; Perkovic et al, 2015) 
 which is complete in the sense that either a set
 fulfills this criterion, or it does not remove all confounding bias.
