@@ -1044,7 +1044,10 @@ graphLayout <- function( x, method="spring" ){
 #' @param ... not used.
 #'
 #' @export
-plot.dagitty <- function( x, abbreviate.names=FALSE, ... ){	
+plot.dagitty <- function( x,
+	abbreviate.names=FALSE, 
+	show.coefficients=FALSE,
+	... ){	
 	x <- as.dagitty( x )
 	.supportsTypes(x,c("dag","mag","pdag"))
 	coords <- coordinates( x )
@@ -1056,7 +1059,6 @@ plot.dagitty <- function( x, abbreviate.names=FALSE, ... ){
 	} else {
 		labels <- names(coords$x)
 	}
-	print( labels )
 	omar <- par("mar")
 	par(mar=rep(0,4))
 	plot.new()
@@ -1080,6 +1082,10 @@ plot.dagitty <- function( x, abbreviate.names=FALSE, ... ){
 	asp <- par("pin")[1]/diff(par("usr")[1:2]) /
 		(par("pin")[2]/diff(par("usr")[3:4]))
 	ex <- edges(x)
+	if( show.coefficients ){
+		ea <- dagitty:::.edgeAttributes(x,"beta")
+		ex <- merge( ex, ea )
+	}
 	ax1 <- rep(0,nrow(ex))
 	ax2 <- rep(0,nrow(ex))
 	ay1 <- rep(0,nrow(ex))
@@ -1126,11 +1132,19 @@ plot.dagitty <- function( x, abbreviate.names=FALSE, ... ){
 		ax2[directed], -ay2[directed], length=0.1, col="gray" )
 	segments( ax1[undirected], -ay1[undirected], 
 		ax2[undirected], -ay2[undirected], col="black", lwd=2 )
-	for( i in which( has.control.point ) ){
+	ic <- which( has.control.point )
+	for( i in ic ){
 		.arc( ax1[i], -ay1[i], 
 			ax2[i], -ay2[i], axc[i], -ayc[i], 
 			col=c("gray","black")[1+(acode[i]==0)], 
 			code=acode[i], length=0.1, lwd=1+(acode[i]==0) )
+	}
+	if( show.coefficients ){
+		axm <- (ax1+ax2)/2
+		aym <- (ay1+ay2)/2
+		axm[ic] <- axc[ic]
+		aym[ic] <- ayc[ic]
+		text( axm, -aym, as.character(ea$a)) #, adj=0.5*c(sign(ax1-ax2),sign(ay1-ay2)) )
 	}
 	text( coords$x, -coords$y, labels )
 	par(mar=omar)
@@ -1546,6 +1560,8 @@ vanishingTetrads <- function( x, type=NA ){
 #'
 #' @param x data frame, lavaan parameter table such as returned by 
 #' \code{\link[lavaan]{lavaanify}}.
+#' @param digits number of significant digits to use when representing 
+#' path coefficients, if any
 #' @param ... Not used.
 #'
 #' @examples
@@ -1563,19 +1579,29 @@ vanishingTetrads <- function( x, type=NA ){
 #' plot( graphLayout( lavaanToGraph( mdl ) ) )
 #' }
 #' @export
-lavaanToGraph <- function( x, ... ){
+lavaanToGraph <- function( x, digits=3, ... ){
+	if( class(x) == "lavaan" ){
+		 x <- parTable(x)
+	}
+	if( "est" %in% colnames(x) ){
+		bt <- function(i){
+			paste(" [beta=",signif(x$est[i],digits),"]",sep="")
+		}
+	} else {
+		bt <- function(i){ "" }
+	}
 	latents <- c()
 	arrows <- c()
 	for( i in seq_len( nrow(x) ) ){
 		if( x$op[i] == "=~" ){
 			latents <- union(latents,x$lhs[i])
-			arrows <- c(arrows,paste(x$lhs[i]," -> ",x$rhs[i]))
+			arrows <- c(arrows,paste(x$lhs[i]," -> ",x$rhs[i],bt(i)))
 		}
 		if( x$op[i] == "~" ){
-			arrows <- c(arrows,paste(x$lhs[i]," <- ",x$rhs[i]))
+			arrows <- c(arrows,paste(x$lhs[i]," <- ",x$rhs[i],bt(i)))
 		}
 		if( x$op[i] == "~~" && (x$lhs[i] != x$rhs[i]) ){
-			arrows <- c(arrows,paste(x$lhs[i]," <-> ",x$rhs[i]))
+			arrows <- c(arrows,paste(x$lhs[i]," <-> ",x$rhs[i],bt(i)))
 		}
 	}
 	if( length(latents) > 0 ){

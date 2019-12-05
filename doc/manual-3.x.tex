@@ -1,26 +1,62 @@
-\documentclass[a4paper,10pt]{article}
+\documentclass[a4paper]{article} % for Science, Engineering and Humanities and Social Sciences articles
+\usepackage[a4paper, margin=2cm]{geometry}
+\usepackage{url,hyperref,microtype,subcaption}
+\usepackage{graphicx,amsmath,pxfonts}
+\usepackage[font={small,sf}]{caption}
+\renewcommand{\captionlabelfont}{\bfseries}
+\usepackage[onehalfspacing]{setspace}
+\usepackage{fixltx2e}
+\usepackage{xcolor}
+\usepackage{xspace}
+\hypersetup{
+    colorlinks,
+    linkcolor=red!70!black, citecolor=blue!80!black
+}
+\usepackage{doi}
+\usepackage[numbers]{natbib}
+\usepackage{tikz}
+\usepackage{framed}
+\definecolor{shadecolor}{rgb}{.97, .97, .97}
 
-\usepackage{ucs}
-\usepackage[utf8x]{inputenc}
-
-\newcommand{\pname}{{\sc DAG}itty\xspace}
+\newcommand{\pp}{{\sc DAG}itty\xspace}
 \newcommand{\action}[1]{\emph{``#1''}}
 
 %opening
-\title{Drawing and Analyzing Causal DAGs with \pname}
+\title{Drawing and Analyzing Causal DAGs with \pp}
 \author{Johannes Textor}
 \date{\today}
 
-\usepackage{atbegshi}
-\usepackage{tikz}
-\usepackage{a4wide}
-\usepackage{xspace}
-\usepackage{hyperref}
-\usepackage{pxfonts}
 
-\usepackage[nottoc,numbib]{tocbibind}
+\makeatletter
+\newenvironment{kframe}{%
+ \def\at@end@of@kframe{}%
+ \ifinner\ifhmode%
+  \def\at@end@of@kframe{\end{minipage}}%
+  \begin{minipage}{\columnwidth}%
+ \fi\fi%
+ \def\FrameCommand##1{\hskip\@totalleftmargin \hskip-\fboxsep
+ \colorbox{shadecolor}{##1}\hskip-\fboxsep
+     % There is no \\@totalrightmargin, so:
+     \hskip-\linewidth \hskip-\@totalleftmargin \hskip\columnwidth}%
+ \MakeFramed {\advance\hsize-\width
+   \@totalleftmargin\z@ \linewidth\hsize
+   \@setminipage}}%
+ {\par\unskip\endMakeFramed%
+ \at@end@of@kframe}
+\makeatother
+
+\newenvironment{dagcode}{%
+\begin{kframe}
+\begin{verbatim}
+}{
+\end{verbatim}
+\end{kframe}
+}
+
 
 % \usepackage{natbib}
+
+
 
 \newcommand{\typesetbiblink}[1]{#1}
 
@@ -28,48 +64,45 @@
 
 \begin{document}
 
-\maketitle
+\twocolumn[{%
+  \begin{@twocolumnfalse}
+    \maketitle
+    \begin{quote}
+\pp is a software for drawing and analyzing causal diagrams, also known as directed acyclic graphs (DAGs). Functions include identification of minimal sufficient adjustment sets for estimating causal effects, diagnosis of insufficient or invalid adjustment via the identification of biasing paths, identification of instrumental variables, and derivation of testable implications.
 
-\begin{abstract}
+\pp is provided in the hope that it is useful for researchers and students in Epidemiology, Sociology, Psychology, and other empirical disciplines. The software should run in any modern web browser that supports JavaScript, HTML, and SVG.
 
-\pname DAGitty is a software for drawing and analyzing causal diagrams, also known as directed
-acyclic graphs (DAGs). Functions include identification of minimal sufficient adjustment sets
-for estimating causal effects, diagnosis of insufficient or invalid adjustment via the 
-identification of biasing paths, identification of model-implied instrumental variables,
-and derivation of testable implications.
-
-\pname is provided in the hope that it is useful for researchers and students in Epidemiology,
-Sociology, Psychology, and other empirical disciplines. The software should run in any modern
-web browser that supports JavaScript, HTML, and SVG.
-
-This is the user manual for \pname version 3.0. The manual is updated with every release of
-a new stable version. \pname is available at \href{http://dagitty.net}{dagitty.net}. An R package ‘dagitty’ implementing the same functionality is also available on CRAN and at 
+This is the user manual for \pp version 3.0. The manual is updated with every release of
+a new stable version. \pp is available at \href{http://dagitty.net}{dagitty.net}. An R package ‘dagitty’ implementing the same functionality is also available on CRAN and at 
 \href{https://github.com/jtextor/dagitty}{github.com/jtextor/dagitty}.
-\end{abstract}
+\vspace{20pt}
+    \end{quote}
+  \end{@twocolumnfalse}
+}]
 
 \tableofcontents
 
 \section{Introduction}
 
-\pname is a web-based software for analyzing causal diagrams. It contains some of the 
+\pp is a web-based software for analyzing causal diagrams. It contains some of the 
 fastest algorithms available for this purpose. 
 
 This manual describes how causal diagrams can be created
 (Section~\ref{sec:diagramcreation}) 
-and manipulated (Section~\ref{sec:diagramediting}) using \pname. In 
-Section~\ref{sec:diagramanalysis}, \pname's capabilities to analyze causal diagrams are
+and manipulated (Section~\ref{sec:diagramediting}) using \pp. In 
+Section~\ref{sec:diagramanalysis}, \pp's capabilities to analyze causal diagrams are
 described. A brief introduction to causal diagrams is given
 in Section~\ref{sec:dagintro}. Advanced users might also be interested in the R package ‘dagitty’ \cite{textor_robust_2016}, which implements all functionality of the web-based software and more.
 
 
-\subsection{Citing \pname}
+\subsection{Citing \pp}
 
-Developing and maintaining \pname takes time and effort.
+Developing and maintaining \pp takes time and effort.
 If you publish research results obtained
-with the help of \pname, please 
+with the help of \pp, please 
 consider giving us credit by citing our work. 
 The main reference
-for \pname is our paper describing the accompanying R package \cite{textor_robust_2016}, 
+for \pp is our paper describing the accompanying R package \cite{textor_robust_2016}, 
 which is based on the same software library, and therefore also serves as a reference for the web-based program.
  We have also published several research papers describing the specific algorithms used in DAGitty, such as for identification of biasing paths \cite{TextorL2011}, adjustment sets \cite{textor14_uai}, and instrumental variables
 \cite{zander15_instrument}.
@@ -77,43 +110,43 @@ which is based on the same software library, and therefore also serves as a refe
 
 
 
-\subsection{Running \pname online}
+\subsection{Running \pp online}
 
-There are two ways to run \pname: either from the internet or from your
-own computer. To run \pname online, visit the URL
+There are two ways to run \pp: either from the internet or from your
+own computer. To run \pp online, visit the URL
 \href{http://www.dagitty.net}{\tt dagitty.net}.
-\pname should run in every modern browser. Specifically, I expect it
+\pp should run in every modern browser. Specifically, I expect it
 to work well on recent versions of Firefox, Chrome, Opera, and Safari
 as well as on Internet Explorer (IE) version 9.0 or later, which all
 support scalable vector graphics (SVG). If you encounter any problems, please send
 me an e-mail so I can fix them (my contact information is at the end of this manual). 
-Keep in mind that \pname is used by hundreds of people per day from all over the world -- these people all benefit if the problem you found is fixed so please do consider investing the time to notify me if you encounter any bugs.
+Keep in mind that \pp is used by hundreds of people per day from all over the world -- these people all benefit if the problem you found is fixed so please do consider investing the time to notify me if you encounter any bugs.
 
-\subsection{Installing \pname on your own computer} 
+\subsection{Installing \pp on your own computer} 
 
-\pname can be ``installed'' on your computer for use without an internet
+\pp can be ``installed'' on your computer for use without an internet
 connection. To do this, download the file 
 \href{http://www.dagitty.net/dagitty.zip}{\tt dagitty.net/dagitty.zip}
-which is a ZIP archive containing \pname's source. Unpack this ZIP file anywhere
-in your file system. To run \pname, just open the file \verb|dags.html| in the
+which is a ZIP archive containing \pp's source. Unpack this ZIP file anywhere
+in your file system. To run \pp, just open the file \verb|dags.html| in the
 unpacked folder. 
 
-Some features of \pname will not work in the offline version, because they
+Some features of \pp will not work in the offline version, because they
 are actually implemented on the web server. Currently, these features are:
 \begin{itemize}
 \item Exporting model drawings as PDF, JPEG or PNG files.
 \item Publishing models on-line.
 \end{itemize}
 
-\subsection{Migrating from earlier versions of \pname}
+\subsection{Migrating from earlier versions of \pp}
 
-The following two issues are important for users of older \pname versions. New users
+The following two issues are important for users of older \pp versions. New users
 can skip this section.
 
 \begin{itemize}
 \item The model code syntax has been completely changed in DAGitty version 3.0; the old syntax
-	based on the DAG program by Sven Knüppel \cite{KnueppelS2010} was getting too limited to accommodate the new features that were being added. Therefore, I decided to switch to a very different, but much more extensible syntax closely based on the ``dot'' language used by graphviz.
-\pname will still be able to open model code from older versions (with one small caveat
+	based on the DAG program by Sven Kn\"uppel \cite{KnueppelS2010} was getting too limited to accommodate the new features that were being added. Therefore, I decided to switch to a very different, but much more extensible syntax closely based on the ``dot'' language used by graphviz.
+\pp will still be able to open model code from older versions (with one small caveat
 for very old code, see below) and will automatically convert this to the new syntax.
 \item Early versions of DAGitty supported only one exposure and one outcome variable. It has
 now been possible for quite some time to have more than one exposure and/or outcome
@@ -258,7 +291,7 @@ not open new ones or closes causal paths in the process) is called an
 \emph{adjustment sets}.  Adjustment sets will be explained in more detail in 
 Section~\ref{sec:adjustment}.
 
-The purpose of \pname is to aid study design through devising identification
+The purpose of \pp is to aid study design through devising identification
 strategies in (possibly complex) causal diagrams and,
 more generally, through the identification of causal and biasing paths as
 well as testable implications in a given diagram. 
@@ -267,121 +300,173 @@ well as testable implications in a given diagram.
 
 \label{sec:diagramcreation}
 
-This section covers the three basic steps of working with \pname: 
+This section covers the three basic steps of working with \pp: 
 (1) loading a diagram; (2) manipulating the graphical layout of the diagram; and
 (3) saving the diagram. 
-% The first step for working with \pname is to create a causal network.
+% The first step for working with \pp is to create a causal network.
 First of all, any causal diagram consists of vertices (variables) and arrows 
 (direct causal effects).
-You can either create the diagram directly using \pname's graphical user
+You can either create the diagram directly using \pp's graphical user
 interface (explained in the next section),
 or prepare a textual diagram description in a word processor 
 and then import this
-description into \pname. In addition, \pname
+description into \pp. In addition, \pp
 contains some pre-defined examples that you can use to become familiar
 with the program and with DAGs in general. 
 To do so, just select one of the pre-defined examples from
 the \action{Examples} menu.
 
-\subsection{\pname's textual syntax for causal diagrams} 
+\subsection{\pp's textual syntax for causal diagrams} 
 
-\pname's textual syntax for causal diagrams is based on the one used
-by the DAG program by Sven Kn\"{u}ppel \cite{KnueppelS2010}. A diagram description 
-(\emph{model code}, somewhat clumsily 
-called \emph{model text data} in older \pname versions)  
-consists of two parts: 
+The textual syntax in DAGitty is based on the ‘dot’ language by graphviz. In fact, many dot graphs should work directly in dagitty without modifications, although most of the style attributes of the dot language are not supported by dagitty.
+I believe it is best to introduce the syntax by a series of examples. Let us start by defining the example used in the introduction above.
 
-\begin{enumerate}
-  \item A list of the variables in the diagram
-  \item A list of arrows between the variables
-\end{enumerate}
+\begin{kframe}
+\begin{verbatim}
+dag{ 
+  smoking
+  "carry matches" [exposure]
+  cancer [outcome]
+  smoking -> "carry matches"
+  smoking -> cancer
+  "carry matches" -> cancer
+}
+\end{verbatim}
+\end{kframe}
 
-The list of variables consists of one variable per line. 
-After each variable name follows 
-a character that indicates the status of the variable, which can
-be one of ``1'' (normal variable), ``A'' (adjusted for), ``U'' (latent/unobserved),
-``E'' (exposure), or ``O'' (outcome). If you prepare your diagram description
-in a word processor rather than constructing the diagram in \pname itself,
-you may encounter problems when you use spaces or other special symbols
-in variable names (e.g. instead of ``patient sex'' you should write 
-``patient\_sex''). This restriction does not apply when you construct the
-diagram using \pname's graphical user interface.
+This example shows the three basic components of the syntax in action:
+\begin{itemize}
+\item The enclosing statement \verb'dag{ ... }', which is always there. The DAG can also be given a name like so: \verb'dag Smoking { ... }'
 
-The list of arrows consists of several lines each starting 
-with a start variable name, followed by one or more other target variables 
-that the start variable is connected to. Figure~\ref{fig:syntaxexample} 
-contains a worked example of a textual model description. When you modify
-a diagram within \pname, the vertex labels will be augmented by additional information
-to help \pname remember the layout of the vertices and for other purposes (see
-rightmost column in Figure~\ref{fig:syntaxexample}).
+\item The variable (vertex) statements. These consist of a variable name and a list of options enclosed in square brackets. For instance, the options ``exposure'' and ``outcome'' set a variable to be an exposure or outcome, respectively. Other relevant options are ``latent'' (for unobserved variables) and ``adjusted'' (for variables that have been adjusted for in a statistical analysis). It is necessary to double-quote the variable names if they contain spaces or other special characters, like for the variable ``carry matches''.
 
+\item The edge statements. These consist of a source variable, and edge type (which can be  \verb|->|, \verb|<-|, or \verb|<->|), and a target variable. Double-headed edges (\verb|x<->y|) are simply an equivalent shortand for typing \verb|x<-u->y; u[latent]|. Importantly, this means that double-headed edges are \emph{not} meant to represent reciprocal causation (which is impossible to represent in a DAG). Instead, they are commonly used to depict unknown or unobserved confounders without specifying explicitly what those confounders are. 
+\end{itemize}
+
+These three syntax components are in fact enough to define any DAG. We are now going to define the same DAG in various different ways to showcase various convenient features of the syntax that make DAG definitions more compact; it is not necessary to use any of these features, but they can save a lot of typing.
+
+Variable statements can be omitted if the variable has no options, such as ``smoking'' in the above example. Every time a variable is used in an edge statement, that variable is automatically added as if there had been a corresponding node statement without an option.
+
+\begin{kframe}
+\begin{verbatim}
+dag{ 
+  "carry matches" [exposure]
+  cancer [outcome]
+  smoking -> "carry matches"
+  smoking -> cancer
+  "carry matches" -> cancer
+}
+\end{verbatim}
+\end{kframe}
+
+
+White-space is optional and several statements can be combined on one line. For clarity, it is recommended to insert semi-colons between different statements on the same line; however, this is not necessary. The following two versions are equivalent:
+
+\begin{kframe}
+\begin{verbatim}
+dag{ 
+  "carry matches" [exposure] ; cancer [outcome]
+  smoking -> "carry matches" ; smoking -> cancer ; "carry matches" -> cancer
+}
+\end{verbatim}
+\end{kframe}
+\begin{kframe}
+\begin{verbatim}
+dag{ 
+  "carry matches" [exposure]  cancer [outcome]
+  smoking -> "carry matches"  smoking -> cancer  "carry matches" -> cancer
+}
+\end{verbatim}
+\end{kframe}
+
+
+Edge statements can be chained together such that entire paths can be defined at once:
+
+\begin{kframe}
+\begin{verbatim}
+dag{ 
+  "carry matches" [exposure] ; cancer [outcome]
+  smoking -> "carry matches" -> cancer  smoking -> cancer
+}
+\end{verbatim}
+\end{kframe}
+
+Arrows can also be written in reverse orientation, which is quite convenient when used together with edge chaining:
+
+\begin{kframe}
+\begin{verbatim}
+dag{ 
+  "carry matches" [exposure] ; cancer [outcome]
+  cancer <- smoking -> "carry matches" -> cancer 
+}
+\end{verbatim}
+\end{kframe}
+
+Another very useful feature for short DAG descriptions is variable grouping using curly braces. This allows you to define several arrows at once like so:
+\begin{kframe}
+\begin{verbatim}
+dag{
+  "carry matches" [exposure] ; cancer [outcome]
+  smoking -> {"carry matches" cancer}
+   "carry matches" -> cancer
+}
+\end{verbatim}
+\end{kframe}
+
+The curly braces open a new scope in which a ``sub-graph'' is defined. An arrow pointing to a sub-graph means that there will be arrows made to all variables in the sub-graph, and the sub-graph itself can also define its own internal arrows. This means that we can also write the above as:
+\begin{kframe}
+\begin{verbatim}
+dag{
+  "carry matches" [exposure] ; cancer [outcome]
+  smoking -> {"carry matches" -> cancer}
+}
+\end{verbatim}
+\end{kframe}
+
+To save even more typing, several option names can be abbreviated using single letters like so:
+\begin{kframe}
+\begin{verbatim}
+dag{
+  "carry matches" [e] ; cancer [o]
+  smoking -> {"carry matches" -> cancer}
+}
+\end{verbatim}
+\end{kframe}
+
+Like mentioned above, it is not necessary to use grouping or edge statement chaining; the only purpose of these tricks is to save some typing. In fact, once your textual syntax is entered in \pp, it will be converted back to a trivial form in which the variable and edge statements are all explicitly listed. (This is similar to what would happen in graphviz.)
+
+The above examples covered only the structure of the DAG, but gave no layout information. A simple layout is automatically by \pp once you input a text description where \pp cannot detect any layout coordinates. The coordinates are also updated when you move nodes around or bend edges. See Figure~\ref{fig:syntax} for how the layout information is added to the variable statements. You could of course enter your own layout information manually into the text syntax as well.
 \begin{figure}
-\centering 
-\begin{minipage}[t]{3cm}
-{\bf (a)} \emph{vertex labels}\\
-E E \\
-D O \\
-A 1 \\
-B 1 \\
-Z 1
-\end{minipage}
-\begin{minipage}[t]{3cm}
-{\bf (b)} \emph{adjacency list}\\
-E D \\
-A E Z \\
-B D Z \\
-Z E D
-\end{minipage}
-\begin{minipage}[t]{3cm}
-{\bf (c)} \emph{resulting graph}\\
-\begin{tikzpicture}
-\node (e) at (-1,0) {E};
-\node (d) at (1,0) {D};
-\node (z) at (0,1) {Z};
-\node (a) at (-1,2) {A};
-\node (b) at (1,2) {B};
-\draw [->] (a) -- (z); \draw [->] (b) -- (z); 
-\draw [->] (a) -- (e); \draw [->] (b) -- (d); 
-\draw [->] (z) -- (e); \draw [->] (z) -- (d);
-\draw [->] (e) -- (d);
-\end{tikzpicture}
-\end{minipage}
-\hskip .5cm
-\begin{minipage}[t]{4cm}
-{\bf (d)} \emph{augmented vertex labels}\\
-E E @-2.2,1.6 \\
-D O @1.4,1.6 \\
-A 1 @-2.2,-1.5 \\
-B 1 @1.4,-1.5 \\ 
-Z 1 @-0.3,-0.1
-\end{minipage}
-\caption{Example for a textual model definition with \pname (a,b: model code; 
-c: resulting diagram). When the diagram is edited within
-\pname, the vertex labels and adjustment status are augmented with 
-additional information that \pname uses to layout 
-the vertices on the canvas (d): the
-layout coordinates of each variable are indicated behind the @ sign. 
-} 
-\label{fig:syntaxexample}
+\begin{tabular}{lll}
+(a) long syntax & (b) shorter syntax & (c) very short syntax \\
+\begin{dagcode}
+test test 
+\end{dagcode}
+\end{tabular}
+\caption{
+Example for a textual model definition with \pp (a) simple model code; (b) shorter model code of the same graph as in (a) using clever nested grouping; (c) resulting diagram. (d) When the diagram is edited within \pp, the vertex labels and adjustment status are augmented with additional layout coordinates for each variable, which are indicated as an option of the corresponding node.
+}
+\label{fig:syntax}
 \end{figure}
 
-\subsection{Loading a textually defined diagram into \pname}
 
-To load a textually defined diagram into \pname, simply copy\&paste the 
+\subsection{Loading a model text}
+
+To load a textually defined diagram into \pp, simply copy\&paste the 
 variable list, followed by a blank line,
 followed by the list of arrows into the \action{Model code} text
 box. Then click on \action{Update DAG}.
-\pname will now generate a preliminary graphical layout for your diagram on 
+\pp will now generate a preliminary graphical layout for your diagram on 
 the canvas, which may not yet look the way you intended, but can be freely 
 modified.
 
 \subsection{Modifying the graphical layout of a diagram}
 
-To layout the vertices and arrows of your diagram more clearly than \pname
+To layout the vertices and arrows of your diagram more clearly than \pp
 did, simply drag the vertices with your mouse on the canvas. You may notice
-that \pname modifies the information in the \action{Model code} field
+that \pp modifies the information in the \action{Model code} field
 on the fly, and augments it with additional position information for each
-vertex. In general, all changes you make to your diagram within \pname 
+vertex. In general, all changes you make to your diagram within \pp 
 are immediately reflected in the model code. 
 
 \subsection{Saving the diagram} 
@@ -393,11 +478,11 @@ by clicking in the text field, pressing \action{CTRL + A} to select the entire c
 of the text field, then pressing \action{CTRL + C} to copy the content. You
 can then paste the content in another program using \action{CTRL + V}.}.
 When you wish to continue working on the
-diagram, copy the model code back into \pname as explained above. 
+diagram, copy the model code back into \pp as explained above. 
 
 \subsection{Exporting the diagram}
 
-\pname can export the diagram as a PDF or SVG vector graphic (publication quality)
+\pp can export the diagram as a PDF or SVG vector graphic (publication quality)
 or a JPEG or PNG bitmap graphic (e.g. for inclusion in Powerpoint). Select the
 corresponding function from the \action{Model} menu. If you want to edit the graphical
 layout of the diagram or annotate it, it is recommended to export the diagram as an
@@ -413,9 +498,9 @@ with the data and interpretation. I have however seen many articles
 where people report having used DAGs but do not actually show them.
 If researchers, reviewers or editors deem it inappropriate to include the 
 DAG (or its model code) in the manuscript itself, here's another option:
-Store the DAG on the \pname website and get a short URL under which
+Store the DAG on the \pp website and get a short URL under which
 this DAG will be accessible. Then include this URL in the manuscript,
-or its supporting information. For example, one of the \pname examples
+or its supporting information. For example, one of the \pp examples
 is stored at the URL \href{http://dagitty.net/mvcFQ}{\tt dagitty.net/mvcFQ}.
 
 Here's how it works: Draw your DAG to full satisfaction, then choose 
@@ -512,7 +597,7 @@ and information flow in the diagram (see below).
 At present, these statuses are mutually exclusive --  e.g.,
 a variable cannot be both unobserved and adjusted 
 or both exposure and unobserved. This could change
-in future versions of \pname.
+in future versions of \pp.
 
 \subsection{Adding new arrows}
 
@@ -536,7 +621,7 @@ and hit the \action{del} key on your keyboard, or alternatively
 the \action{d} key (the latter comes in handy if you're on a Mac, which 
 has no real delete key).
 All arrows to that variable will be deleted along 
-with the variable. In contrast to \pname versions prior to 2.0,
+with the variable. In contrast to \pp versions prior to 2.0,
 all variables can now be deleted including exposure and outcome.
 
 \subsection{Deleting arrows}
@@ -599,7 +684,7 @@ to the empty set $\mathbf{Z}=\{\}$.
 
 It is not easy to verify by hand which paths are open and
 which paths are closed, especially in larger diagrams. 
-\pname highlights all arrows lying on open 
+\pp highlights all arrows lying on open 
 biasing paths in red and all arrows lying on open
 causal paths in green. This highlighting is optional 
 and is controlled via 
@@ -635,7 +720,7 @@ our variables $X$, $M$, $Y$ we came up with this DAG:
 For the arrows drawn in bold, there is no corresponding indirect path -- removing
 one of these arrows from the diagram means that there will no longer be any causal 
 effect between the corresponding variables. These arrows are called \emph{atomic direct
-effects} in \pname, and they can be highlighted -- like in the above DAG -- by ticking
+effects} in \pp, and they can be highlighted -- like in the above DAG -- by ticking
 the checkbox with that name. 
 On the other hand, for the thin arrow 
 $X \to Y$, there is also the indirect pathway $X \to M \to Y$. One may therefore reconsider
@@ -646,7 +731,7 @@ perhaps the causal effect from $X$ to $Y$ is entirely mediated through $M$.
 
 There are several ways to transform a given DAG such that it becomes better suited for 
 a particular purpose. We call such a transformed DAG a \emph{derived graph}. Currently
-\pname can display two kinds of derived graphs: correlation graphs, and moral graphs.
+\pp can display two kinds of derived graphs: correlation graphs, and moral graphs.
 These derived graphs can be shown by clicking on the respective radio button in the
 \action{View mode} field on the left-hand side of the screen. 
 
@@ -659,26 +744,26 @@ must be statistically independent. These pairwise independencies are also listed
 \action{Testable implications} field on the right-hand side of the screen, and so the
 correlation graph could be seen as encoding a subset of those implications. 
 
-Although this is not implemented in \pname yet, it is also possible to take a given 
+Although this is not implemented in \pp yet, it is also possible to take a given 
 correlation graph (which can be obtained e.g. by thresholding a covariance matrix) and 
 list all the DAGs that are ``compatible'' with it in the sense that they entail exactly
 the given correlation graph \cite{textor15_uai}.
 
 \subsubsection{The moral graph}
 
-To identify minimal sufficient adjustment sets, \pname uses the so-called ``moral graph'',
+To identify minimal sufficient adjustment sets, \pp uses the so-called ``moral graph'',
 which results from a transformation of the model to an undirected graph.
 This procedure is also highly recommended if you wish to verify the calculation by hand.
 See the nice explanation by Shrier and Platt \cite{ShrierP2008} for details on this
 procedure.  
 
-In \pname, you can switch between display of the model and its moral graph 
+In \pp, you can switch between display of the model and its moral graph 
 choosing ``moral graph'' in the``view mode'' section on the left-hand
 side of the page.
 
 \subsection{Causal effect identification}
 
-Some of the most important features of \pname are concerned with the question: how
+Some of the most important features of \pp are concerned with the question: how
 can causal effects be estimated from observational data? Currently, two types of causal
 effect identification are supported: adjustment sets, and instrumental variables.
 
@@ -687,7 +772,7 @@ effect identification are supported: adjustment sets, and instrumental variables
 \label{sec:adjustment}
 
 Finding sufficient adjustment sets is one main purpose 
-of \pname. In a nutshell, a sufficient adjustment
+of \pp. In a nutshell, a sufficient adjustment
 set $\mathbf{Z}$ is a set of covariates such that adjustment,
 stratification, or selection (e.g. by restriction or 
 matching) will minimize bias when estimating the causal 
@@ -707,7 +792,7 @@ One can understand adjustment sets graphically by viewing an adjustment set
 as a set $\mathbf{Z}$ that closes all all biasing 
 paths while keeping desired causal paths open
 (see previous section).
-\pname considers two kinds of adjustment sets: 
+\pp considers two kinds of adjustment sets: 
 
 \begin{itemize}
  \item Adjustment sets for the \emph{total effect} are sets that 
@@ -761,7 +846,7 @@ As proved by Lauritzen et al. \cite{Lauritzen1990}
 (see also Tian et al. \cite{TianPP1998}), 
 it suffices to restrict our attention to the part of the model that consists of exposure, 
 outcome, and their ancestors for identifying sufficient adjustment sets. This is indicated
-by \pname by coloring irrelevant nodes in gray. The relevant variables are colored according 
+by \pp by coloring irrelevant nodes in gray. The relevant variables are colored according 
 to which node they are ancestors of (exposure, outcome, or both) -- see the legend on the 
 left-hand side of the screen. The highlighting may be turned on and off by toggling the 
 \action{highlight ancestors} checkbox.
@@ -796,31 +881,31 @@ To find minimal sufficient adjustment sets, select the
 option \action{Adjustment (total effect)}
 or \action{Adjustment (direct effect)} in the 
 \action{Causal effect identification} field. 
-\pname
+\pp
 will then calculate all minimal sufficient adjustment sets and display 
 them in that field. Any changes made to the diagram will be instantly
 reflected in the list of adjustment sets.
 
 \paragraph{Forcing adjustment for specific covariates.}
 
-You can also tell \pname that you wish a specific covariate
+You can also tell \pp that you wish a specific covariate
 to be included into every adjustment set. To do this, move the
 mouse over the vertex of that covariate and press the \emph{a} 
-key. \pname will then update the list of minimal sufficient
+key. \pp will then update the list of minimal sufficient
 adjustment sets accordingly -- every set displayed
 is now minimal in the sense that removing any variable 
 \emph{except those you specified} will render
 that set insufficient. However, when you adjust for an intermediate
-or another descendant of the exposure, \pname will tell you that it is no longer
+or another descendant of the exposure, \pp will tell you that it is no longer
 possible to find a valid adjustment set.
 
 \paragraph{Avoiding adjustment for unobserved covariates.}
 
-You can tell \pname that a certain variable is unobserved 
+You can tell \pp that a certain variable is unobserved 
 (e.g. not measured at present, or not measurable because it is a 
 latent variable) by moving the mouse 
 over that covariate and pressing the \emph{u} key.
-\pname will only calculate adjustment sets that do 
+\pp will only calculate adjustment sets that do 
 not contain unobserved variables. However, if too many or
 some important variables are unobserved, then it may
 be impossible to close all biasing paths. 
@@ -835,7 +920,7 @@ mean that it is impossible to estimate the causal effect at all.
 often used in situations with unobserved confounders.
 Note that this technique depends on linearity assumptions. For further information
 on instrumental variables, please refer to the literature \cite{AngristIR96,imbens14}. 
-\pname can find instrumental variables in DAGs, as explained below. 
+\pp can find instrumental variables in DAGs, as explained below. 
 
 The validity of an instrumental variable $I$ depends on two causal conditions -- 
 exogeneity and exclusion restriction. These two conditions can be expressed 
@@ -855,16 +940,16 @@ in a modified graph where all edges out of $X$ are removed.
 A variable that fulfills these two conditions is called a
 \emph{conditional instrument}.
 
-\pname will find both ``classic'' and conditional instruments when the option 
+\pp will find both ``classic'' and conditional instruments when the option 
 \action{Instrumental Variable} is selected under the \action{Causal effect identification} 
-field. Note that \pname will not always list \emph{all} possible instruments;
+field. Note that \pp will not always list \emph{all} possible instruments;
 instead, it will restrict itself to a certain well-defined subset that we call 
 ``ancestral instruments''. However, whenever any instrument or conditional instrument
-exists at all, then \pname is guaranteed to find one. Note also that if there are several
+exists at all, then \pp is guaranteed to find one. Note also that if there are several
 instruments available, then it is best to choose the one that is most strongly
 correlated with $X$ (conditional on $\mathbf{Z}$ in the case of a conditional instrument).
 
-For details regarding ancestral instruments and how \pname computes them, please
+For details regarding ancestral instruments and how \pp computes them, please
 refer to the research paper where we describe these methods \cite{zander15_instrument}.
 
 \subsection{Testable implications}
@@ -884,11 +969,11 @@ variables can also be $d$-separated by the empty set $\mathbf{Z}=\emptyset$.
 In that case, the diagram implies that $X$ and $Y$ are
 \emph{unconditionally} independent.
 
-\pname displays all minimal testable implications 
+\pp displays all minimal testable implications 
 in the \action{Testable implications} text field. Only such
 implications will be displayed that are in fact testable,
 i.e., that do not involve any unobserved variables. Note
-that the set of testable implications displayed by \pname
+that the set of testable implications displayed by \pp
 does not constitute a ``basis set'' \cite{Pearl2009}. 
 Future versions will allow choosing between different basis sets. 
 
@@ -915,7 +1000,7 @@ Dirk van Kampen,
 Jeff Martin, Jillian Martin, Karl Micha\"{e}lsson,
 David Tritchler, Eric Vittinghof, 
 and other users for sending feedback and bug reports that greatly
-helped to improve \pname. 
+helped to improve \pp. 
 
 The development of DAGitty was sponsored by funding from the 
 Institute of Genetics, Health and Therapeutics at Leeds
@@ -924,8 +1009,8 @@ generous support.
 
 \section{Legal notice}
 
-Use of \pname is (and will always be) freely permitted and free of charge. 
-You may download a copy of \pname's source code from its website at \url{www.dagitty.net}.
+Use of \pp is (and will always be) freely permitted and free of charge. 
+You may download a copy of \pp's source code from its website at \url{www.dagitty.net}.
 The source code is available under the GNU General Public License (GPL),
 either version 2.0, or any later version, at the licensee's choice;
 see the file \verb|LICENSE.txt| in the download archive for details.
@@ -934,7 +1019,7 @@ as you please as long as the result remains itself under the GPL.
 
 \section{Bundled libraries}
 
-\pname ships along with the following JavaScript libraries:
+\pp ships along with the following JavaScript libraries:
 
 \begin{itemize} 
  \item \emph{Prototype.js}, a framework that makes life with JavaScript much easier. Only some 
@@ -942,10 +1027,10 @@ as you please as long as the result remains itself under the GPL.
   by the Prototype Core Team and licensed under the MIT license \cite{Prototype2010}. 
 \end{itemize}
 
-Furthermore, \pname uses some modified code from the \emph{Dracula Graph Library} by 
+Furthermore, \pp uses some modified code from the \emph{Dracula Graph Library} by 
 Philipp Strathausen, which is also licensed under the MIT license \cite{Dracula2010}. 
 
-Versions of \pname prior to 2.0 used the \emph{Rapha\"el} library for smooth 
+Versions of \pp prior to 2.0 used the \emph{Rapha\"el} library for smooth 
 cross-browser vector graphics in SVG and VML, developed by Dmitry Baranovskiy 
 \cite{Raphael2010}. However, the dependency on \emph{Rapha\"el} was removed starting
 from version 2.0, and only SVG-capable browsers will be supported in the future.
@@ -954,7 +1039,7 @@ I am grateful to the authors of these libraries for their valuable work.
 
 \section{Bundled examples}
 
-\pname contains some builtin examples for didactic and illustrative purposes. 
+\pp contains some builtin examples for didactic and illustrative purposes. 
 Some of these examples are taken from published papers or talks given at 
 scientific meetings. These are, in inverse chronological order: 
 
@@ -975,10 +1060,10 @@ via personal communication (2013).
 \section{Author contact}
 
 I would be glad to receive feedback from those 
-who use \pname for research or educational purposes. 
+who use \pp for research or educational purposes. 
 Also, you are welcome to send me your 
 suggestions or requests for features that 
-you miss in \pname. 
+you miss in \pp. 
 
 \bigskip
 
