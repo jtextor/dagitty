@@ -1144,7 +1144,7 @@ plot.dagitty <- function( x,
 		aym <- (ay1+ay2)/2
 		axm[ic] <- axc[ic]
 		aym[ic] <- ayc[ic]
-		text( axm, -aym, as.character(ea$a)) #, adj=0.5*c(sign(ax1-ax2),sign(ay1-ay2)) )
+		text( axm, -aym, as.character(ex$a)) #, adj=0.5*c(sign(ax1-ax2),sign(ay1-ay2)) )
 	}
 	text( coords$x, -coords$y, labels )
 	par(mar=omar)
