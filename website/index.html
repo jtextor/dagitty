@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+   <head>
+	<meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<title>DAGitty - drawing and analyzing causal diagrams (DAGs)</title>
+
+<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
+
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+   </head>
+
+<body>
+<div class="container"><div class="row">
+
+<div class="col-8">
+
+      <h1>Welcome to DAGitty!</h1>
+
+      <p class="lead">
+        DAGitty is a browser-based environment for creating, editing, and analyzing
+        causal models (also known as directed acyclic graphs or causal Bayesian networks).
+        The focus is on the use of causal diagrams for minimizing bias in empirical
+        studies in epidemiology and other disciplines. For background information, see
+        the "<a href="learn/index.html">learn</a>" page.
+      </p>
+
+	<div class="card-group">
+	<div class="card">
+		<div class="card-header">
+			<h4 class="card-title">Launch</h4>
+		</div>
+		<div class="card-body">
+		<p class="card-text">
+		<a href="dags.html"><img src="images/launch.png" alt="" /><br/>
+		Launch DAGitty online in your browser</a>.
+		</p>
+		</div>
+	</div>
+
+
+	<div class="card">
+		<div class="card-header">
+			<h4 class="card-title">Download</h4>
+		</div>
+		<div class="card-body">
+		<p class="card-text"> 
+		<a href="dagitty.zip"><img src="images/down.png" alt="" /><br/>
+			Download DAGitty's source for offline use</a>.
+		</p>
+		</div>
+	</div>
+
+
+	<div class="card">
+		<div class="card-header">
+			<h4 class="card-title">Learn</h4>
+		</div>
+		<div class="card-body">
+			<p class="card-text">
+				<a href="learn/index.html"><img src="images/doc.png" alt="" /><br/>
+				Learn more about DAGs and DAGitty</a>.
+			</p>
+		</div>
+	</div>
+
+	<div class="card">
+		<div class="card-header">
+			<h4 class="card-title">Code</h4>
+		</div>
+		<div class="card-body">
+			<p class="card-text">
+				<a href="https://github.com/jtextor/dagitty">
+					<img src="images/Rlogo.png" alt="" style="height:70px" /></a><br/>
+				The R package "dagitty" is available on 
+				<a href="https://cran.r-project.org/web/packages/dagitty/index.html">CRAN</a> or 
+				<a href="https://github.com/jtextor/dagitty">github</a>.
+			</p>
+		</div>
+	</div>
+
+	</div>
+
+      <p>
+       <a name="feedback">DAGitty</a> is developed and maintained by 
+       <a href="http://johannes-textor.name">Johannes Textor</a> 
+       (<a href="http://www.tumor-immunology.com">Tumor Immmunology Lab</a>
+	and <a href="http://ru.nl/icis">Institute for Computing and 
+		Information Sciences</a>,
+	<a href="http://www.ru.nl">Radboud University Nijmegen</a>). 
+
+	</p>
+
+	<p>
+
+<a href="https://twitter.com/intent/tweet?button_hashtag=DAGitty&ref_src=twsrc%5Etfw" class="twitter-hashtag-button" data-show-count="false">Tweet #DAGitty</a><script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+
+<a href="https://twitter.com/intent/tweet?screen_name=JohannesTextor&ref_src=twsrc%5Etfw" class="twitter-mention-button" data-show-count="false">Tweet to @JohannesTextor</a><script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+
+		<p>
+
+
+The algorithms
+	implemented in DAGitty were developed in close collaboration with
+	<a href="https://www.tcs.uni-luebeck.de/en/mitarbeiter/liskiewi/">Maciej Li&#347;kiewicz</a> 
+	and <a href="https://www.tcs.uni-luebeck.de/en/mitarbeiter/vanderzander/">Benito van der Zander</a>, University of L&uuml;beck, Germany (see literature references below).
+      </p>
+
+	<p>
+		DAGitty development happens 
+		on <a href="https://github.com/jtextor/dagitty">GitHub</a>. You can
+		download all source code from there and also get involved. 
+	</p>
+
+      <h2>How can I get help?</h2>
+
+	<p>
+
+      <p>
+         If you encounter any problems using DAGitty, or would like to have a certain
+         feature implemented, find me on Twitter or write to <em>"johannes {dot} textor {at} gmx {dot} 
+         de".</em> Your feedback and bug reports are very welcome and contribute to 
+         making DAGitty a better experience for everyone.
+		 Past contributors are acknowledged in the <a href="manual-2.x.pdf">manual</a>.
+      </p>
+
+      <h2>Is it free?</h2>
+
+      <p>
+        Because the main purpose of DAGitty is facilitating the use of causal models
+        in empirical studies, it is and will always be Free software (both 
+        "free as in beer" and "free as in speech"). You can copy, redistribute, and
+        modify it under the  terms of the  
+        <a href="http://www.gnu.org/licenses/gpl.html">GNU general public license</a>. 
+        Enjoy!
+      </p>
+
+	<p>
+		DAGitty development has been sponsored by the Leeds Institute for
+		Data Analytics and by the Deutsche Forschungsgemeinschaft (DFG),
+		grant <a href="http://gepris.dfg.de/gepris/projekt/273587939">273587939</a>.<br/>
+	</p>
+
+	<p>
+		<img style="width:20em" src="images/Dfg_logo_schriftzug_blau.jpg"/>
+	</p>
+
+      <h2>How can I cite DAGitty?</h2>
+
+	<p>
+		If you use DAGitty in your scientific work, please consider citing us:
+	</p>
+	  
+	<p>
+		Johannes Textor, Benito van der Zander, Mark K. Gilthorpe, Maciej Liskiewicz,
+		George T.H. Ellison. <br/>
+		<a href="http://dx.doi.org/10.1093/ije/dyw341">Robust causal inference using directed acyclic graphs: the R package 'dagitty'.</a><br />
+		<i>International Journal of Epidemiology</i> 45(6):1887-1894, 2016.<br/>
+		<a href="http://johannes-textor.name/papers/2017-ije.pdf">PDF postprint</a>
+	</p>
+
+      <h2>How can I learn more about how DAGitty works?</h2>
+
+      <p>The algorithms used in DAGitty are described in more depth the following
+         papers:</p>
+
+      <p>
+Johannes Textor, Maciej Li&#347;kiewicz.<br />
+<a href="http://www.tcs.uni-luebeck.de/downloads/papers/2011/Textor_Liskiewicz_Adjustment_Criteria_in_Causal_Diagrams_An_Algorithmic_Perspective.pdf">Adjustment Criteria in Causal Diagrams: An Algorithmic Perspective.</a><br />
+In <i>Proceedings of the 27th Conference on Uncertainty in Artificial Intelligence (UAI 2011)</i>, pp. 681-688. AUAI press, 2011.
+	  </p>
+	  
+	  <p>Benito van der Zander, Maciej Li&#347;kiewicz, Johannes Textor.<br />
+<a href="http://auai.org/uai2014/proceedings/individuals/286.pdf">Constructing Separators and Adjustment Sets in Ancestral Graphs.</a><br/>
+In <em>Proceedings of the 30th Conference on Uncertainty in Artificial Intelligence (UAI 2014)</em>,
+	pp. 907-916. AUAI Press, 2014.
+	  </p>
+	
+<p>Benito van der Zander, Johannes Textor, Maciej Li&#347;kiewicz.<br />
+<a href="http://ijcai.org/papers15/Papers/IJCAI15-457.pdf">Efficiently Finding 
+Conditional Instruments for Causal Inference.</a><br />
+	In<em> Proceedings of the 24th International Joint Conference on Artificial 
+	Intelligence (IJCAI 2015)</em>, pp. 3243-3249.
+	AAAI Press, 2015.
+	 </p>
+
+	<p>Benito van der Zander, Maciej Li&#347;kiewicz.<br />
+	<a href="https://www.aaai.org/ocs/index.php/AAAI/AAAI16/paper/download/12363/12096">Separators and Adjustment Sets in Markov Equivalent DAGs.</a><br />
+	In<em> Proceedings of the Thirtieth AAAI Conference on Artificial Intelligence 
+		(AAAI 2016)</em>, pp. 3315-3321. AAAI Press, 2016.
+	 </p>	
+
+	  <h2>What other related software is out there?</h2>
+
+	  <p>There is currently quite a lot of activity in causal inference software. A few links:</p>
+	  
+	  <ul>
+		<li><a href="https://cran.r-project.org/web/packages/ggdag/vignettes/intro-to-ggdag.html">ggdag</a>
+			is a nice R package based on dagitty
+			but tidyverse-compatible and with much better plotting functionality.</li>
+		<li><a href="https://www.gerkelab.com/project/shinydag/">ggdag</a> is another GUI
+			aimed at visualizing DAGs and exporting them in different publication-ready formats.</li>
+		<li><a href="http://www.phil.cmu.edu/projects/tetrad/">TETRAD</a></li>
+		<li><a href="http://epi.dife.de/dag/">DAG program</a> </li>
+		<li><a href="http://journals.lww.com/epidem/Fulltext/2010/07000/dagR__A_Suite_of_R_Functions_for_Directed_Acyclic.26.aspx">dagR</a> </li>
+	  </ul>
+	  
+	  <p>Please contact me if you know of other programs that should be added to this list,
+		or directly submit a pull request on github.</p>
+
+</div>
+
+
+
+<div class="col-4" style="background-color: #f5f3f3;">
+	  
+      <h2>Versions</h2>
+
+      <p>The following versions of DAGitty are available:</p>
+
+      <ul>
+        <li><a href="development/dags.html">Development version</a> <br />
+	  Recent development snapshot. May contain new 
+	  features, but could also contain new bugs.</li>
+        <li><a href="experimental">Experimental version</a> <br />
+	  Most recent development snapshot. May not even work.</li>
+        <li><a href="dags.html">2.3: Released 2015-08-19</a></li>
+        <li><a href="history/v2.2/dags.html">2.2: Released 2014-10-30</a></li>
+        <li><a href="history/v2.1/dags.html">2.1: Released 2014-02-06</a></li>
+        <li><a href="history/v2.0/dags.html">2.0: Released 2013-02-12</a></li>
+        <li><a href="history/v1.1/dags.html">1.1: Released 2011-11-29</a></li>
+        <li><a href="history/v1.0/dags.html">1.0: Released 2011-03-24</a></li>
+        <li><a href="history/v0.9b/dags.html">0.9b: Released 2010-11-24</a></li>
+        <li><a href="history/v0.9a/dags.html">0.9a: Released 2010-09-01</a></li>
+      </ul>
+
+
+      <h2>Changelog</h2>
+
+      <p><strong>2018-04-04</strong></p>
+
+      <p> Updated the development version and preparing for a long overdue release! </p>
+
+      <p><strong>2015-08-19</strong></p>
+
+      <p>
+		Version 2.3 has been released! The most notable new feature: 
+		instrumental variables.
+      </p>
+
+      <p><strong>2014-10-30</strong></p>
+
+      <p>
+		Version 2.2 has been released! 
+      </p>
+
+      <p><strong>2014-10-05</strong></p>
+
+      <p>
+	Version 2.2 is forthcoming and now available as the 
+	<a href="development/dags.html">Development version</a>. This version features
+	a new, SEM-like diagram drawing style and the ability to share your DAGs 
+	online.
+      </p>
+
+      <p><strong>2014-04-14</strong></p>
+
+      <p>
+	At "dagitty.net/learn", I am building some interactive tutorials
+	using the forthcoming version 2.1 of DAGitty. That version will
+	be embeddable into HTML pages, which will make it easy to include
+	interactive DAG drawings into just about any webpage. Check it out!
+	The first examples include an implementation of the "Simpson Machine"
+	and an interactive version of a tutorial text on d-separation.
+      </p>
+
+	 <p><a href="changelog.html">View older entries ...</a></p>
+</div>
+
+</div><!--row--></div><!--container-->
+</body>
+</html>
