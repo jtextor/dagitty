@@ -1,5 +1,5 @@
 \documentclass[a4paper]{article} % for Science, Engineering and Humanities and Social Sciences articles
-\usepackage[a4paper, margin=2cm]{geometry}
+\usepackage[a4paper, margin=1.5cm]{geometry}
 \usepackage{url,hyperref,microtype,subcaption}
 \usepackage{graphicx,amsmath,pxfonts}
 \usepackage[font={small,sf}]{caption}
@@ -16,11 +16,12 @@
 \usepackage[numbers]{natbib}
 \usepackage{tikz}
 \usepackage{framed}
-\usepackage{verbatim}
+\usepackage{fancyvrb}
 \definecolor{shadecolor}{rgb}{.97, .97, .97}
 
 \newcommand{\pp}{{\sc DAG}itty\xspace}
 \newcommand{\action}[1]{\emph{``#1''}}
+\setlength{\columnsep}{1cm}
 
 %opening
 \title{Drawing and Analyzing Causal DAGs with \pp}
@@ -46,15 +47,9 @@
  \at@end@of@kframe}
 \makeatother
 
-\newenvironment{dagcode}{%
-\begingroup
-\small
-\verbatim
-}{
-\endverbatim
-\endgroup
-}
 
+\DefineVerbatimEnvironment% 
+	{dagcode}{Verbatim} {frame=lines,framerule=0.1mm,fontsize=\small}
 
 % \usepackage{natbib}
 
@@ -425,14 +420,89 @@ Like mentioned above, it is not necessary to use grouping or edge statement chai
 
 The above examples covered only the structure of the DAG, but gave no layout information. A simple layout is automatically by \pp once you input a text description where \pp cannot detect any layout coordinates. The coordinates are also updated when you move nodes around or bend edges. See Figure~\ref{fig:syntax} for how the layout information is added to the variable statements. You could of course enter your own layout information manually into the text syntax as well.
 \begin{figure}
-\begin{tabular}{lll}
-(a) long syntax & (b) shorter syntax & (c) very short syntax \\
+\begin{tikzpicture}
+(a)
+\node [text width=2cm,align=center,anchor=north west] at (0,5) {
+(a)
 \begin{dagcode}
-test test
+dag{
+E -> D
+A -> E
+A -> Z
+B -> Z
+B -> D
+Z -> E
+Z -> D
+}
 \end{dagcode}
-\end{tabular}
+};
+\node [text width=2cm,align=center,anchor=north west] at (3,5) {
+(b)
+\begin{dagcode}
+dag{
+A -> {Z E}
+B -> {Z D}
+Z -> {E D}
+E -> D
+}
+\end{dagcode}
+};
+\node [text width=2cm,align=center,anchor=north west] at (6,5) {
+(c)
+\begin{dagcode}
+dag{
+{A B} -> 
+  {Z->{E->D}}
+}
+\end{dagcode}
+};
+\node [text width=4cm,align=center,anchor=north west] at (0,0) {
+(d)
+\begin{dagcode}
+dag {
+A [pos="0,-2"]
+B [pos="2,-2"]
+D [outcome,pos="2,0"]
+E [exposure,pos="0,0"]
+Z [pos="1,-1"]
+A -> { E Z }
+B -> { D Z }
+E -> D
+Z -> { D E }
+}
+\end{dagcode}
+};
+
+\node [text width=4cm,align=center,anchor=north west] at (4.5,0) {
+(e)
+};
+
+
+\begin{scope}[xshift=5.5cm,yshift=-3.6cm,scale=1.2]
+\node (a) at (0,2) {A};
+\node (b) at (2,2) {B};
+\node (z) at (1,1) {Z};
+\node (e) at (0,0) {E};
+\node (d) at (2,0) {D};
+
+\draw [->] (a) -- (e);
+\draw [->] (a) -- (z);
+\draw [->] (b) -- (z);
+\draw [->] (b) -- (d);
+\draw [->] (z) -- (e);
+\draw [->] (z) -- (d);
+\draw [->] (e) -- (d);
+\end{scope}
+
+\end{tikzpicture}
 \caption{
-Example for a textual model definition with \pp (a) simple model code; (b) shorter model code of the same graph as in (a) using clever nested grouping; (c) resulting diagram. (d) When the diagram is edited within \pp, the vertex labels and adjustment status are augmented with additional layout coordinates for each variable, which are indicated as an option of the corresponding node.
+Example for a textual model definition with \pp {\bfseries (a)} simple model code; 
+{\bfseries (b)} shorter model codel
+and {\bfseries (c)} very short model code of the graph in (a) using 
+clever nested grouping. {\bfseries (d)} When the diagram is edited within \pp, vertex labels 
+and adjustment status are augmented with additional layout coordinates
+for each variable, which are indicated as an option of the corresponding node.
+{\bfseries (e)} Graphical layout corresponding to (d).
 }
 \label{fig:syntax}
 \end{figure}
@@ -905,7 +975,7 @@ For example, this is the case whenever there is an unobserved confounder that di
 effects the exposure and outcome variables. However, this does not necessarily 
 mean that it is impossible to estimate the causal effect at all. 
 \emph{Instrumental variable regression} is a technique that is 
-often used in situations with unobserved confounders.
+often used in situations wit unobserved confounders.
 Note that this technique depends on linearity assumptions. For further information
 on instrumental variables, please refer to the literature \cite{AngristIR96,imbens14}. 
 \pp can find instrumental variables in DAGs, as explained below. 
