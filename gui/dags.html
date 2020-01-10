@@ -3,8 +3,8 @@
 	<head>
 	<meta http-equiv="Content-type" content="text/html; charset=UTF-8" />
 	<!--
-		DAGitty - a browser-based software for causal modelling and analysis
-		Copyright (C) 2010-2016 Johannes Textor, Benito van der Zander
+		DAGitty - a graphical tool for analyzing causal diagrams
+		Copyright (C) 2010-2020 Johannes Textor, Benito van der Zander
 	
 		This program is free software; you can redistribute it and/or
 		modify it under the terms of the GNU General Public License
@@ -23,7 +23,6 @@
 
     <title>DAGitty v3.0</title>
     <link rel="stylesheet" type="text/css" href="dags.css" />
-    	<!-- IE 6 is no longer supported! -->
 
 	<script type="text/javascript" src="js/dagitty.js"></script>
 	<script type="text/javascript" src="js/example-dags.js"></script>
@@ -139,7 +138,7 @@
 
     <ul id="menu">
       <li><a href="javascript:void(0)" id="menu_model_title">Model</a>
-         <ul id="menu_model">
+         <ul id="menu_model" style="z-Index:15">
             <li><a href="#" onclick="newModel();displayHide('menu_model')">New model</a></li>
             <li><a href="#" onclick="loadOnlineForm();displayHide('menu_model')">Load from dagitty.net</a></li>
             <script type="text/javascript">
@@ -160,7 +159,7 @@
 	</ul>
       </li>
       <li><a href="javascript:void(0)" id="menu_examples_title">Examples</a>
-       <ul id="menu_examples">
+       <ul id="menu_examples" style="z-Index:14">
          <script type="text/javascript">
          for( var i = 0 ; i < examples.length ; i++ ){
             document.write( "<li><a href=\"#\" onclick=\"loadExample("+i+");displayHide('menu_examples')\">"+examples[i].l+"</a></li>" );
@@ -169,7 +168,7 @@
        </ul>
       </li>
       <li><a href="javascript:void(0)" id="menu_howto_title">How to ...</a>
-         <ul id="menu_howto">
+         <ul id="menu_howto" style="z-Index:13">
             <li><a href="#" onclick="how('To add a new variable, click/tap on the canvas.')">Add a variable</a></li>
 			<li><a href="#" onclick="how('To rename a variable, click/tap it and click/tap &quot;rename&quot; in the &quot;variable&quot; tab, or move the mouse over it and press the &quot;r&quot; key on your keyboard.')">Rename a variable</a></li>
             <li><a href="#" onclick="how('To add a new connection, click/tap on the start variable and then on the end variable.')">Add a connection</a></li>
@@ -183,12 +182,12 @@
          </ul>
       </li>
       <li><a href="javascript:void(0)" id="menu_layout_title">Layout</a>
-         <ul id="menu_layout">
+         <ul id="menu_layout" style="z-Index:12">
             <li><a href="#" onclick="generateSpringLayout();displayHide('menu_layout');return false">Generate layout automatically</a></li>
          </ul>
       </li>
       <li style="border-right:none"><a href="javascript:void(0)" id="menu_help_title">Help</a>
-         <ul id="menu_help">
+         <ul id="menu_help" style="z-Index:11">
             <li><a href="manual-2.x.pdf" target="_blank" onclick="displayHide('menu_help')">Manual</a></li>
          </ul>
       </li>

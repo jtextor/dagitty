@@ -334,7 +334,9 @@ simulateLogistic <- function( x, b.default=NULL,
 	r <- r[,seq(1,nV),drop=FALSE]
 	colnames(r) <- ovars
 	r <- as.data.frame(r)
-	r[,setdiff(ovars,latents(x)),drop=FALSE]
+	r <- r[,setdiff(ovars,latents(x)),drop=FALSE]
+	r[] <- lapply(r,function(x) factor(x,levels=c(-1,1)))
+	r
 }
 
 #' Implied Covariance Matrix of a Gaussian Graphical Model
@@ -1827,6 +1829,9 @@ downloadGraph <- function(x="dagitty.net/mz-Tuw9"){
 #'  testing to only a certain subset of tests (for instance, to test only those conditional
 #'  independencies for which the conditioning set is of a reasonably low dimension, such
 #'  as shown in the example). 
+#' @param X vector of variable names.
+#' @param Y vector of variable names.
+#' @param Z vector of variable names.
 #' @param data matrix or data frame containing the data.
 #' @param sample.cov the sample covariance matrix; ignored if \code{data} is supplied.
 #' Either \code{data} or \code{sample.cov} and \code{sample.nobs} must be supplied.
@@ -1853,6 +1858,9 @@ downloadGraph <- function(x="dagitty.net/mz-Tuw9"){
 #'   statistics.
 #' @param loess.pars list of parameter to be passed on to  \code{\link[stats]{loess}}
 #'   (for \code{type="cis.loess"}), for example the smoothing range.
+#'
+#' \code{ciTest(X,Y,Z,data)} is a convenience function to test a single conditional independence
+#' independently of a DAG.
 #'
 #' @details Tetrad implications can only be derived if a Gaussian model (i.e., a linear
 #' structural equation model) is postulated. Conditional independence implications (CI)
@@ -2034,6 +2042,14 @@ localTests <- function(x=NULL, data=NULL,
 		}
 	} 
 	return(r)
+}
+
+#' @rdname localTests
+#' @export
+ciTest <- function(X,Y,Z=NULL,data,...){
+	localTests( data=data, tests=structure(
+		list(structure(list(X=X,Y=Y,Z=Z),class="dagitty.ci")),
+		class="dagitty.cis"), ...)
 }
 
 #' Plot Results of Local Tests

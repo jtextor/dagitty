@@ -11,15 +11,24 @@
    </head>
 
 <body>
-<div class="container"><div class="row">
 
-<div class="col-8">
 
-      <h1>Welcome to DAGitty!</h1>
+<div class="container">
 
+<div class="pb-2 mt-4 mb-2 border-bottom">
+	<h1>DAGitty &mdash; draw and analyze causal diagrams</h1>
+</div>
+
+
+<div class="row">
+
+<div class="col-lg-8">
+
+
+ 
       <p class="lead">
         DAGitty is a browser-based environment for creating, editing, and analyzing
-        causal models (also known as directed acyclic graphs or causal Bayesian networks).
+        causal diagrams (also known as directed acyclic graphs or causal Bayesian networks).
         The focus is on the use of causal diagrams for minimizing bias in empirical
         studies in epidemiology and other disciplines. For background information, see
         the "<a href="learn/index.html">learn</a>" page.
@@ -198,7 +207,7 @@ Conditional Instruments for Causal Inference.</a><br />
 		<li><a href="https://cran.r-project.org/web/packages/ggdag/vignettes/intro-to-ggdag.html">ggdag</a>
 			is a nice R package based on dagitty
 			but tidyverse-compatible and with much better plotting functionality.</li>
-		<li><a href="https://www.gerkelab.com/project/shinydag/">ggdag</a> is another GUI
+		<li><a href="https://www.gerkelab.com/project/shinydag/">shinydag</a> is another GUI
 			aimed at visualizing DAGs and exporting them in different publication-ready formats.</li>
 		<li><a href="http://www.phil.cmu.edu/projects/tetrad/">TETRAD</a></li>
 		<li><a href="http://epi.dife.de/dag/">DAG program</a> </li>
@@ -212,7 +221,7 @@ Conditional Instruments for Causal Inference.</a><br />
 
 
 
-<div class="col-4" style="background-color: #f5f3f3;">
+<div class="col-sm-4" style="background-color: #f5f3f3;">
 	  
       <h2>Versions</h2>
 
@@ -224,7 +233,8 @@ Conditional Instruments for Causal Inference.</a><br />
 	  features, but could also contain new bugs.</li>
         <li><a href="experimental">Experimental version</a> <br />
 	  Most recent development snapshot. May not even work.</li>
-        <li><a href="dags.html">2.3: Released 2015-08-19</a></li>
+        <li><a href="dags.html">3.0: Released 2019-01-09</a></li>
+        <li><a href="history/v2.3/dags.html">2.3: Released 2015-08-19</a></li>
         <li><a href="history/v2.2/dags.html">2.2: Released 2014-10-30</a></li>
         <li><a href="history/v2.1/dags.html">2.1: Released 2014-02-06</a></li>
         <li><a href="history/v2.0/dags.html">2.0: Released 2013-02-12</a></li>
@@ -236,6 +246,11 @@ Conditional Instruments for Causal Inference.</a><br />
 
 
       <h2>Changelog</h2>
+
+      <p><strong>2020-01-09</strong></p>
+
+      <p> Version 3.0 has been released! Complete reimplementation of the interface,
+		should work with mobile/touch now.</p>
 
       <p><strong>2018-04-04</strong></p>
 

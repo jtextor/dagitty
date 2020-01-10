@@ -1,6 +1,5 @@
 html, body{
    height: 100%;
-   /*overflow: hidden;*/
 }
 
 body{
@@ -44,6 +43,7 @@ main{
 #summary{
 }
 
+
 #menu{
    margin: 0em;
    list-style-type:none;
@@ -57,7 +57,6 @@ main{
     float: left; 
     position: relative; top: 0px; left: 0px; 
     border-right: 1px solid #666;
-    z-Index: 15;
 }
 
 #menu li ul{
@@ -79,9 +78,11 @@ main{
     margin: 1px;
     background-color: #eee; 
     padding: .2em .5em .2em .5em;
+	position: relative;
 }
+
 #menu a{
-    color: black;
+	color: black;
     text-decoration: none;
 }
 #menu:after {
@@ -173,6 +174,13 @@ form{
 .dialogwin p{
 	margin: 2em;
 }
+
+@media screen and (max-width: 40em) {
+	main{
+		height: 90%;
+	}
+}
+
 
 @media screen and (min-width: 40em) and (max-width: 60em) {
 	aside {

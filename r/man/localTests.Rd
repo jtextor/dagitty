@@ -2,6 +2,7 @@
 % Please edit documentation in R/dagitty.r
 \name{localTests}
 \alias{localTests}
+\alias{ciTest}
 \title{Test Graph against Data}
 \usage{
 localTests(x = NULL, data = NULL, type = c("cis", "cis.loess",
@@ -9,6 +10,8 @@ localTests(x = NULL, data = NULL, type = c("cis", "cis.loess",
   "tetrads.epistemic"), tests = NULL, sample.cov = NULL,
   sample.nobs = NULL, conf.level = 0.95, R = NULL,
   max.conditioning.variables = NULL, tol = NULL, loess.pars = NULL)
+
+ciTest(X, Y, Z = NULL, data, ...)
 }
 \arguments{
 \item{x}{the input graph, a DAG, MAG, or PDAG. Either an input graph or an explicit
@@ -53,7 +56,16 @@ a two-sided test of the hypothesis theta=0. If this parameter is given, the test
 to abs(theta)=tol versus abs(theta)>tol.}
 
 \item{loess.pars}{list of parameter to be passed on to  \code{\link[stats]{loess}}
-(for \code{type="cis.loess"}), for example the smoothing range.}
+  (for \code{type="cis.loess"}), for example the smoothing range.
+
+\code{ciTest(X,Y,Z,data)} is a convenience function to test a single conditional independence
+independently of a DAG.}
+
+\item{X}{vector of variable names.}
+
+\item{Y}{vector of variable names.}
+
+\item{Z}{vector of variable names.}
 }
 \description{
 Derives testable implications from the given graphical model and tests them against
