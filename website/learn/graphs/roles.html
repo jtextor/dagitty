@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta http-equiv="Content-type" content="text/html; charset=UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+
+<link rel="stylesheet"
+	href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css"
+	integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh"
+	crossorigin="anonymous">
+
+<title>Terminology in Causal Diagrams: Covariate Roles</title>
+<script src="http://ajax.googleapis.com/ajax/libs/prototype/1.7.1.0/prototype.js"></script>
+<script type="text/javascript" src="http://dagitty.net/lib/dagitty-2.2.js"></script>
+<!-- For this text we use the no-frills "SEMlike-Plain" style, which
+		 does not color any nodes. -->
+<script type="text/javascript" src="http://dagitty.net/lib/styles/semlike-plain.js"></script>
+<script type="text/javascript" src="graphs.js"></script>
+<script type="text/javascript">
+	var sty = DAGitty.stylesheets.default.style
+	sty.adjustednode = sty.latentnode
+	sty.latentnode = {} // no special treatment of latent nodes
+	sty.node.stroke = "none"
+	sty.exposurenode = sty.adjustednode
+	sty.outcomenode = sty.adjustednode
+	sty.causalpath = sty.path
+	sty.biasingpath = sty.path
+	
+	// custom function to implement an "onclick" handler for this tutorial
+	function clickfun(){
+		// "this" context is going to be the view object
+		
+		// prevent adjustment for "x" and "y" nodes
+		var v = this.getCurrentVertex()
+		if( v && ( this.getGraph().isSource( v ) || 
+			this.getGraph().isTarget( v ) ) ){
+			return;
+		}
+		
+		this.keydownhandler( {keyCode:65} ); // triggers same action as "a" key*/
+	}
+	
+	function setup(){
+		DAGitty.setup({action_on_click:clickfun})
+		askrand()
+	}
+	
+	var correct_answers = 0, max_correct = 7
+
+	function askrand(){
+		switch( Math.floor( Math.random()*4 ) ){
+			case 0 :
+				ask("proxyConfounders","Please click on a <b>proxy confounder</b>!")
+				break
+			case 1 :
+				ask("mediators","Please click on a <b>mediator</b>!")
+				break
+			case 2 :
+				ask("confounders","Please click on a <b>confounder</b>!")
+				break
+			case 3 :
+				ask("competingExposures","Please click on a <b>competing exposure</b>!")
+				break
+			default:
+				ask("confounders","Please click on a <b>confounder</b>!")
+		}
+	}
+	
+	function ask( what, msg ){
+		var g, gsk, i = 0, ci = DAGitty.controllers.length-1
+		var nodes
+		do {
+			i ++
+			nodes = ["a","b","c","d","e","f","g"]
+			shuf(nodes)
+			nodes.splice(4,0,"X")
+			nodes.splice(8,0,"Y")
+			g = GraphGenerator.randomDAG( nodes, 0.3 )
+			g.addSource("X")
+			g.addTarget("Y")
+		} while( ( !isconnected( g ) || 
+			tests[what](g).length == 0 ) )
+		var layouter = new GraphLayouter.Spring( g )
+		layouter.layout()
+		DAGitty.controllers[ci].setGraph(g)
+		$("msg").innerHTML = msg
+		DAGitty.controllers[ci].setActionOnClick( 
+			check(what,
+				DAGitty.controllers[ci].getView())
+		)
+	}
+</script>
+
+<link rel="stylesheet" type="text/css"  href="../../content.css"/>
+<style type="text/css">
+	#scoregood{
+		background-color: #0a0;
+		width: 0%;
+		height: 1em;
+}
+</style>
+
+
+</head>	
+
+<body onload="setup()">
+<div class="container">
+<div class="pb-2 mt-4 mb-2 border-bottom">
+<h1>Covariate Roles in DAGs</h1>
+</div>
+<p>This is based on lecture notes prepared together with 
+<a href="https://medicinehealth.leeds.ac.uk/clinical-population-science/staff/361/professor-mark-s-gilthorpe">
+Mark Gilthorpe</a>
+for his module "Advanced Modelling Strategies".</p>
+<h2>Roles of Covariates in DAGs</h2>
+<p>
+In empirical studies we often distinguish two variables of interest: the
+<b>exposure</b>, or independent variable, or cause, and the <b>outcome</b>, 
+or dependent variable, or effect. Once these two special variables are 
+selected, the other variables in the study (whether measured or not measured)
+are called <b>covariates</b>.
+</p>
+<p>Covariates can be categorized into several roles; not all of these roles 
+are mutually exclusive, but some are. We will define four of these roles
+below; in our definition we will make use of 
+<a href="index.html">kinship terminology</a>. In all of the following, we 
+assume that X is the exposure and Y is the outcome.
+</p>
+<h3>Confounders</h3>
+<p>Confounders are variables that is both 
+an ancestor of  the exposure and an ancestor of the 
+outcome (along a path that does not include the exposure). 
+For instance, Z is a confounder in the following DAG:
+</p>
+<pre class="dagitty" style="width: 50%; height:6em;">
+X E @0,1
+Y O @1,1.1
+Z 1 @0.5,2
+
+X Y
+Z Y X
+</pre>
+<p>To understand why the restriction "along a path that does not lead via the 
+exposure" in the definition above, consider the following example:
+</p>
+<pre class="dagitty" style="width: 50%; height:6em;">
+X E @0,1
+Y O @1,1.1
+Z 1 @0.5,2
+
+X Y
+Z X
+</pre>
+
+<p>
+Here, Z is no longer a confounder, even though it is an ancestor of both
+the exposure and the outcome. This is because the only path from Z to Y
+leads through the exposure X.
+</p>
+
+<h3>Mediators</h3>
+
+<p>
+A <b>mediator</b> is a variable that lies "between" the exposure and 
+the outcome; in other words, it is a descendant of the exposure and an
+ancestor of the outcome. M is a mediator in the following example:
+</p>
+
+<pre class="dagitty" style="width: 50%; height:4em;">
+X E @0,1
+Y O @1,1.1
+M 1 @0.5,1.05
+
+X M
+M Y
+</pre>
+
+<p>
+A mediator cannot be a confounder. Can you explain why?
+</p>
+
+<h3>Proxy Confounders</h3>
+
+<p>
+Proxy confounders are covariates that are not themselves confounders, but
+lie "between" confounders and the exposure or outcome. In other words, a proxy
+confounder is a descendant of a confounder and an ancestor of either the
+exposure or the outcome (but not both; else it would be a confounder).
+</p>
+
+<p>
+In the example below, Z is a confounder and A and M are proxy confounders.
+Note that M is also a mediator; the roles as mediator and proxy confounder
+are not mutually exclusive.
+</p>
+
+<pre class="dagitty" style="width: 70%; height:10em;">
+X E @0,1
+Y O @1,1.1
+Z 1 @0.35,2
+M 1 @0.5,0
+A 2 @0.7,1.5
+
+X M
+M Y
+Z M X
+Z A
+A Y
+</pre>
+
+<h3>Competing Exposures</h3>
+
+<p>
+Lastly, a competing exposure is an ancestor of the outcome that is not related
+with the exposure -- i.e., it is neither a confounder, nor a proxy confounder,
+nor a mediator. Including competing exposures in a regression model does not
+affect bias, but should improve precision.
+</p>
+
+<p>
+In the two examples below, Z is a competing exposure.
+</p>
+
+<pre class="dagitty" style="width: 50%; height:6em;">
+X E @0,1
+Y O @1,1.1
+Z 1 @0.5,2
+
+X Y
+Z Y
+</pre>
+
+<pre class="dagitty" style="width: 70%; height:6em;">
+X E @0,1
+Y O @1,1.1
+A 1 @0.35,2
+Z 2 @0.7,2
+
+X Y
+Z A Y
+X A
+</pre>
+
+<div class="exercise">
+<h2>Test your knowledge!</h2>
+
+<p>
+Below you can play a little game to test your knowledge of DAG terminology.
+Do you manage to give <script>document.write(max_correct)</script> correct
+answers in a row?
+</p>
+
+<p>
+In each example, X is the <b>exposure</b> and Y is the <b>outcome</b>!
+</p>
+
+<p id="scoregood">
+
+</p>
+
+<p>
+<span id="msg">
+</span>
+</p>
+
+<pre class="dagitty" style="width: 100%; height:25em;">
+digraph G {
+
+}
+</pre>
+</div>
+
+<p>
+Do you now feel eager to apply your graphical knowledge to an
+important statistical concept? Great! Read on about the
+<a href="table2-fallacy.html">Table 2 Fallacy</a>.
+</p>
+
+</div>
+</body>
+</html>

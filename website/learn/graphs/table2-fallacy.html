@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta http-equiv="Content-type" content="text/html; charset=UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+
+<link rel="stylesheet"
+	href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css"
+	integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh"
+	crossorigin="anonymous">
+
+<title>Causal Intepretation of Multiple Regression: The Table 2 Fallacy</title>
+<script src="http://ajax.googleapis.com/ajax/libs/prototype/1.7.1.0/prototype.js"></script>
+<script type="text/javascript" src="http://dagitty.net/lib/dagitty-2.2.js"></script>
+<!-- For this text we use the no-frills "SEMlike-Plain" style, which
+		does not color any nodes. -->
+<script type="text/javascript" src="http://dagitty.net/lib/styles/semlike-plain.js"></script>
+<script type="text/javascript" src="graphs.js"></script>
+<script type="text/javascript">
+	var sty = DAGitty.stylesheets.default.style
+	sty.adjustednode = sty.latentnode
+	sty.latentnode = {} // no special treatment of latent nodes
+	sty.node.stroke = "none"
+	sty.exposurenode = sty.adjustednode
+	sty.outcomenode = sty.adjustednode
+	sty.causalpath = sty.path
+	sty.biasingpath = sty.path
+	
+	var correct_answers = 0, max_correct = 7, ci1, ci2
+
+	// custom function to implement an "onclick" handler for this tutorial
+	function clickfun(){
+		// "this" context is going to be the view object
+		// prevent adjustment for "x" and "y" nodes
+		var v = this.getCurrentVertex()
+		if( v && ( this.getGraph().isSource( v ) || 
+			this.getGraph().isTarget( v ) ) ){
+			return;
+		}
+		
+		this.keydownhandler( {keyCode:65} ); // triggers same action as "a" key*/
+	}
+	
+	function setup(){
+		DAGitty.setup({action_on_click:clickfun})
+		ci1 = DAGitty.controllers.length-3
+		ci2 = DAGitty.controllers.length-1
+		ask()
+		ask2()
+	}
+	
+	function solve(){
+		var g = DAGitty.controllers[ci1].getGraph()
+		var ohtml = "", corr, totl, adj = g.getAdjustedNodes()
+		g.getVertices().without(g.getVertex("Y")).each( function(v){
+			totl = g.childrenOf( [v] ).length == 1
+			corr = totl ? adj.include(v) : 
+				!adj.include(v)
+			if( corr ){
+				ohtml += "<span class=\"corr\">"+v.id+": correct ("+
+					(totl?"total":"direct")+" effect)</span><br/>"
+			} else {
+				ohtml += "<span class=\"incorr\">"+v.id+": not correct ("+
+					(totl?"total":"direct")+" effect)</span><br/>"
+			}
+		} )
+		$("msg").innerHTML = ohtml+"<br/>"+
+			"<a href=\"#\" onclick=\"ask();return false\">Try again!</a>"
+	}
+	
+	function ask(){
+		var g, gsk, i = 0
+		var nodes
+		do {
+			nodes = ["a","b","c","d"] // ,"e","f","g"]
+			shuf(nodes)
+			nodes.push("Y")
+			g = GraphGenerator.randomDAG( nodes, 0.3 )
+			g.addSource("X")
+			g.addTarget("Y")
+		} while( !isconnected( g ) )
+		for( i = 0 ; i < nodes.length-1 ; i ++ ){
+			g.addEdge( nodes[i], "Y" )
+		}
+		var layouter = new GraphLayouter.Spring( g )
+		layouter.layout()
+		DAGitty.controllers[ci1].setGraph(g)
+		$("msg").innerHTML = "Regression model: Y ~ "+
+			nodes.without("Y").sort().join(" + ")+""
+	}
+
+	function solve2(){
+		var g = DAGitty.controllers[ci2].getGraph()
+		var ohtml = "", corr, conf, adj = g.getAdjustedNodes(), 
+			vu = g.getVertex("U"), vy = g.getVertex("Y"),
+			covars = g.getVertices().without(vy).without(vu)
+		covars.each( function(v){
+			g.removeAllSources()
+			g.addSource(v)
+			covars.without(v).each(function(cv){g.addAdjustedNode(cv)})
+			conf = GraphTransformer.activeBiasGraph(g).edges.length > 0
+			corr = conf ? !adj.include(v) : 
+				adj.include(v)
+			if( corr ){
+				ohtml += "<span class=\"corr\">"+v.id+": correct ("+
+					(conf?"confounded":"unconfounded")+" by U)</span><br/>"
+			} else {
+				ohtml += "<span class=\"incorr\">"+v.id+": not correct ("+
+					(conf?"confounded":"unconfounded")+" by U)</span><br/>"
+			}
+		} )
+		g.removeAllSources()
+		g.removeAllAdjustedNodes()
+		$("msg2").innerHTML = ohtml+"<br/>"+
+			"<a href=\"#\" onclick=\"ask2();return false\">Try again!</a>"
+	}
+
+	function ask2(){
+		var g, gsk, i = 0
+		var nodes
+		do {
+			nodes = ["a","b","c","d"] // ,"e","f","g"]
+			shuf(nodes)
+			nodes.push("Y")
+			nodes.unshift("U")
+			g = GraphGenerator.randomDAG( nodes, 0.3 )
+			g.addSource("X")
+			g.addTarget("Y")
+		} while( !isconnected( g ) )
+		for( i = 0 ; i < nodes.length-1 ; i ++ ){
+			g.addEdge( nodes[i], "Y" )
+		}
+		var layouter = new GraphLayouter.Spring( g )
+		layouter.layout()
+		DAGitty.controllers[ci2].setGraph(g)
+		$("msg2").innerHTML = "Regression model: Y ~ "+
+			nodes.without("Y").without("U").sort().join(" + ")+""
+	}
+</script>
+<link rel="stylesheet" type="text/css"  href="../../content.css"/>
+<style type="text/css">
+	#scoregood{
+		background-color: #0a0;
+		width: 0%;
+		height: 1em;
+	}
+	.corr{background-color: #afa;}
+	.incorr{background-color: #faa;}
+</style>
+</head>
+
+<body onload="setup()">
+<div class="container">
+<div class="pb-2 mt-4 mb-2 border-bottom">
+<h1>The Table 2 Fallacy</h1>
+</div>
+<p>This is based on lecture notes prepared together 
+with <a href="https://medicinehealth.leeds.ac.uk/clinical-population-science/staff/361/professor-mark-s-gilthorpe">
+Mark
+Gilthorpe</a>
+for his module "Advanced Modelling Strategies".</p>
+
+<p>
+<a href="roles.html">As you know,</a> 
+the covariates in a statistical analysis
+can have a variety of different roles from 
+a causal inference perspective:
+they can be mediators, confounders, proxy confounders, 
+or competing exposures.
+If a suitable set of
+covariates can be identified that removes confounding, 
+we may proceed to estimate our causal effect using a 
+multivariable regression model. In linear regression 
+models, there are only two
+types of variables: the dependent variable (DV) and
+independent variables (IVs, or predictors).
+No further distinction is made between the IVs – 
+specifically, the exposure is by no means a
+"special" IV and is treated just like any other IV. 
+Thus, as you can see, there is a conceptual
+mismatch between causal theory (DAG) that leads 
+us to formulate a multivariable regression
+model (that highlights the exposure-outcome 
+relationship and associated statistical adjustment
+for confounding) and the regression model itself. 
+This conceptual mismatch can easily lead to
+misinterpretation of the results from a multivariable 
+regression model.
+</p>
+
+<h2>Mutual Adjustment</h2>
+
+<p>
+One particularly widespread misconception is known as 
+<em>mutual adjustment</em>, recently called the
+<a href="http://dx.doi.org/10.1093/aje/kws412">Table 2 fallacy</a> since the first table in most epidemiological 
+articles usually describes the study
+data, and the second table reports the results of a 
+multivariable regression model where the
+erroneous efforts to illustrate mutual adjustment often
+appear. To illustrate the fallacy, let us
+assume that we estimate the effect of X on Y. We know 
+(e.g. from a DAG) that there is only
+one confounder, Z, so we run the regression Y~X+Z. If our 
+background knowledge and the
+statistical assumptions of the regression (e.g. normality) 
+hold, then the coefficient of X
+estimates the causal effect of X on Y. The ‘Table 2 fallacy’ 
+is the belief that we can also
+interpret the coefficient of Z as the effect of Z on Y; 
+indeed, in larger models, the fallacy is the
+belief that all coefficients have a similar interpretation 
+with respect to Y.
+</p>
+
+<p>
+To see why this is not true, let us look at an example DAG
+that matches our scenario. 
+</p>
+
+<div style="width:50%; text-align:center; font-style: italic">
+	Figure 1
+</div>
+<pre class="dagitty" style="width: 50%; height:10em;">
+digraph G {
+	X [pos="1,1"]
+	Y [pos="2,0"]
+	Z [pos="0,0"]
+	Z -> Y
+	Z -> X -> Y
+}
+</pre>
+
+<p>
+With respect to the effect of X on Y,
+adjustment for Z removes all confounding, but what
+does including X in the model mean for the effect of
+Z on Y?
+</p>
+
+<p>
+As we can see, X <em>mediates</em> the effect of 
+Z on Y, but adjustment for a mediator is erroneous
+when estimating the total causal effect.
+Thus, the Z coefficient in our model cannot be interpreted as
+a total causal effect.
+Instead, we could interpret it as the <em>direct effect</em> 
+of Z on Y when X is held constant;
+this could be stronger than, weaker than, or opposite to 
+the total effect (see <a href="../simpson/index.html">Simpson's paradox</a>).
+</p>
+
+<div class="exercise">
+<h2>Test your knowledge!</h2>
+
+<p>
+Suppose Y is regressed on <b>all other variables in the DAG</b> below. 
+Now look to see which coefficients in this model can be interpreted as 
+(unconfounded) <b>total effects</b>? Please click on all coefficients that can
+ be interpreted as <b>total effects</b>, and then click 
+<button onclick="solve()">solve</button>!
+</p>
+
+<p>
+<span id="msg">
+</span>
+</p>
+
+<pre class="dagitty" style="width: 100%; height:20em;">
+digraph G {
+
+}
+</pre>
+	</div>
+	
+	<h2>The role of confounding</h2>
+
+	<p>
+		Thus far it would 
+		seem that we can
+		at least interpret every coefficient in a multivariable regression
+		model as eiter a total or a direct causal effect.
+		To see that this can also fail, let us add another
+		variable to our DAG. We include U, which affects
+		both Z and Y:
+	<p>
+
+	<div style="width:50%; text-align:center; font-style: italic">
+		Figure 2
+	</div>
+	<pre class="dagitty" style="width: 50%; height:10em;">
+	digraph G {
+		X [pos="1,1"]
+		Y [pos="2,0"]
+		Z [pos="0,0"]
+		U [pos=".7,-1"]
+		Z -> Y
+		U -> Y
+		U -> Z -> X -> Y
+	}
+	</pre>
+
+
+	<p>
+		Despite this new variable,
+		it is still sufficient to adjust for Z alone to unconfound the
+		X→Y effect (can you see why?). Thus, the validity of
+		the X coefficient is unchanged. Upon examining Z
+		in this situation, however, we encounter difficulties.
+	</p>
+
+	<p>
+The new variable U acts as a confounder of the Z→Y relationship, which means that we would
+have to interpret the Z coefficient as a ‘direct effect that is confounded by U’ – not exactly a
+helpful interpretation. Indeed, no single multivariable regression model could ever estimate
+the causal effects of X and Z at the same time: estimating the X effect means we must include
+X as an IV, but to estimate the Z effect we must not include X. In general, it is impossible to
+identify multiple causal effects using a single regression model, and we can usually interpret at
+most one coefficient in such a model as a (total) causal effect.
+
+<div class="exercise">
+<h2>Test your knowledge!</h2>
+
+<p>
+Suppose Y is regressed on <b>all other variables in the DAG</b>
+ below, <b>except for U</b>.
+Now look to see which coefficients in this model can be interpreted as 
+(unconfounded) <b>total effects</b> or (unconfounded) <b>direct effects</b>? 
+Please click on all coefficients that can be interpreted as unconfounded, 
+and then click <button onclick="solve2()">solve</button>!
+</p>
+
+<p>
+<span id="msg2">
+</span>
+</p>
+
+<pre class="dagitty" style="width: 100%; height:20em;">
+digraph G {
+
+}
+</pre>
+</div>
+
+<p>
+	If we are interested in multiple causal effects, we need multiple regression
+	models. In Figure 2, we can get the effect of X from the model Y~X+Z because adjustment for Z unconfounds the X→Y effect; and we can get the effect of Z from the model Y~Z+U because adjustment for U unconfounds the Z → Y effect.
+</p>
+
+	<h2>The bottom line</h2>
+	<p>
+		The concept of ‘mutual adjustment’, as often encountered in
+		the literature, is seriously misleading.
+	</p>
+
+	</body>
+</html>
