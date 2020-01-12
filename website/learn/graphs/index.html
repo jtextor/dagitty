@@ -12,24 +12,18 @@
 	crossorigin="anonymous">
 
 <title>Terminology in Causal Diagrams: Ancestral Relations</title>
-<script src="http://ajax.googleapis.com/ajax/libs/prototype/1.7.1.0/prototype.js"></script>
-<script type="text/javascript" src="http://dagitty.net/lib/dagitty-2.2.js"></script>
+<!--<script type="text/javascript" src="http://dagitty.net/lib/dagitty-3.0.js"></script>-->
 <!-- For this text we use the no-frills "SEMlike-Plain" style, which
 	does not color any nodes. -->
-<script type="text/javascript" src="http://dagitty.net/lib/styles/semlike-plain.js"></script>
+<script type="text/javascript" src="../../../jslib/dagitty.js"></script>
+<script type="text/javascript" src="../../../gui/js/styles/learn.js"></script>
 
 <script type="text/javascript" src="graphs.js"></script>
 <script type="text/javascript">
-	var sty = DAGitty.stylesheets.default.style
-			sty.adjustednode = sty.latentnode
-			sty.latentnode = {} // no special treatment of latent nodes
-			sty.node.stroke = "none"
-			sty.exposurenode = sty.adjustednode
-			
-			// custom function to implement an "onclick" handler for this tutorial
+		// custom function to implement an "onclick" handler for this tutorial
 			function clickfun(){
 				// "this" context is going to be the view object
-				
+				console.log("clickitty")
 				// prevent adjustment for "x" and "y" nodes
 				var v = this.getCurrentVertex()
 				if( v && ( this.getGraph().isSource( v ) || 
@@ -37,52 +31,60 @@
 					return;
 				}
 				
-				this.keydownhandler( {keyCode:65} ); // triggers same action as "a" key*/
+				this.keydownHandler( {keyCode:65} ); // triggers same action as "a" key*/
 			}
 			
 			function setup(){
-				DAGitty.setup({action_on_click:clickfun})
+				DAGitty.setup({action_on_click:function(){}})
+				DAGitty.get("ex1").on("vertex_marked",function(v){
+					v && DAGitty.get("ex1").unmarkVertex()
+				})
+				DAGitty.get("ex2").on("vertex_marked",function(v){
+					v && DAGitty.get("ex2").unmarkVertex()
+				})
+				DAGitty.get("game").on("vertex_marked", 
+					function(v){ 
+						rcheck( what, v, DAGitty.get("game").getGraph() ) }
+				)
 				askrand()
 			}
 
-			var correct_answers = 0, max_correct = 7
+			var correct_answers = 0, max_correct = 7, what = ""
 			
 			function askrand(){
 				switch( Math.floor( Math.random()*4 ) ){
-					/*case 0 : 
+					case 0 : 
 						ask("parents","Please click on a <b>parent</b> of X!")
 					break;
 					case 1 :
 						ask("children","Pleae click on a <b>child</b> of X!")
-					break;*/
-					case 0 :
+					break;
 					case 2 :
 						ask("ancestors","Please click on an <b>ancestor</b> of X!")
 					break;
-					case 1 :
 					case 3 :
 						ask("descendants","Please click on an <b>descendant</b> of X!")
 					break;
 				}
 			}
 
-			function ask( what, msg ){
+			function ask( _what, msg ){
 				var g, gsk, i = 0
 				var nodes = ["a","b","c","X","y","d","e","f"]
+				what = _what
 				do {
 					i ++
 					shuf(nodes)
 					g = GraphGenerator.randomDAG( nodes, 0.3 )
 					g.addSource( "X" )
-					console.log( tests[what](g) )
+					//console.log( tests[what](g) )
 				} while( !isconnected( g ) || 
 					tests[what](g).length == 0 )
 				//g.addAdjustedNode( "X" )
 				var layouter = new GraphLayouter.Spring( g )
 				layouter.layout()
-				DAGitty.controllers[2].setGraph(g)
-				$("msg").innerHTML = msg
-				DAGitty.controllers[2].setActionOnClick( check(what) )
+				DAGitty.get("game").setGraph(g)
+				document.getElementById("msg").innerHTML = msg
 			}
 </script>
 
@@ -110,24 +112,25 @@ Causal path diagrams (DAGs) consist of <em>nodes</em> that represent variables
 (e.g. X, Y) and <em>arrows</em> that depict direct causal
 effects. A very simple DAG is the following:
 </p>
-<pre class="dagitty" style="width: 50%; height:4em;">
-X 1 @0,1
-Y 1 @1,1.1
-
-X Y
-</pre>
+<div class="dagitty" style="max-width: 12em; height:5em" id="ex1">
+dag{
+	X [pos="0,1"]
+	Y [pos="1,1.1"]
+	X -&gt; Y 
+}
+</div>
 <p>
 To describe relationships between variables in a diagram, we often read
 them like an ancestry tree and use kinship terminology. Consider this example:
 </p>
-<pre class="dagitty" style="width: 50%; height:4em;">
-X 1 @0,1
-M 1 @1,1.1
-Y 1 @2,1.2
-
-X M
-M Y
-</pre>
+<div class="dagitty" style="max-width: 18em; height:5em" id="ex2">
+dag{
+	X [pos="0,1"]
+	M [pos="1,1.1"]
+	Y [pos="2,1.2"]
+	X -&gt; M -&gt; Y 
+}
+</div>
 <p>
 In this diagram, M is a <em>child</em> of X and X is a <em>parent</em> of M.
 M and Y are <em>descendants</em> of X, and X and M are <em>ancestors</em> 
@@ -153,10 +156,8 @@ answers in a row?
 <p id="msg">
 </p>
 
-<pre class="dagitty" style="width: 70%; height:30em;">
-digraph G {
-
-}
+<div class="dagitty" id="game" style="max-width:40em; height:30em">
+dag G {}
 </pre>
 </div>
 

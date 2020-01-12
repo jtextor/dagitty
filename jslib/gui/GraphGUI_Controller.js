@@ -26,12 +26,13 @@ var DAGittyController = Class.extend({
 		}
 
 		// ... and creates the view ...
-		this.view = new DAGittyGraphView( obj.canvas, this.getGraph(), this,
-			{ 
+		this.view = new DAGittyGraphView( obj.canvas,
+			this.getGraph(),
+			this, { 
 				autofocus : (obj.autofocus !== undefined) ? obj.autofocus : false,
 				action_on_click : obj.action_on_click
 			} 
-			)
+		)
 	
 		this.view.setEventListener( "vertex_marked", 
 			_.bind( function(v){ _.each(this.event_listeners["vertex_marked"],
@@ -43,6 +44,10 @@ var DAGittyController = Class.extend({
 		// graph change event listeners are wired in the
 		// function "setGraph" (because they might need to be 
 		// changed when a completely new graph is loaded)
+	},
+
+	on : function( event_name, listener ){
+		this.event_listeners[event_name].push( listener )
 	},
 
 	getGraph : function(){
@@ -240,6 +245,9 @@ var DAGittyController = Class.extend({
 			},this)
 			this.getObservedGraph()["add"+pcamel](v)
 		}
+	},
+	unmarkVertex : function(){
+		this.view.unmarkVertex()
 	}
 })
 
@@ -247,23 +255,32 @@ var DAGitty = {
 	setup : function( op ){
 		if( !op ){ op = {} }
 		if( this.setupCalled && !op.force ){ return }
-		DAGitty.controllers = []
+		this.controllers = []
+		this.controllers_by_id = []
 		var tags = ["div", "pre"]
 		for( var j = 0 ; j < tags.length ; j ++ ){
 			var divs = document.getElementsByTagName( tags[j] )
 			var re = new RegExp("\\bdagitty\\b")
 			for( var i = 0 ; i < divs.length ; i ++ ){
-				if( re.test(divs.item(i).className) ){
+				var el = divs.item(i)
+				if( re.test(el.className) ){
 					// some styles are added automatically to the container
 					// inside the constructor of the view (GraphGUI_View.js)
-					op.canvas = divs.item(i)
-					DAGitty.controllers.push( 
-						new DAGittyController( op )
+					op.canvas = el
+					var c = new DAGittyController( op )
+					this.controllers.push( 
+						c
 					)
+					if( el.id ){
+						this.controllers_by_id[el.id] = c
+					}
 				}
 			}
 		}
 		this.setupCalled = true
+	},
+	get : function( id ){
+		return this.controllers_by_id[id]
 	},
 	resize : function(){
 		for( var i = 0 ; i < DAGitty.controllers.length ; i ++ ){

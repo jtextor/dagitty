@@ -13,7 +13,7 @@
 
 <title>Causal Intepretation of Multiple Regression: The Table 2 Fallacy</title>
 <script src="http://ajax.googleapis.com/ajax/libs/prototype/1.7.1.0/prototype.js"></script>
-<script type="text/javascript" src="http://dagitty.net/lib/dagitty-2.2.js"></script>
+<script type="text/javascript" src="http://dagitty.net/lib/dagitty-3.0.js"></script>
 <!-- For this text we use the no-frills "SEMlike-Plain" style, which
 		does not color any nodes. -->
 <script type="text/javascript" src="http://dagitty.net/lib/styles/semlike-plain.js"></script>
@@ -221,7 +221,7 @@ that matches our scenario.
 <div style="width:50%; text-align:center; font-style: italic">
 	Figure 1
 </div>
-<pre class="dagitty" style="width: 50%; height:10em;">
+<pre class="dagitty" style="max-width: 18em; height:10em;">
 digraph G {
 	X [pos="1,1"]
 	Y [pos="2,0"]
@@ -266,7 +266,7 @@ Now look to see which coefficients in this model can be interpreted as
 </span>
 </p>
 
-<pre class="dagitty" style="width: 100%; height:20em;">
+<pre class="dagitty" style="max-width: 40em; height:20em;">
 digraph G {
 
 }
@@ -288,8 +288,8 @@ digraph G {
 	<div style="width:50%; text-align:center; font-style: italic">
 		Figure 2
 	</div>
-	<pre class="dagitty" style="width: 50%; height:10em;">
-	digraph G {
+	<pre class="dagitty" style="max-width: 18em; height:10em;">
+	dag G {
 		X [pos="1,1"]
 		Y [pos="2,0"]
 		Z [pos="0,0"]
@@ -335,9 +335,9 @@ and then click <button onclick="solve2()">solve</button>!
 </span>
 </p>
 
-<pre class="dagitty" style="width: 100%; height:20em;">
-digraph G {
-
+<pre class="dagitty" style="max-width: 40em; height:20em;">
+dag G {
+	X -> Y
 }
 </pre>
 </div>

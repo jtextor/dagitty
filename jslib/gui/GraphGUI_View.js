@@ -1,5 +1,5 @@
 /* DAGitty - a browser-based software for causal modelling and analysis
- *   Copyright (C) 2010-2016 Johannes Textor, Benito van der Zander
+ *   Copyright (C) 2010-2020 Johannes Textor, Benito van der Zander
  * 
  *   This program is free software; you can redistribute it and/or
  *   modify it under the terms of the GNU General Public License
@@ -233,6 +233,9 @@ var DAGittyGraphView = Class.extend({
 		this.newVertexDialog() 
 	},
 
+	unmarkVertex : function(){
+		this.impl.unmarkVertexShape()
+	},
 
 	toggleVertexProperty : function( v, prop ){
 		// this will trigger a redraw

@@ -287,9 +287,15 @@ var GraphGUI_SVG = Class.extend({
 			}
 			this.unmarkVertexShape()
 		} else {
-			el.dom.firstChild.setAttribute( "stroke-width", 5 )
-			el.dom.firstChild.setAttribute( "stroke", "black" )
-			el.previous_stroke  = el.dom.firstChild.getAttribute( "stroke", "black" )
+
+			el.previous_stroke  = el.dom.firstChild.getAttribute( "stroke",
+				this.getStyle().style.node.stroke )
+			el.previous_stroke_width  = el.dom.firstChild.getAttribute( "stroke-width",
+				this.getStyle().style.node["stroke-width"] )
+			el.dom.firstChild.setAttribute( "stroke-width", 3*el.previous_stroke_width )
+			if( !el.previous_stroke ){
+				el.dom.firstChild.setAttribute( "stroke", "black" )
+			}
 			this.marked_vertex_shape = el
 			this.callEventListener( "vertex_marked", [el.v] )
 		}
@@ -298,7 +304,7 @@ var GraphGUI_SVG = Class.extend({
 		if( !el ) el = this.marked_vertex_shape
 		if( el && el.dom ){
 			el.dom.firstChild.setAttribute( "stroke", el.previous_stroke )
-			el.dom.firstChild.setAttribute( "stroke-width", 2 )
+			el.dom.firstChild.setAttribute( "stroke-width", el.previous_stroke_width )
 		}
 		delete this.marked_vertex_shape	
 		this.callEventListener( "vertex_marked", [void(0)] )	
