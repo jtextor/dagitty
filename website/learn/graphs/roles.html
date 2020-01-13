@@ -12,45 +12,28 @@
 	crossorigin="anonymous">
 
 <title>Terminology in Causal Diagrams: Covariate Roles</title>
-<script src="http://ajax.googleapis.com/ajax/libs/prototype/1.7.1.0/prototype.js"></script>
-<script type="text/javascript" src="http://dagitty.net/lib/dagitty-3.0.js"></script>
-<!-- For this text we use the no-frills "SEMlike-Plain" style, which
-		 does not color any nodes. -->
-<script type="text/javascript" src="http://dagitty.net/lib/styles/semlike-plain.js"></script>
+
+<script type="text/javascript" src="../../lib/dagitty-3.0.js"></script>
+<!-- For this text we use a no-frills style that does not color any nodes. -->
+<script type="text/javascript" src="../simple-style.js"></script>
 <script type="text/javascript" src="graphs.js"></script>
+
+
 <script type="text/javascript">
-	var sty = DAGitty.stylesheets.default.style
-	sty.adjustednode = sty.latentnode
-	sty.latentnode = {} // no special treatment of latent nodes
-	sty.node.stroke = "none"
-	sty.exposurenode = sty.adjustednode
-	sty.outcomenode = sty.adjustednode
-	sty.causalpath = sty.path
-	sty.biasingpath = sty.path
-	
-	// custom function to implement an "onclick" handler for this tutorial
-	function clickfun(){
-		// "this" context is going to be the view object
-		
-		// prevent adjustment for "x" and "y" nodes
-		var v = this.getCurrentVertex()
-		if( v && ( this.getGraph().isSource( v ) || 
-			this.getGraph().isTarget( v ) ) ){
-			return;
-		}
-		
-		this.keydownhandler( {keyCode:65} ); // triggers same action as "a" key*/
-	}
-	
-	function setup(){
-		DAGitty.setup({action_on_click:clickfun})
+		function setup(){
+			DAGitty.setup()
+			DAGitty.get("game").on("vertex_marked", 
+				function(v){ 
+					rcheck( what, v, DAGitty.get("game").getGraph() ) }
+			)
 		askrand()
 	}
 	
-	var correct_answers = 0, max_correct = 7
+	var correct_answers = 0, max_correct = 7, what = ""
 
 	function askrand(){
-		switch( Math.floor( Math.random()*4 ) ){
+		var i = Math.floor( Math.random()*4 )
+		switch( i ){
 			case 0 :
 				ask("proxyConfounders","Please click on a <b>proxy confounder</b>!")
 				break
@@ -68,8 +51,9 @@
 		}
 	}
 	
-	function ask( what, msg ){
-		var g, gsk, i = 0, ci = DAGitty.controllers.length-1
+	function ask( _what, msg ){
+		what = _what
+		var g, gsk, i = 0
 		var nodes
 		do {
 			i ++
@@ -81,15 +65,12 @@
 			g.addSource("X")
 			g.addTarget("Y")
 		} while( ( !isconnected( g ) || 
-			tests[what](g).length == 0 ) )
+			tests[what](g).length == 0 ) && i < 100 )
+		console.log(i)
 		var layouter = new GraphLayouter.Spring( g )
 		layouter.layout()
-		DAGitty.controllers[ci].setGraph(g)
-		$("msg").innerHTML = msg
-		DAGitty.controllers[ci].setActionOnClick( 
-			check(what,
-				DAGitty.controllers[ci].getView())
-		)
+		DAGitty.get("game").setGraph(g)
+		document.getElementById("msg").innerHTML = msg
 	}
 </script>
 
@@ -132,7 +113,7 @@ an ancestor of  the exposure and an ancestor of the
 outcome (along a path that does not include the exposure). 
 For instance, Z is a confounder in the following DAG:
 </p>
-<div class="dagitty" style="max-width:18em; height:6em">
+<div class="dagitty mediumg-twolines" data-interactive="false">
 dag {
 X [exposure,pos="0.000,1.000"]
 Y [outcome,pos="1.000,1.100"]
@@ -145,7 +126,7 @@ Z -> Y
 <p>To understand why the restriction "along a path that does not lead via the 
 exposure" in the definition above, consider the following example:
 </p>
-<div class="dagitty" style="max-width:18em; height:6em">
+<div class="dagitty mediumg-twolines" data-interactive="false">
 dag {
 X [exposure,pos="0.000,1.000"]
 Y [outcome,pos="1.000,1.100"]
@@ -169,7 +150,7 @@ the outcome; in other words, it is a descendant of the exposure and an
 ancestor of the outcome. M is a mediator in the following example:
 </p>
 
-<div class="dagitty" style="width: 50%; height:4em;">
+<div class="dagitty mediumg-oneline" data-interactive="false">
 dag {
 M [pos="0.500,1.050"]
 X [exposure,pos="0.000,1.000"]
@@ -198,7 +179,7 @@ Note that M is also a mediator; the roles as mediator and proxy confounder
 are not mutually exclusive.
 </p>
 
-<div class="dagitty" style="width: 70%; height:10em;">
+<div class="dagitty largeg-threelines" data-interactive="false">
 dag {
 A [pos="0.700,1.500"]
 M [pos="0.500,0.000"]
@@ -227,7 +208,7 @@ affect bias, but should improve precision.
 In the two examples below, Z is a competing exposure.
 </p>
 
-<div class="dagitty" style="max-width: 18em; height:6em">
+<div class="dagitty mediumg-twolines" data-interactive="false">
 dag {
 X [exposure,pos="0.000,1.000"]
 Y [outcome,pos="1.000,1.100"]
@@ -237,7 +218,7 @@ Z -&gt; Y
 }
 </div>
 
-<div class="dagitty" style="max-width: 24em; height:6em">
+<div class="dagitty largeg-twolines" data-interactive="false">
 dag {
 A [pos="0.350,2.000"]
 X [exposure,pos="0.000,1.000"]
@@ -272,7 +253,7 @@ In each example, X is the <b>exposure</b> and Y is the <b>outcome</b>!
 </span>
 </p>
 
-<div class="dagitty" style="max-width: 35em; height:25em;">
+<div class="dagitty gameg" id="game">
 digraph G {
 
 }

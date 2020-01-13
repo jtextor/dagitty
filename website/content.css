@@ -3,3 +3,56 @@ h1{
 	padding-bottom: .5em;
 	border-bottom: 1px solid #ccc;
 }
+
+.smallg-oneline{
+	max-width: 12em; height:5em
+}
+
+.mediumg-oneline{
+	max-width: 18em; height:5em
+}
+
+.mediumg-twolines{
+	max-width: 18em; height:7.5em
+}
+
+.mediumg-threelines{
+	max-width: 18em; height:10em
+}
+
+
+.largeg-oneline{
+	max-width: 30em; height:5em
+}
+
+.vlargeg-oneline{
+	max-width: 35em; height:5em
+}
+
+
+.vlargeg-twolines{
+	max-width: 35em; height:7.5em
+}
+
+.vlargeg-threelines{
+	max-width: 35em; height:10em
+}
+
+.largeg-twolines{
+	max-width: 30em; height:7.5em
+}
+
+.largeg-threelines{
+	max-width: 30em; height:10em
+}
+
+.largeg-fourlines{
+	max-width: 30em; height:12.5em
+}
+
+
+.gameg{
+	max-width: 30em; height:25em
+}
+
+

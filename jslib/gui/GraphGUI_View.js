@@ -26,8 +26,6 @@ var DAGittyGraphView = Class.extend({
 		// obj -> further options
 		//    autofocus -> if true, will set an event handler giving
 		//                 focus to the container on mouse entry
-		//    action_on_click -> which key code to emulate upon mouseclick, or a function
-		//						 to execute.
 		
 		this.setContainer(el)
 		this.setGraph(graph)
@@ -52,8 +50,23 @@ var DAGittyGraphView = Class.extend({
 		}
 		
 		el.innerHTML = ""
-		this.impl = new GraphGUI_SVG( c, this.width, this.height )
+		this.impl = new GraphGUI_SVG( c, this.width, this.height, {
+			interactive : obj.interactive
+		} )
 
+		if( ! (obj.interactive === false || obj.mutable===false) ){
+			this.initEventListeners(obj)
+		}
+
+		// We always pass on the "vertex_marked" event if available
+		this.impl.setEventListener( "vertex_marked", 
+			_.bind( function(v){ this.callEventListener( "vertex_marked", [v] ) }, this ) )
+
+		this.view_mode = "normal"
+		this.drawGraph()
+	},
+
+	initEventListeners : function(obj){
 		this.impl.setEventListener( "vertex_drag", _.bind( function( vs ){
 			var g_coords = this.toGraphCoordinate( vs.x, vs.y )
 			vs.v.layout_pos_x = g_coords[0] // changes model
@@ -77,18 +90,7 @@ var DAGittyGraphView = Class.extend({
 		this.impl.setEventListener( "vertex_connect", 
 			_.bind( this.connectVertices, this ) )	
 
-		this.impl.setEventListener( "vertex_marked", 
-			_.bind( function(v){ this.callEventListener( "vertex_marked", [v] ) }, this ) )
-
-
 		this.registerEventListeners( obj?obj.autofocus:false )
-		
-		if( obj && obj.action_on_click ){
-			this.setActionOnClick( obj.action_on_click )
-		}
-		
-		this.view_mode = "normal"
-		this.drawGraph()
 	},
 
 	pointerX : function(e) {
@@ -157,45 +159,6 @@ var DAGittyGraphView = Class.extend({
 			return void(0)
 		}
 	},
-	setActionOnClick : function( a ){
-		if( typeof a === "function" ){
-			this.action_on_click = a; return
-		}
-		switch( a ){
-		case "a":
-		case 65:
-			this.action_on_click = 65
-			break
-		case "c":
-		case 67:
-			this.action_on_click = 67
-			break
-		case "e":
-		case 69: 
-			this.action_on_click = 69
-			break
-		case "r":
-		case 82:		
-			this.action_on_click = 82
-			break
-		case "u":
-		case 85:
-			this.action_on_click = 85
-			break
-		case "o":
-		case 79:
-			this.action_on_click = 79
-			break
-		case "del":
-		case 46:
-			this.action_on_click = 46
-			break
-		case "n":
-		case 78:
-			this.action_on_click = 78
-			break
-		}
-	},
 	registerEventListeners : function( autofocus ){
 		/* register event handlers on canvas */
 		var myself = this, mycontainer = myself.getContainer()
@@ -213,23 +176,12 @@ var DAGittyGraphView = Class.extend({
 		this.getContainer().addEventListener( "keydown", function(e){ myself.keydownHandler(e) } )
 	},
 
-
 	clickHandler : function(e){
 		// click handler can be set to emulate keypress action
 		// using this function
 		this.last_click_x = this.pointerX(e)-this.getContainer().offsetLeft
 		this.last_click_y = this.pointerY(e)-this.getContainer().offsetTop
 		this.last_click_g_coords = this.toGraphCoordinate( this.last_click_x, this.last_click_y )
-
-		if( this.action_on_click ){
-			if( typeof this.action_on_click !== "function" ){
-				this.keydownHandler( {keyCode:this.action_on_click} )
-			} else {
-				this.action_on_click.apply( this )
-			}
-			return
-		}
-
 		this.newVertexDialog() 
 	},
 

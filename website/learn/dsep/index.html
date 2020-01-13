@@ -1,52 +1,40 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-	<meta charset="utf-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-	<title>DAGitty - drawing and analyzing causal diagrams (DAGs)</title>
-	<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta http-equiv="Content-type" content="text/html; charset=UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
 
 <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
 
-<link rel="stylesheet" type="text/css"  href="content.css"/>
-
-		<title>d-Separation Without Tears</title>
-		<script src="http://ajax.googleapis.com/ajax/libs/prototype/1.7.1.0/prototype.js"></script>
-		<script type="text/javascript" src="http://dagitty.net/lib/dagitty-2.1.js"></script>
-		<!-- For this text we use the no-frills "SEMlike-Plain" style, which
-			 does not color any nodes. -->
-		<script type="text/javascript" src="http://dagitty.net/lib/styles/semlike-plain.js"></script>
-		<!-- Judea uses circles in this text to mark adjusted nodes. In standard
-			 SEM, this is used to mark unobserved nodes. So, because we do not need
-			 any unobserved nodes here, we just take a shortcut. -->
-		<script type="text/javascript">
-			var sty = DAGitty.stylesheets.default.style
-			sty.adjustednode = sty.latentnode;
-			sty.latentnode = {}; // no special treatment of latent nodes
-			sty.node.stroke = "none";
-			
-			// custom function to implement an "onclick" handler for this tutorial
-			function clickfun(){
-				// "this" context is going to be the view object
-				
-				// prevent adjustment for "x" and "y" nodes
-				var v =	this.getCurrentVertex()
-				if( v && ( v.id == "x" || v.id == "y" ) ){
-					return;
-				}
-				
-				this.keydownhandler( {keyCode:65} ); // triggers same action as "a" key
-			}
-			
-			function setup(){
-				DAGitty.setup({action_on_click:clickfun})
-			}
-		</script>
-
 <link rel="stylesheet" type="text/css"  href="../../content.css"/>
+
+<title>d-Separation Without Tears</title>
+
+<script type="text/javascript" src="../../lib/dagitty-3.0.js"></script>
+<!-- For this text we use a no-frills style that does not color any nodes. -->
+<script type="text/javascript" src="../simple-style.js"></script>
+
+<script type="text/javascript">			
+function setup(){
+	DAGitty.stylesheets.default.style.causalpath["stroke-width"] = 2.2
+	DAGitty.stylesheets.default.style.biasingpath["stroke-width"] = 2.2
+
+	DAGitty.setup()
+	for( let c of DAGitty.controllers ){
+		(function(cc){
+			cc.on("vertex_marked",v=> v && !cc.getGraph().isSource(v) &&
+				!cc.getGraph().isTarget(v) && cc.toggleVertexProperty(v,"adjustedNode"))
+		})(c)
+	}
+}
+</script>
+
 <style type="text/css">
-			.exercise {background-color: #fdd}
-		</style>
+	.exercise {border: 1px solid gray; padding: .5em}
+</style>
+
 	</head>	
 	<body onload="setup()">
 		<div class="container">
@@ -102,12 +90,13 @@ All graphs on this page are clickable; clicking on a variable shows the effect o
 conditioning on it.
 </p>
 
-<ul>
-<li>
-<i>x</i> and <i>y</i> are <i>d</i>-connected because <i>r</i>
+
+<p>
+<i>x</i> and <i>y</i> are <i>d</i>-connected (shown as thick edges)
+because <i>r</i>
 is not a collider. This path represents an indirect causal effect.
 
-<pre class="dagitty" style="width: 100%; height:4em;">
+<pre class="dagitty mediumg-oneline">
 x E @0,0
 y O @6,6
 r 1 @3,3
@@ -115,14 +104,15 @@ r 1 @3,3
 x r
 r y
 </pre>
-</li>
+</p>
 
-<li>
-<i>x</i> and <i>y</i> are not <i>d</i>-connected because
-<i>r</i> is a collider. No statistical correlation can result
-from this path.
+<p>
+<i>x</i> and <i>y</i> are not <i>d</i>-connected (shown as thin edges)
+ because
+<i>r</i> is a collider. This path does not transmit any 
+correlation or other statistical relationship.
 
-<pre class="dagitty" style="width: 100%; height:4em;">
+<pre class="dagitty mediumg-oneline">
 x E @0,0
 y O @6,6
 r 1 @3,3
@@ -131,15 +121,14 @@ x r
 y r
 </pre>
 
-</li>
+</p>
 
-<li>
-
+<p>
 <i>x</i> and <i>y</i> are <i>d</i>-connected because
 there is a path between them that does not contain a 
 collider. This path transmits a correlation that does not
 reflect a causal effect (biasing path).
-<pre class="dagitty" style="width: 100%; height:4em;">
+<pre class="dagitty vlargeg-oneline">
 x E @0,0
 r 1 @1,1
 s 1 @2,2
@@ -154,15 +143,13 @@ u v t
 v y
 r x
 </pre>
+</p>
 
-</li>
-
-<li>
-
+<p>
 <i>x</i> and <i>y</i> are not <i>d</i>-connected because
 <i>t</i> is a collider. Again, no statistical correlation can
 result from this path.
-<pre class="dagitty" style="width: 100%; height:4em;">
+<pre class="dagitty vlargeg-oneline">
 x E @0,0
 r 1 @1,1
 s 1 @2,2
@@ -191,8 +178,7 @@ as well as <i>x</i> and <i>v, s</i> and <i>u, r</i> and <i>u,</i> etc.
 (The ramification is that the covariance terms corresponding
 to these pairs of variables will be zero, for every choice
 of model parameters).
-
-</li>
+</p>
 
 </ul>
 
@@ -223,7 +209,7 @@ more concretely,
 <h3>Example</h3>
 
 
-<pre class="dagitty" style="width: 100%; height:4em;">
+<pre class="dagitty vlargeg-oneline">
 x E @0,0
 r A @1,1
 s 1 @2,2
@@ -241,7 +227,7 @@ x r
 
 
 <p>
-Let <i>Z</i> be the set {<i>r, v</i>} (marked by circles in the figure).  
+Let <i>Z</i> be the set {<i>r, v</i>} (marked in gray in the figure).  
 Rule 2 tells us that <i>x</i> and <i>y</i> are <i>d-</i>separated by <i>Z,</i> 
 and so are also <i>x</i> and <i>s, u</i> and <i>y, s</i> and <i>u</i> etc.
 The path <i>x-r-s</i> is blocked by <i>Z,</i> and so are also
@@ -282,7 +268,7 @@ descendants (representing effects of common effects).
 
 <h3>Example</h3>
 
-<div class="dagitty" style="height:10em;">
+<pre class="dagitty vlargeg-threelines">
 x E @0,0
 r A @1,0
 w 1 @1,1
@@ -304,7 +290,7 @@ v q
 </pre>
 
 <p>
-Let <i>Z</i> be the set {<i>r, p</i>} (again, marked with circles).
+Let <i>Z</i> be the set {<i>r, p</i>} (again, marked in gray).
 Rule 3 tells us that <i>s</i> and <i>y</i> are <i>d</i>-connected by <i>Z,</i>
 because the collider at <i>t</i> has a descendant (<i>p</i>) in <i>Z,</i>
 which unblocks the path <i>s-t-u-v-y.</i> However,

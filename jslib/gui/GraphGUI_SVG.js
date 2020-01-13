@@ -5,9 +5,10 @@
 var svgns = "http://www.w3.org/2000/svg"
 
 var GraphGUI_SVG = Class.extend({
-	init : function( canvas_element, width, height, style ){
-		if( !style ){
-			style = "default"
+	init : function( canvas_element, width, height, op ){
+		var style = "default"
+		if( op.style ){
+			style = op.style
 		}
 		// create SVG root element
 		var svg = document.createElementNS( svgns, "svg" ) // don't need to pass in 'true'
@@ -18,7 +19,10 @@ var GraphGUI_SVG = Class.extend({
 		this.container = canvas_element
 		this.setStyle(style)
 		this.svg = svg
-
+		this.interactive = true
+		if( op.interactive === false ){
+			this.interactive = false
+		}
 		_.map( ["touchmove","mouseup","mousemove","mouseleave","click"],
 			function(x){ svg.addEventListener( x, _.bind( this[x+"Handler"], this ) ) },
 			this )
@@ -92,10 +96,13 @@ var GraphGUI_SVG = Class.extend({
 				}
 			}
 		}
-
+		if( this.interactive ){
+			this.addEdgeEventListeners( el )
+		}
 		this.anchorEdgeShape( el )
 		el.dom.style.cursor = "move"
-
+	},
+	addEdgeEventListeners : function( el ){
 		el.dom.addEventListener( "touchstart",
 			_.bind( function(e){ 
 				this.touchEdgeShape( el, e.changedTouches[0] )
@@ -125,7 +132,6 @@ var GraphGUI_SVG = Class.extend({
 
 		el.dom.addEventListener( "mouseout", _.bind(
 			this.unsetLastHoveredElement, this ) )
-
 	},
 	anchorEdgeShape : function( el ){
 		var anchorback = DAGitty.Math.svgEdgeAnchor( el, 0, el.directed )
@@ -228,6 +234,12 @@ var GraphGUI_SVG = Class.extend({
 		el.dom.style.cursor = "move"
 		el.dom.style.touchAction = "none"
 
+		if( this.interactive ){
+			this.addVertexEventListeners( el )
+		}
+		this.moveVertexShape( el )
+	},
+	addVertexEventListeners : function( el ){
 		el.dom.addEventListener( "touchstart",
 			_.bind( function(e){ 
 				this.touchVertexShape( el, e.changedTouches[0] )
@@ -258,8 +270,6 @@ var GraphGUI_SVG = Class.extend({
 		el.dom.addEventListener( "mouseout", _.bind(
 			this.unsetLastHoveredElement, this
 		) )
-
-		this.moveVertexShape( el )
 	},
 	touchVertexShape : function( el, e ){
 		this.last_touched_element = {"vertex" : el, "last_touch" : e.identifier}

@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta http-equiv="Content-type" content="text/html; charset=UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+
+<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
+
+<link rel="stylesheet" type="text/css"  href="../../content.css"/>
+
+<title>The Single-Door Criterion</title>
+
+<script type="text/javascript" src="../../lib/dagitty-3.0.js"></script>
+<!-- For this text we use a no-frills style that does not color any nodes. -->
+<script type="text/javascript" src="../simple-style.js"></script>
+
+<script type="text/javascript">			
+function setup(){
+	DAGitty.stylesheets.default.style.causalpath["stroke-width"] = 2.2
+	DAGitty.stylesheets.default.style.biasingpath["stroke-width"] = 2.2
+
+	DAGitty.setup()
+	for( let c of DAGitty.controllers ){
+		(function(cc){
+			cc.on("vertex_marked",v=> v && !cc.getGraph().isSource(v) &&
+				!cc.getGraph().isTarget(v) && cc.toggleVertexProperty(v,"adjustedNode"))
+		})(c)
+	}
+}
+</script>
+
+<style type="text/css">
+	.exercise {border: 1px solid gray; padding: .5em}
+</style>
+
+</head>	
+
+<body onload="setup()">
+
+<div class="container">
+<h1>The Single-Door Criterion</h1>
+<p>Based on a <a href="http://www2.gsu.edu/~mkteer/semnet.html">SEMnet</a> discussion
+with <a href="https://leibniz-psychology.org/mitarbeiter/profil-holger-steinmetz/">Holger Steinmetz</a>.</p>
+<h2>Introduction</h2>
+<p>
+The single-door criterion helps to identify single path coefficients in structural
+equation models (SEMs). It is especially useful in cases where the SEM as a whole
+is not  "identified", i.e., where it is impossible to find a unique set of coefficients
+for the whole model that best explains the observed covariance matrix. In this 
+tutorial, we illustrate the single-door criterion with four examples.
+</p>
+
+<h2>Definition of the single-door criterion</h2>
+
+<p>
+Let G be any recursive causal graph in which 
+&alpha; is the path coefficient associated with link X &rarr; Y,
+and let G<sub>&alpha;</sub>
+ denote the diagram that results when X &rarr; Y is deleted from G.
+The coefficient &alpha; is identifiable if there exists a set of variables Z 
+such that
+<ol>
+<li>Z contains no descendant of Y and</li>
+<li>Z <a href="../dsep/index.html">d-separates</a> X from Y in G<sub>&alpha;</sub></li>
+</ol>
+If Z satisfies these two conditions, then  &alpha; is equal to the regression 
+coefficient &beta;<sub>YX.Z</sub>
+Conversely, if Z does not satisfy these conditions, then &beta;<sub>YX.Z</sub> 
+is not a consistent estimand of &alpha;
+(Chen &amp; Pearl, 2014, p. 10).
+</p>
+
+<p>Let's start to illuminate this definition using our examples.</p>
+
+<p class="exercise">
+All graphs on this page are clickable; clicking on a variable shows the effect of 
+conditioning on it, i.e., including it into the set Z.
+</p>
+
+<h2>Examples</h2>
+
+<h3>Model 1</h3>
+
+<p>We first consider a simple mediation model.</p>
+<pre class="dagitty mediumg-oneline">
+M 1 @-0.361,-0.183
+X E @-1.884,-0.236
+Y O @1.091,-0.125
+
+M Y
+X M
+</pre>
+
+<p>
+This model is clearly identified, and has positive degrees of freedom. 
+Also the single-door criterion tells us that the parameter 
+on the path X &rarr; M is identified 
+because after removing the path X &rarr; M, X becomes unconditionally separated 
+(i.e., conditionally separated given the empty set Z={}) from M:
+</p>
+
+<pre class="dagitty mediumg-oneline">
+M 1 @-0.361,-0.183
+X E @-1.884,-0.236
+Y O @1.091,-0.125
+
+M Y
+</pre>
+
+<p>
+The parameter M &rarr; Y is also identified for the same reason.
+</p>
+
+<h3>Model 2</h3>
+
+<p>We now add a direct effect to the simple mediation model.</p>
+<pre class="dagitty mediumg-twolines">
+M 1 @-0.354,-0.559
+X 1 @-1.884,-0.236
+Y 1 @1.041,-0.270
+
+M Y
+X M Y
+</pre>
+
+<p>
+This model is just-identified (df=0). The coefficient 
+X &rarr; M is identified as when we remove the path X &rarr; M,
+we get
+</p>
+<pre class="dagitty mediumg-twolines">
+M O @-0.354,-0.559
+X E @-1.884,-0.236
+Y 1 @1.041,-0.270
+
+M Y
+X Y
+</pre>
+
+<p>and again, X and M are unconditionally separated. Importantly,
+if we include Y into our set Z, this would violate the first condition
+of the single-door criterion, as we get a biasing path from 
+X to Y via the collider M:
+<p>
+
+<pre class="dagitty mediumg-twolines">
+M O @-0.354,-0.559
+X E @-1.884,-0.236
+Y A @1.041,-0.270
+
+M Y
+X Y
+</pre>
+
+<p>
+Hence, X &rarr; M is no longer identified
+if Y is added to the regression.
+</p>
+
+<p>
+The coefficient M &rarr; Y is identified as M and Y would become separated by holding X constant:
+</p>
+
+<pre class="dagitty mediumg-twolines">
+M E @-0.354,-0.559
+X A @-1.884,-0.236
+Y O @1.041,-0.270
+
+X M
+X Y
+</pre>
+
+<p>
+And finally, X &rarr; Y is also identified, as holding M constant separates X and Y.
+</p>
+
+
+<h3>Model 3</h3>
+
+<p>
+Now it becomes trickier: We add an error covariance between M and Y to 
+model a confounder C that influences M and Y.
+
+<pre class="dagitty largeg-threelines">
+digraph G { 
+M [pos="-0.521,-0.265"]
+X [exposure,pos="-1.749,-0.238"]
+Y [outcome,pos="1.029,-0.228"]
+M &lt;-> Y [pos="0.645,-0.279"]
+X -> Y
+X -> M -> Y
+}
+</pre>
+
+<p>
+This model is un-identified with -1 df. Does this mean that we can not identify 
+any coefficients? No, the single-door criterion tells us that we can anyway just regress
+M on X to identify the coefficient X &rarr; M. Just to check, this is what the graph 
+looks like after removing the X &rarr; M arrow:
+</p>
+
+<pre class="dagitty largeg-threelines">
+dag G { 
+M [outcome,pos="-0.521,-0.265"]
+X [exposure,pos="-1.749,-0.238"]
+Y [pos="1.029,-0.228"]
+M &lt;-> Y [pos="0.645,-0.279"]
+X -> Y
+M -> Y
+}
+</pre>
+
+<p>
+Indeed, X and M are independent now, so the criterion is fulfilled. But what about
+the other coefficients? Let us first check X &rarr; Y. After removing this path, we get
+</p>
+
+<div class="dagitty largeg-threelines">
+dag G { 
+M [pos="-0.521,-0.265"]
+X [exposure,pos="-1.749,-0.238"]
+Y [outcome,pos="1.029,-0.228"]
+M &lt;-> Y [pos="0.645,-0.279"]
+X -> M
+M -> Y
+}
+</div>
+
+<p>
+and we see that X and Y are not separated. Our only chance to separate them would be
+by conditioning on M, which does not work either -- we would close one path via M, but
+open another one:
+</p>
+
+<div class="dagitty largeg-threelines">
+dag G { 
+M [adjusted,pos="-0.521,-0.265"]
+X [exposure,pos="-1.749,-0.238"]
+Y [outcome,pos="1.029,-0.228"]
+M &lt;-> Y [pos="0.645,-0.279"]
+X -> M
+M -> Y
+}
+</div>
+
+<p>
+For the same reason, we cannot identify the error covariance M &#8596; Y using the 
+single-door criterion.
+</p>
+
+<p>
+<b>Conclusion:</b> The single-door criterion can help us identify some, but not all,
+coefficients in un-identified structural equation models.
+</p>
+
+<h3>Model 4</h3>
+
+<p>
+Finally, let's add an instrument W for M to identify all coefficients:
+</p>
+
+<pre class="dagitty largeg-fourlines">
+digraph G { 
+M [pos="-0.521,-0.265"]
+W [pos="-1.75,-0.3"]
+X [pos="-1.75,-0.23"]
+Y [pos="1.029,-0.228"]
+M &lt;-> Y [pos="0.645,-0.279"]
+W -> M
+X -> M -> Y
+X -> Y
+}
+</pre>
+
+<p>
+This model is again just-identied; when simulating it, all parameter estimates are correct.
+But what will the single-door criterion tell us about the identifiability of the 
+parameters?
+</p>
+
+<p>
+The coefficient W &rarr; M (effect of the instrument) is identified as by deleting 
+the referring path,  W becomes unconditionally independent from M:
+</p>
+
+<pre class="dagitty largeg-fourlines">
+digraph G { 
+M [outcome,pos="-0.521,-0.265"]
+W [exposure,pos="-1.75,-0.3"]
+X [pos="-1.75,-0.23"]
+Y [pos="1.029,-0.228"]
+M &lt;-> Y [pos="0.645,-0.279"]
+X -> M -> Y
+X -> Y
+}
+</pre>
+
+<p>
+In the same way, we can identify the coefficient X &rarr; M.
+</p>
+
+<p>
+But what about X &rarr; Y? Here nothing has changed compared to model 3: The only candidate for
+Z would be M - but again, holding M constant opens a path between X and Y via the 
+collider M:
+</p>
+
+<pre class="dagitty largeg-fourlines">
+digraph G { 
+M [adjusted,pos="-0.521,-0.265"]
+W [pos="-1.75,-0.3"]
+X [exposure,pos="-1.75,-0.23"]
+Y [outcome,pos="1.029,-0.228"]
+W -> M 
+M &lt;-> Y [pos="0.645,-0.279"]
+X -> M -> Y
+X -> Y
+}
+</pre>
+
+<p>
+For similar reasons, we cannot apply the criterion to the coefficients
+M &rarr; Y and M &#8596; Y.
+</p>
+
+<h2>The bottom line</h2>
+
+<p> When coefficients are not identifiable using the single-door criterion,
+they can still be identifiable by other means, such as instrumental variables or even
+by estimating the whole model.
+</p>
+
+		</div>
+	</body>
+</html>

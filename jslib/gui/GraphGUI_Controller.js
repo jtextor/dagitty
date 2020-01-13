@@ -9,7 +9,7 @@ var DAGittyController = Class.extend({
 			"graphlayoutchange" : [],
 			"vertex_marked" : []
 		}
-	
+
 		// the controller initializes the model ... 
 		if( !obj.canvas ) return
 		if( obj.graph ){
@@ -29,9 +29,10 @@ var DAGittyController = Class.extend({
 		this.view = new DAGittyGraphView( obj.canvas,
 			this.getGraph(),
 			this, { 
+				interactive : obj.interactive,
+				mutable : obj.mutable,
 				autofocus : (obj.autofocus !== undefined) ? obj.autofocus : false,
-				action_on_click : obj.action_on_click
-			} 
+			}
 		)
 	
 		this.view.setEventListener( "vertex_marked", 
@@ -252,32 +253,53 @@ var DAGittyController = Class.extend({
 })
 
 var DAGitty = {
+	makeController : function( el, op ){
+		for( var k of Object.keys( el.dataset ) ){
+			if( !op.hasOwnProperty( k ) ){
+				op[k] = JSON.parse(el.dataset[k])
+			}
+		}
+		if( !("interactive" in op) ){
+			op.interactive = true
+		}
+		if( !("mutable" in op) ){
+			op.mutable = false
+		}
+		var c = new DAGittyController( op )
+		this.controllers.push( c )
+		if( el.id ){
+			this.controllers_by_id[el.id] = c
+		}
+		return c
+	},
 	setup : function( op ){
 		if( !op ){ op = {} }
 		if( this.setupCalled && !op.force ){ return }
 		this.controllers = []
 		this.controllers_by_id = []
-		var tags = ["div", "pre"]
-		for( var j = 0 ; j < tags.length ; j ++ ){
-			var divs = document.getElementsByTagName( tags[j] )
-			var re = new RegExp("\\bdagitty\\b")
-			for( var i = 0 ; i < divs.length ; i ++ ){
-				var el = divs.item(i)
-				if( re.test(el.className) ){
-					// some styles are added automatically to the container
-					// inside the constructor of the view (GraphGUI_View.js)
-					op.canvas = el
-					var c = new DAGittyController( op )
-					this.controllers.push( 
-						c
-					)
-					if( el.id ){
-						this.controllers_by_id[el.id] = c
+		var el, c
+		if( op.el ){
+			el = document.getElementById( op.el )
+			if( el ){
+				return makeController( el, op )
+			}
+		} else {
+			var tags = op.tags || ["div", "pre"]
+			for( var j = 0 ; j < tags.length ; j ++ ){
+				var divs = document.getElementsByTagName( tags[j] )
+				var re = new RegExp("\\bdagitty\\b")
+				for( var i = 0 ; i < divs.length ; i ++ ){
+					el = divs.item(i)
+					if( re.test(el.className) ){
+						// some styles are added automatically to the container
+						// inside the constructor of the view (GraphGUI_View.js)
+						op.canvas = el
+						this.makeController( el, Object.assign({},op) )
 					}
 				}
 			}
+			this.setupCalled = true
 		}
-		this.setupCalled = true
 	},
 	get : function( id ){
 		return this.controllers_by_id[id]

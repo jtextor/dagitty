@@ -2,30 +2,33 @@
 var tests = {
 	confounders : function( g ){
 		var gb = GraphTransformer.backDoorGraph( g )
-		return gb.ancestorsOf( gb.getSources() ).intersect(
-			gb.ancestorsOf( gb.getTargets() ) ).
-			without( gb.getSources() ).
-			without( gb.getTargets() ).pluck("id")
+		var s = gb.getSources(), t = gb.getTargets()
+		var gbans = gb.ancestorsOf( s )
+		var gbant = gb.ancestorsOf( t )
+		return gbans.filter(i=>gbant.includes(i)).filter( i=>
+			!(s.includes(i) || t.includes(i) )).map(i=>i.id)
 	},
 	proxyConfounders : function( g ){
 		var gb = GraphTransformer.backDoorGraph( g )
-		var sandt = gb.getSources().concat( gb.getTargets() )
-		var conf = gb.ancestorsOf( gb.getSources() ).intersect(
-			gb.ancestorsOf( gb.getTargets() ) )
-		return gb.ancestorsOf( sandt ).intersect( gb.descendantsOf( conf ) ).
-			without( sandt ).without( conf ).pluck("id")
+		var s = gb.getSources(), t = gb.getTargets()
+		var gbans = gb.ancestorsOf( s )
+		var gbant = gb.ancestorsOf( t )
+		var conf = gbans.filter(i=>gbant.includes(i)).filter( i=>
+			!(s.includes(i) || t.includes(i) ))
+		var dconf = gb.descendantsOf( conf ).filter(i=>gbans.includes(i)||gbant.includes(i))
+		return dconf.filter(i=>!(s.includes(i)||t.includes(i)||conf.includes(i)))
+			.map(i=>i.id)
 	},
 	mediators : function( g ){
-		var cp = g.descendantsOf( g.getSources() ).intersect( g.ancestorsOf(
-			g.getTargets() ) )
-		cp = cp.without.apply( cp, g.getSources() )
-		cp = cp.without.apply( cp, g.getTargets() )
-		return cp.pluck("id")		
+		var s = g.getSources(), t = g.getTargets(), tan = g.ancestorsOf(t)
+		var cp = g.descendantsOf( s ).filter(i=>tan.includes(i))
+			.filter(i=>!(s.includes(i)||t.includes(i)))
+		return cp.map(i=>i.id)		
 	},
 	competingExposures : function( g ){
 		var gan = g.ancestorsOf( g.getTargets() )
 		var gdsc = g.descendantsOf( g.ancestorsOf( g.getSources() ) )
-		return gan.without.apply( gan, gdsc ).pluck("id")
+		return gan.filter(i=>!gdsc.includes(i)).map(i=>i.id)
 	},
 	parents : function( g ){
 		return g.parentsOf( g.getSources() ).map( i => i.id )

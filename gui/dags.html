@@ -195,16 +195,19 @@
       <li style="float:none; overflow: hidden; border-right: none;"> &nbsp;</li>
    </ul>
 
-   <div id="canvas" class="dagitty">
-A 1 @-2.200,-1.520
-B 1 @1.400,-1.460
-D O @1.400,1.621
-E E @-2.200,1.597
-Z 1 @-0.300,-0.082
-
-A E Z @-0.791,-1.045
-B D Z @0.680,-0.496
-E D
+   <div id="canvas" class="dagitty" data-mutable="true">
+dag {
+A [pos="-2.200,-1.520"]
+B [pos="1.400,-1.460"]
+D [outcome,pos="1.400,1.621"]
+E [exposure,pos="-2.200,1.597"]
+Z [pos="-0.300,-0.082"]
+A -&gt; E
+A -&gt; Z [pos="-0.791,-1.045"]
+B -&gt; D
+B -&gt; Z [pos="0.680,-0.496"]
+E -&gt; D
+}
    </div>
 
 </main>

@@ -11,53 +11,38 @@
 	integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh"
 	crossorigin="anonymous">
 
-<title>Causal Intepretation of Multiple Regression: The Table 2 Fallacy</title>
-<script src="http://ajax.googleapis.com/ajax/libs/prototype/1.7.1.0/prototype.js"></script>
-<script type="text/javascript" src="http://dagitty.net/lib/dagitty-3.0.js"></script>
-<!-- For this text we use the no-frills "SEMlike-Plain" style, which
-		does not color any nodes. -->
-<script type="text/javascript" src="http://dagitty.net/lib/styles/semlike-plain.js"></script>
+<script type="text/javascript" src="../../lib/dagitty-3.0.js"></script>
+<!-- For this text we use a no-frills style that does not color any nodes. -->
+<script type="text/javascript" src="../simple-style.js"></script>
 <script type="text/javascript" src="graphs.js"></script>
-<script type="text/javascript">
-	var sty = DAGitty.stylesheets.default.style
-	sty.adjustednode = sty.latentnode
-	sty.latentnode = {} // no special treatment of latent nodes
-	sty.node.stroke = "none"
-	sty.exposurenode = sty.adjustednode
-	sty.outcomenode = sty.adjustednode
-	sty.causalpath = sty.path
-	sty.biasingpath = sty.path
-	
-	var correct_answers = 0, max_correct = 7, ci1, ci2
 
-	// custom function to implement an "onclick" handler for this tutorial
-	function clickfun(){
-		// "this" context is going to be the view object
-		// prevent adjustment for "x" and "y" nodes
-		var v = this.getCurrentVertex()
-		if( v && ( this.getGraph().isSource( v ) || 
-			this.getGraph().isTarget( v ) ) ){
-			return;
-		}
-		
-		this.keydownhandler( {keyCode:65} ); // triggers same action as "a" key*/
-	}
+<title>Causal Intepretation of Multiple Regression: The Table 2 Fallacy</title>
+<script type="text/javascript">
+	var correct_answers = 0, max_correct = 7, ci1, ci2
 	
 	function setup(){
-		DAGitty.setup({action_on_click:clickfun})
-		ci1 = DAGitty.controllers.length-3
-		ci2 = DAGitty.controllers.length-1
+		DAGitty.setup()
+		var g1 = DAGitty.get("g1")
+		g1.on("vertex_marked",
+			v => v && g1.toggleVertexProperty(v,"adjustedNode")
+		)
 		ask()
+		var g2 = DAGitty.get("g2")
+		g2.on("vertex_marked", 
+			v => v && (v.id=="U"?
+				g2.unmarkVertex():
+				g2.toggleVertexProperty(v,"adjustedNode"))
+		)
 		ask2()
 	}
 	
 	function solve(){
-		var g = DAGitty.controllers[ci1].getGraph()
+		var g = DAGitty.get("g1").getGraph()
 		var ohtml = "", corr, totl, adj = g.getAdjustedNodes()
-		g.getVertices().without(g.getVertex("Y")).each( function(v){
+		g.getVertices().filter(i=>i.id!="Y").forEach( function(v){
 			totl = g.childrenOf( [v] ).length == 1
-			corr = totl ? adj.include(v) : 
-				!adj.include(v)
+			corr = totl ? adj.includes(v) : 
+				!adj.includes(v)
 			if( corr ){
 				ohtml += "<span class=\"corr\">"+v.id+": correct ("+
 					(totl?"total":"direct")+" effect)</span><br/>"
@@ -66,7 +51,7 @@
 					(totl?"total":"direct")+" effect)</span><br/>"
 			}
 		} )
-		$("msg").innerHTML = ohtml+"<br/>"+
+		document.getElementById("msg").innerHTML = ohtml+"<br/>"+
 			"<a href=\"#\" onclick=\"ask();return false\">Try again!</a>"
 	}
 	
@@ -76,6 +61,7 @@
 		do {
 			nodes = ["a","b","c","d"] // ,"e","f","g"]
 			shuf(nodes)
+			nodes.push("X")
 			nodes.push("Y")
 			g = GraphGenerator.randomDAG( nodes, 0.3 )
 			g.addSource("X")
@@ -86,23 +72,23 @@
 		}
 		var layouter = new GraphLayouter.Spring( g )
 		layouter.layout()
-		DAGitty.controllers[ci1].setGraph(g)
-		$("msg").innerHTML = "Regression model: Y ~ "+
-			nodes.without("Y").sort().join(" + ")+""
+		DAGitty.get("g1").setGraph(g)
+		document.getElementById("msg").innerHTML = "Regression model: Y ~ "+
+			nodes.filter(i=>i.id!="Y").sort().join(" + ")+""
 	}
 
 	function solve2(){
-		var g = DAGitty.controllers[ci2].getGraph()
+		var g = DAGitty.get("g2").getGraph()
 		var ohtml = "", corr, conf, adj = g.getAdjustedNodes(), 
 			vu = g.getVertex("U"), vy = g.getVertex("Y"),
-			covars = g.getVertices().without(vy).without(vu)
-		covars.each( function(v){
+			covars = g.getVertices().filter(v=>!["U","Y"].includes(v.id))
+		covars.forEach( function(v){
 			g.removeAllSources()
 			g.addSource(v)
-			covars.without(v).each(function(cv){g.addAdjustedNode(cv)})
+			covars.filter(w=>w.id!=v.id).forEach(function(cv){g.addAdjustedNode(cv)})
 			conf = GraphTransformer.activeBiasGraph(g).edges.length > 0
-			corr = conf ? !adj.include(v) : 
-				adj.include(v)
+			corr = conf ? !adj.includes(v) : 
+				adj.includes(v)
 			if( corr ){
 				ohtml += "<span class=\"corr\">"+v.id+": correct ("+
 					(conf?"confounded":"unconfounded")+" by U)</span><br/>"
@@ -113,7 +99,7 @@
 		} )
 		g.removeAllSources()
 		g.removeAllAdjustedNodes()
-		$("msg2").innerHTML = ohtml+"<br/>"+
+		document.getElementById("msg2").innerHTML = ohtml+"<br/>"+
 			"<a href=\"#\" onclick=\"ask2();return false\">Try again!</a>"
 	}
 
@@ -128,15 +114,16 @@
 			g = GraphGenerator.randomDAG( nodes, 0.3 )
 			g.addSource("X")
 			g.addTarget("Y")
+			g.addLatentNode("U")
 		} while( !isconnected( g ) )
 		for( i = 0 ; i < nodes.length-1 ; i ++ ){
 			g.addEdge( nodes[i], "Y" )
 		}
 		var layouter = new GraphLayouter.Spring( g )
 		layouter.layout()
-		DAGitty.controllers[ci2].setGraph(g)
-		$("msg2").innerHTML = "Regression model: Y ~ "+
-			nodes.without("Y").without("U").sort().join(" + ")+""
+		DAGitty.get("g2").setGraph(g)
+		document.getElementById("msg2").innerHTML = "Regression model: Y ~ "+
+			nodes.filter(v=>!["Y","U"].includes(v)).sort().join(" + ")
 	}
 </script>
 <link rel="stylesheet" type="text/css"  href="../../content.css"/>
@@ -221,7 +208,7 @@ that matches our scenario.
 <div style="width:50%; text-align:center; font-style: italic">
 	Figure 1
 </div>
-<pre class="dagitty" style="max-width: 18em; height:10em;">
+<div class="dagitty mediumg-twolines" data-interactive="false">
 digraph G {
 	X [pos="1,1"]
 	Y [pos="2,0"]
@@ -229,7 +216,7 @@ digraph G {
 	Z -> Y
 	Z -> X -> Y
 }
-</pre>
+</div>
 
 <p>
 With respect to the effect of X on Y,
@@ -266,11 +253,11 @@ Now look to see which coefficients in this model can be interpreted as
 </span>
 </p>
 
-<pre class="dagitty" style="max-width: 40em; height:20em;">
+<div class="dagitty gameg" id="g1">
 digraph G {
 
 }
-</pre>
+</div>
 	</div>
 	
 	<h2>The role of confounding</h2>
@@ -288,7 +275,7 @@ digraph G {
 	<div style="width:50%; text-align:center; font-style: italic">
 		Figure 2
 	</div>
-	<pre class="dagitty" style="max-width: 18em; height:10em;">
+	<pre class="dagitty largeg-threelines" data-interactive="false">
 	dag G {
 		X [pos="1,1"]
 		Y [pos="2,0"]
@@ -335,11 +322,11 @@ and then click <button onclick="solve2()">solve</button>!
 </span>
 </p>
 
-<pre class="dagitty" style="max-width: 40em; height:20em;">
+<div class="dagitty gameg" id="g2">
 dag G {
 	X -> Y
 }
-</pre>
+</div>
 </div>
 
 <p>
