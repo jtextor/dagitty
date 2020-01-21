@@ -6544,6 +6544,7 @@ var DAGittyGraphView = Class.extend({
 	clickHandler : function(e){
 		// click handler can be set to emulate keypress action
 		// using this function
+		console.log(" click handler called on canvas" )
 		this.last_click_x = this.pointerX(e)-this.getContainer().offsetLeft
 		this.last_click_y = this.pointerY(e)-this.getContainer().offsetTop
 		this.last_click_g_coords = this.toGraphCoordinate( this.last_click_x, this.last_click_y )
@@ -6565,11 +6566,28 @@ var DAGittyGraphView = Class.extend({
 		var v = this.getCurrentVertex()
 		var es = this.getCurrentEdge()
 		switch( e.keyCode ){
+		case 8: // backspace
+		case 46: //del
 		case 65: //a
 			if(v) this.toggleVertexProperty(v,"adjustedNode")
 			break
+		case 67: //c
+			if(v) this.impl.touchVertexShape( this.getVertexShape(v.id), e )
+			break
+		case 68: //d
+			if(v) this.getController().deleteVertex(v)
+			if(es) this.getController().deleteAnyEdge(es.v1.id, es.v2.id)
+			break
 		case 69: //e
 			if(v) this.toggleVertexProperty(v,"source")
+			break
+		case 78: //n
+			this.newVertexDialog()
+			e.stopPropagation()
+			e.preventDefault()
+			break
+		case 79: //o
+			if(v) this.toggleVertexProperty(v,"target")
 			break
 		case 82: //r
 			if(v){
@@ -6580,20 +6598,6 @@ var DAGittyGraphView = Class.extend({
 			break
 		case 85: //u
 			if(v) this.toggleVertexProperty(v,"latentNode")
-			break
-		case 79: //o
-			if(v) this.toggleVertexProperty(v,"target")
-			break
-		case 8: // backspace
-		case 46: //del
-		case 68: //d
-			if(v) this.getController().deleteVertex(v)
-			if(es) this.getController().deleteAnyEdge(es.v1.id, es.v2.id)
-			break
-		case 78: //n
-			this.newVertexDialog()
-			e.stopPropagation()
-			e.preventDefault()
 			break
 		}
 	},
@@ -6862,6 +6866,9 @@ var DAGittyGraphView = Class.extend({
 		return [x/this.width*(this.bounds[1]-this.bounds[0])+this.bounds[0],
 			y/this.height*(this.bounds[3]-this.bounds[2])+this.bounds[2]]
 	},
+	getVertexShape : function( vid ){
+		return this.vertex_shapes.get( vid )
+	},
 	drawGraph : function(){
 		var g,i,c
 		var g_causal = new Graph()
@@ -6902,7 +6909,7 @@ var DAGittyGraphView = Class.extend({
 		this.impl.clear()
 
 		this.edge_shapes = new Hash()		
-		var vertex_shapes = new Hash()
+		this.vertex_shapes = new Hash()
 		
 		var ean_ids = {}
 		_.each(g_an.ancestorsOf( g_an.getSources() ),function(v){ean_ids[v.id]=1})
@@ -6936,18 +6943,18 @@ var DAGittyGraphView = Class.extend({
 			}
 			
 			this.impl.createVertexShape( vertex_type, vs )
-			vertex_shapes.set( vv[i].id, vs )
+			this.vertex_shapes.set( vv[i].id, vs )
 		}
-		this.impl.appendShapes( vertex_shapes.values() )
-		this.impl.appendTextBackgrounds( vertex_shapes.values() )
+		this.impl.appendShapes( this.vertex_shapes.values() )
+		this.impl.appendTextBackgrounds( this.vertex_shapes.values() )
 		
 		var ee = g.getEdges()
 		for( i = 0 ; i < ee.length ; i ++ ){
 			c = this.toScreenCoordinate( ee[i].v1.layout_pos_x, ee[i].v1.layout_pos_y ) 
 			
 			var es = { 
-				v1 : vertex_shapes.get( ee[i].v1.id ), 
-				v2 : vertex_shapes.get( ee[i].v2.id ),
+				v1 : this.getVertexShape( ee[i].v1.id ), 
+				v2 : this.getVertexShape( ee[i].v2.id ),
 				directed : ee[i].directed,
 				e: ee[i]
 			}
@@ -7667,10 +7674,16 @@ var GraphGUI_SVG = Class.extend({
 		this.last_touched_element = {"vertex" : el, "last_touch" : e.identifier}
 		this.start_x = this.pointerX(e)-this.getContainer().offsetLeft
 		this.start_y = this.pointerY(e)-this.getContainer().offsetTop
-		this.cancel_next_click = true
-		if( this.getMarkedVertexShape() == el ){
+		var pel = this.getMarkedVertexShape()
+		if( pel ){
 			this.unmarkVertexShape()
-		} else{ 
+			if( pel != el ){
+				this.callEventListener( "vertex_connect", [pel.v, el.v] )
+			} else {
+				this.cancel_next_click = true 
+			}
+		} else{
+			this.cancel_next_click = true 
 			this.markVertexShape( el )
 		}
 	},
@@ -7682,25 +7695,16 @@ var GraphGUI_SVG = Class.extend({
 		this.unmarkVertexShape()
 	},
 	markVertexShape : function( el ){
-		var pel = this.getMarkedVertexShape()
-		if( pel ){
-			if( pel != el ){
-				this.callEventListener( "vertex_connect", [pel.v, el.v] )
-			}
-			this.unmarkVertexShape()
-		} else {
-
-			el.previous_stroke  = el.dom.firstChild.getAttribute( "stroke",
-				this.getStyle().style.node.stroke )
-			el.previous_stroke_width  = el.dom.firstChild.getAttribute( "stroke-width",
-				this.getStyle().style.node["stroke-width"] )
-			el.dom.firstChild.setAttribute( "stroke-width", 3*el.previous_stroke_width )
-			if( !el.previous_stroke ){
-				el.dom.firstChild.setAttribute( "stroke", "black" )
-			}
-			this.marked_vertex_shape = el
-			this.callEventListener( "vertex_marked", [el.v] )
+		el.previous_stroke  = el.dom.firstChild.getAttribute( "stroke",
+			this.getStyle().style.node.stroke )
+		el.previous_stroke_width  = el.dom.firstChild.getAttribute( "stroke-width",
+			this.getStyle().style.node["stroke-width"] )
+		el.dom.firstChild.setAttribute( "stroke-width", 3*el.previous_stroke_width )
+		if( !el.previous_stroke ){
+			el.dom.firstChild.setAttribute( "stroke", "black" )
 		}
+		this.marked_vertex_shape = el
+		this.callEventListener( "vertex_marked", [el.v] )
 	},
 	unmarkVertexShape : function( el ){
 		if( !el ) el = this.marked_vertex_shape

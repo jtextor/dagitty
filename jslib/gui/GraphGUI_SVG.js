@@ -275,10 +275,16 @@ var GraphGUI_SVG = Class.extend({
 		this.last_touched_element = {"vertex" : el, "last_touch" : e.identifier}
 		this.start_x = this.pointerX(e)-this.getContainer().offsetLeft
 		this.start_y = this.pointerY(e)-this.getContainer().offsetTop
-		this.cancel_next_click = true
-		if( this.getMarkedVertexShape() == el ){
+		var pel = this.getMarkedVertexShape()
+		if( pel ){
 			this.unmarkVertexShape()
-		} else{ 
+			if( pel != el ){
+				this.callEventListener( "vertex_connect", [pel.v, el.v] )
+			} else {
+				this.cancel_next_click = true 
+			}
+		} else{
+			this.cancel_next_click = true 
 			this.markVertexShape( el )
 		}
 	},
@@ -290,25 +296,16 @@ var GraphGUI_SVG = Class.extend({
 		this.unmarkVertexShape()
 	},
 	markVertexShape : function( el ){
-		var pel = this.getMarkedVertexShape()
-		if( pel ){
-			if( pel != el ){
-				this.callEventListener( "vertex_connect", [pel.v, el.v] )
-			}
-			this.unmarkVertexShape()
-		} else {
-
-			el.previous_stroke  = el.dom.firstChild.getAttribute( "stroke",
-				this.getStyle().style.node.stroke )
-			el.previous_stroke_width  = el.dom.firstChild.getAttribute( "stroke-width",
-				this.getStyle().style.node["stroke-width"] )
-			el.dom.firstChild.setAttribute( "stroke-width", 3*el.previous_stroke_width )
-			if( !el.previous_stroke ){
-				el.dom.firstChild.setAttribute( "stroke", "black" )
-			}
-			this.marked_vertex_shape = el
-			this.callEventListener( "vertex_marked", [el.v] )
+		el.previous_stroke  = el.dom.firstChild.getAttribute( "stroke",
+			this.getStyle().style.node.stroke )
+		el.previous_stroke_width  = el.dom.firstChild.getAttribute( "stroke-width",
+			this.getStyle().style.node["stroke-width"] )
+		el.dom.firstChild.setAttribute( "stroke-width", 3*el.previous_stroke_width )
+		if( !el.previous_stroke ){
+			el.dom.firstChild.setAttribute( "stroke", "black" )
 		}
+		this.marked_vertex_shape = el
+		this.callEventListener( "vertex_marked", [el.v] )
 	},
 	unmarkVertexShape : function( el ){
 		if( !el ) el = this.marked_vertex_shape
