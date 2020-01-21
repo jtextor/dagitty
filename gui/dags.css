@@ -182,7 +182,7 @@ form{
 }
 
 
-@media screen and (min-width: 40em) and (max-width: 60em) {
+@media screen and (min-width: 140em) and (max-width: 160em) {
 	aside {
 		position: absolute; top: 0; left: 0; width: 15em;
 	}
@@ -192,7 +192,7 @@ form{
 }
 
 
-@media screen and (min-width: 60em) {
+@media screen and (min-width:160em) {
 	#llegend {
 		position: absolute; top: 0; left: 0; width: 15em;
 	}

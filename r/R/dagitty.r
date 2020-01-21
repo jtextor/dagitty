@@ -903,12 +903,24 @@ coordinates <- function( x ){
 	xv2 <- .getJSVar()
 	tryCatch({
 		.jsassigngraph( xv, x )
-		for( n in intersect( names(value$x), names(x) ) ){
-			.jsassign( xv2, as.character(n) )
-			.jseval(.jsp("global.",xv,".vertices.get(",xv2,").layout_pos_x=",
-				as.numeric(value$x[n])))
-			.jseval(.jsp("global.",xv,".vertices.get(",xv2,").layout_pos_y=",
-				as.numeric(value$y[n])))
+		if( is.null( value ) ){
+			for( n in names(x) ){
+				.jsassign( xv2, as.character(n) )
+				.jseval(.jsp("delete global.",xv,".vertices.get(",xv2,
+					")['layout_pos_x']"))
+				.jseval(.jsp("delete global.",xv,".vertices.get(",xv2,
+					")['layout_pos_y']"))
+			}
+		} else {
+			for( n in intersect( names(value$x), names(x) ) ){
+				.jsassign( xv2, as.character(n) )
+				.jseval(.jsp("global.",xv,".vertices.get(",xv2,
+					").layout_pos_x=",
+					as.numeric(value$x[n])))
+				.jseval(.jsp("global.",xv,".vertices.get(",xv2,
+					").layout_pos_y=",
+					as.numeric(value$y[n])))
+			}
 		}
 		.jsassign( xv, .jsp("global.",xv,".toString()") )
 		r <- .jsget( xv )

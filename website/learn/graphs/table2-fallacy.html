@@ -74,7 +74,7 @@
 		layouter.layout()
 		DAGitty.get("g1").setGraph(g)
 		document.getElementById("msg").innerHTML = "Regression model: Y ~ "+
-			nodes.filter(i=>i.id!="Y").sort().join(" + ")+""
+			nodes.filter(i=>i!="Y").sort().join(" + ")+""
 	}
 
 	function solve2(){
