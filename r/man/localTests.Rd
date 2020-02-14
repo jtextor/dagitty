@@ -66,6 +66,8 @@ independently of a DAG.}
 \item{Y}{vector of variable names.}
 
 \item{Z}{vector of variable names.}
+
+\item{...}{parameters passed on from \code{ciTest} to \code{localTests}}
 }
 \description{
 Derives testable implications from the given graphical model and tests them against

@@ -12,6 +12,9 @@
 
 \item{abbreviate.names}{logical. Whether to abbreviate variable names.}
 
+\item{show.coefficients}{logical. Whether to plot coefficients defined in the graph syntax
+on the edges.}
+
 \item{...}{not used.}
 }
 \description{

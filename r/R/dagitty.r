@@ -507,6 +507,24 @@ orientPDAG <- function( x ){
 	.graphTransformer( x, "cgToRcg" )
 }
 
+#' Convert DAG to MAG.
+#'
+#' Given a DAG, possibly with latent variables, construct a MAG that represents its
+#' marginal independence model.
+#'
+#' @param x the input graph, a DAG
+#' 
+#' @examples
+#' toMAG( "dag { ParentalSmoking->Smoking 
+#'   { Profession [latent] } -> {Income->Smoking}
+#'   Genotype -> {Smoking->LungCancer} }")
+#' @export
+#'
+toMAG <- function( x ){
+	.supportsTypes( x, "dag" )
+	.graphTransformer( x, "dagToMag" )
+}
+
 #' Generating Equivalent Models
 #' 
 #' \code{equivalenceClass(x)} generates a complete partially directed acyclic graph 
@@ -1055,6 +1073,8 @@ graphLayout <- function( x, method="spring" ){
 #'
 #' @param x the input graph, a DAG, MAG, or PDAG.
 #' @param abbreviate.names logical. Whether to abbreviate variable names.
+#' @param show.coefficients logical. Whether to plot coefficients defined in the graph syntax
+#'  on the edges.
 #' @param ... not used.
 #'
 #' @export
@@ -1066,7 +1086,9 @@ plot.dagitty <- function( x,
 	.supportsTypes(x,c("dag","mag","pdag"))
 	coords <- coordinates( x )
         if( any( !is.finite( coords$x ) | !is.finite( coords$y ) ) ){
-                stop("Please supply plot coordinates for graph! See ?coordinates and ?graphLayout.")
+			message("Plot coordinates for graph not supplied! Generating coordinates, see ?coordinates for how to set your own.")
+			x <- graphLayout(x)
+			coords <- coordinates(x)
         }
 	if( abbreviate.names ){
 		labels <- abbreviate(names(coords$x))
@@ -1097,7 +1119,7 @@ plot.dagitty <- function( x,
 		(par("pin")[2]/diff(par("usr")[3:4]))
 	ex <- edges(x)
 	if( show.coefficients ){
-		ea <- dagitty:::.edgeAttributes(x,"beta")
+		ea <- .edgeAttributes(x,"beta")
 		ex <- merge( ex, ea )
 	}
 	ax1 <- rep(0,nrow(ex))
@@ -1590,12 +1612,12 @@ vanishingTetrads <- function( x, type=NA ){
 #' C1 ~~ C2 \n C1 ~~ C3 \n C1 ~~ C4 \n C1 ~~ C5
 #' C2 ~~ C3 \n C2 ~~ C4 \n C2 ~~ C5
 #' C3 ~~ C4 \n C3 ~~ C5",fixed.x=FALSE)
-#' plot( graphLayout( lavaanToGraph( mdl ) ) )
+#' plot( lavaanToGraph( mdl ) )
 #' }
 #' @export
 lavaanToGraph <- function( x, digits=3, ... ){
 	if( class(x) == "lavaan" ){
-		 x <- parTable(x)
+		 x <- lavaan::parTable(x)
 	}
 	if( "est" %in% colnames(x) ){
 		bt <- function(i){
@@ -1868,6 +1890,7 @@ downloadGraph <- function(x="dagitty.net/mz-Tuw9"){
 #'   conditional independence tests can be very unreliable.
 #' @param conf.level determines the size of confidence intervals for test
 #'   statistics.
+#' @param ... parameters passed on from \code{ciTest} to \code{localTests}
 #' @param loess.pars list of parameter to be passed on to  \code{\link[stats]{loess}}
 #'   (for \code{type="cis.loess"}), for example the smoothing range.
 #'
