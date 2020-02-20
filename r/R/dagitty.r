@@ -1595,7 +1595,8 @@ vanishingTetrads <- function( x, type=NA ){
 #' converts models specified in lavaan syntax to dagitty graphs.
 #'
 #' @param x data frame, lavaan parameter table such as returned by 
-#' \code{\link[lavaan]{lavaanify}}.
+#' \code{\link[lavaan]{lavaanify}}. Can also be a \code{lavaan} object
+#' or a lavaan model string.
 #' @param digits number of significant digits to use when representing 
 #' path coefficients, if any
 #' @param ... Not used.
@@ -1616,8 +1617,11 @@ vanishingTetrads <- function( x, type=NA ){
 #' }
 #' @export
 lavaanToGraph <- function( x, digits=3, ... ){
-	if( class(x) == "lavaan" ){
-		 x <- lavaan::parTable(x)
+	if( is(x,"lavaan") ){
+		x <- lavaan::parTable(x)
+	} else if( is.character(x) ) {
+		x <- lavaan::lavaanify(lavaan::lavParseModelString(x))
+		x$est <- x$ustart
 	}
 	if( "est" %in% colnames(x) ){
 		bt <- function(i){

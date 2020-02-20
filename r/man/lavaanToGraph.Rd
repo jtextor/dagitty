@@ -8,7 +8,8 @@ lavaanToGraph(x, digits = 3, ...)
 }
 \arguments{
 \item{x}{data frame, lavaan parameter table such as returned by 
-\code{\link[lavaan]{lavaanify}}.}
+\code{\link[lavaan]{lavaanify}}. Can also be a \code{lavaan} object
+or a lavaan model string.}
 
 \item{digits}{number of significant digits to use when representing 
 path coefficients, if any}
