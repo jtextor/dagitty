@@ -257,6 +257,10 @@ var GraphSerializer = {
 		//return "GroebnerBasis[{"+pv[0]+"},{"+pv[2].join(",")+"},{"+pv[1].join(",")+"}]"
 	},
 
+	toSingular : function( g ){
+		return this.singularSyntax( g, true, true )
+	},
+
 	polynomialVariety : function( g, use_ids_as_labels, standardized ){
 		if( typeof use_ids_as_labels === "undefined" ){
 			use_ids_as_labels = false

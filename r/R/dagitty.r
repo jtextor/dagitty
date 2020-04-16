@@ -1657,7 +1657,7 @@ lavaanToGraph <- function( x, digits=3, ... ){
 toString.dagitty <- function( x, format="dagitty", ... ){
 	x <- as.dagitty( x )
 	format <- match.arg( format, 
-		c("dagitty","tikz","lavaan","dagitty.old","bnlearn") )
+		c("dagitty","tikz","lavaan","dagitty.old","bnlearn","singular") )
 	r <- NULL
 	if( format == "dagitty" ){
 		r <- as.character( x )
@@ -1670,7 +1670,7 @@ toString.dagitty <- function( x, format="dagitty", ... ){
 		}, error=function(e){
 			stop( e )
 		},finally={.deleteJSVar(xv)})
-	} else if( format %in% c("lavaan","tikz","bnlearn") ){
+	} else if( format %in% c("lavaan","tikz","bnlearn","singular") ){
 		xv <- .getJSVar()
 		tryCatch({
 			.jsassign( xv, as.character(x) )
