@@ -4,8 +4,14 @@
 \alias{impliedCovarianceMatrix}
 \title{Implied Covariance Matrix of a Gaussian Graphical Model}
 \usage{
-impliedCovarianceMatrix(x, b.default = NULL, b.lower = -0.6,
-  b.upper = 0.6, eps = 1, standardized = TRUE)
+impliedCovarianceMatrix(
+  x,
+  b.default = NULL,
+  b.lower = -0.6,
+  b.upper = 0.6,
+  eps = 1,
+  standardized = TRUE
+)
 }
 \arguments{
 \item{x}{the input graph, a DAG (which may contain bidirected edges).}

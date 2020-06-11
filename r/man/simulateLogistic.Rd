@@ -4,8 +4,15 @@
 \alias{simulateLogistic}
 \title{Simulate Binary Data from DAG Structure}
 \usage{
-simulateLogistic(x, b.default = NULL, b.lower = -0.6, b.upper = 0.6,
-  eps = 0, N = 500, verbose = FALSE)
+simulateLogistic(
+  x,
+  b.default = NULL,
+  b.lower = -0.6,
+  b.upper = 0.6,
+  eps = 0,
+  N = 500,
+  verbose = FALSE
+)
 }
 \arguments{
 \item{x}{the input graph, a DAG (which may contain bidirected edges).}
