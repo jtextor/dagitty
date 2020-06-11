@@ -1,7 +1,16 @@
-dagitty v0.2-3 (not yet released)
+dagitty v0.3 (Release date: 2020-06-11)
 
 Changes:
+ * toString: added option 'singular' and 'bnlearn'
+ * toMAG: added function to create a MAG from a given DAG
+ * impliedConditionalIndependencies: adds option 'all.pairs' for 'type' argument
+ * instrumentalVariables: added new algorithm (Benito et al. (2015))
+ * simulateLogistic: added function to simulate binary data
+ * localTests: added option 'cis.chisq' for argument 'type' to test categorical variables
+ * isCollider: added function to check for colliders in structure
+ * adjustmentSets: added argument 'max.results'
  * simulateSEM: added options 'empirical' and 'verbose'
+ * plot.dagitty: show coefficient values for edges.
  * plot.dagitty: fixed bug where bent undirected lines where not drawn thick
    but non-bent undirected lines were
 
