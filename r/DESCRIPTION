@@ -2,8 +2,8 @@ Package: dagitty
 Type: Package
 Title: Graphical Analysis of Structural Causal Models
 Version: 0.3
-Date: 2020-06-11
-Author: Johannes Textor, Benito van der Zander
+Date: 2020-06-24
+Author: Johannes Textor, Benito van der Zander, Ankur Ankan
 Maintainer: Johannes Textor <johannes.textor@gmx.de>
 Description: A port of the web-based software 'DAGitty', available at 
     <http://dagitty.net>, for analyzing structural causal models 

@@ -1,7 +1,7 @@
 ## Test environments
 * local OS X 10.10.5, R 3.3.1, UTF-8 encoding
 * local OS X 10.10.5, R 3.3.1, ISO-8859-1 encoding
-* local ubuntu precise, R 3.2.2
+* local ubuntu focal, R 4.0.1
 * win-builder (devel and release)
 * R-forge (linux and windows builds)
 
