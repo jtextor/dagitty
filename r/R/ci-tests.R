@@ -10,10 +10,10 @@
 }
 
 .conf.interval <- function(r, w ){
-   chi <- qchisq( w, df=r$parameter, ncp=r$statistic )
-   .rmsea( list( parameter=r$parameter,
-                 statistic=chi,
-                 observed=r$observed ) )
+	chi <- qchisq( w, df=r$parameter, ncp=r$statistic )
+	.rmsea( list( parameter=r$parameter,
+                      statistic=chi,
+                      observed=r$observed ) )
 }
 
 .chisq.test <- function( x ){
@@ -39,7 +39,7 @@
 }
 
 .ci.test.chisq <- function( x, ind, conf.level ){
-  w <- (1 - conf.level) / 2
+	w <- (1 - conf.level) / 2
 	if( length(ind$Z) > 0 ){
 	  # Determine sample size per stratum
 	  #rrn <- by(x[,c(ind$X,ind$Y)], x[,ind$Z], nrow)
@@ -53,7 +53,7 @@
 		}
 
 		rmsea <- weighted.mean( sapply( rr, .rmsea ),
-				       weights=sapply(rr,`[[`,'observed') )
+				        weights=sapply(rr,`[[`,'observed') )
 		rmsea.lower <- weighted.mean( sapply(rr, .conf.interval, w=w),
 		                              weights=sapply(rr, `[[`, 'observed') )
 		rmsea.upper <- weighted.mean( sapply(rr, .conf.interval, w=(1-w)),

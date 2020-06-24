@@ -2127,15 +2127,15 @@ plotLocalTestResults <- function(x,xlab="test statistic (95% CI)",
 	y <- seq_len(nrow(x))
 
 	if (auto.margin){
-	  oldpar <- graphics::par(no.readonly=TRUE)
-	  on.exit(graphics::par(oldpar))
-	  lmargin <- max(strwidth(rownames(x), "inches")) + 0.2
-	  if ( lmargin > (par("fin")[1] / 2) ){
-	    lmargin = par("fin")[1] / 2
-	    warning("Warning: Plotting area too narrow to fit the Y axis labels.")
-	  }
-    oldpar$mai[2] <- lmargin
-    par(mai=oldpar$mai)
+		oldpar <- graphics::par(no.readonly=TRUE)
+		on.exit(graphics::par(oldpar))
+		lmargin <- max(strwidth(rownames(x), "inches")) + 0.2
+		if ( lmargin > (par("fin")[1] / 2) ){
+			lmargin = par("fin")[1] / 2
+			warning("Warning: Plotting area too narrow to fit the Y axis labels.")
+		}
+		oldpar$mai[2] <- lmargin
+		par(mai=oldpar$mai)
 	}
 
 	plot( x[,1], y,xlab=xlab,xlim=xlim, yaxt="n", ylab="", ... )
