@@ -2072,7 +2072,7 @@ localTests <- function(x=NULL, data=NULL,
 				}
 			} else if( type.postfix == "chisq" ){
 				f <- function(i) 
-					.ci.test.chisq(data,i)
+					.ci.test.chisq(data,i,conf.level)
 			}
 			r <- as.data.frame(
 				row.names=row.names,
