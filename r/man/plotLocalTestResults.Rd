@@ -11,6 +11,7 @@ plotLocalTestResults(
   sort.by.statistic = TRUE,
   n = Inf,
   axis.pars = list(las = 1),
+  auto.margin = TRUE,
   ...
 )
 }
@@ -30,6 +31,9 @@ the test statistics diverges most from 0.}
 
 \item{axis.pars}{arguments to be passed on to \code{\link{axis}}
 when generating the Y axis for the plot.}
+
+\item{auto.margin}{logical. Computes the left margin to fit the 
+Y axis labels.}
 
 \item{...}{further arguments to be passed on to \code{\link{plot}}.}
 }
