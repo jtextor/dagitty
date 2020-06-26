@@ -4,8 +4,7 @@
 \alias{plot.dagitty}
 \title{Plot Graph}
 \usage{
-\method{plot}{dagitty}(x, abbreviate.names = FALSE,
-  show.coefficients = FALSE, ...)
+\method{plot}{dagitty}(x, abbreviate.names = FALSE, show.coefficients = FALSE, ...)
 }
 \arguments{
 \item{x}{the input graph, a DAG, MAG, or PDAG.}

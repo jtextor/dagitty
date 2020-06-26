@@ -4,8 +4,7 @@
 \alias{impliedConditionalIndependencies}
 \title{List Implied Conditional Independencies}
 \usage{
-impliedConditionalIndependencies(x, type = "missing.edge",
-  max.results = Inf)
+impliedConditionalIndependencies(x, type = "missing.edge", max.results = Inf)
 }
 \arguments{
 \item{x}{the input graph, a DAG, MAG, or PDAG.}

@@ -2072,7 +2072,7 @@ localTests <- function(x=NULL, data=NULL,
 				}
 			} else if( type.postfix == "chisq" ){
 				f <- function(i) 
-					.ci.test.chisq(data,i)
+					.ci.test.chisq(data,i,conf.level)
 			}
 			r <- as.data.frame(
 				row.names=row.names,
@@ -2107,6 +2107,8 @@ ciTest <- function(X,Y,Z=NULL,data,...){
 #'  the absolute value of the test statistic before plotting.
 #' @param n plot only the n tests for which the absolute value of 
 #'  the test statistics diverges most from 0.
+#' @param auto.margin logical. Computes the left margin to fit the 
+#'  Y axis labels.
 #' @param ... further arguments to be passed on to \code{\link{plot}}.
 #'
 #' @examples
@@ -2117,12 +2119,25 @@ ciTest <- function(X,Y,Z=NULL,data,...){
 #' @export
 plotLocalTestResults <- function(x,xlab="test statistic (95% CI)",
 	xlim=range(x[,c(ncol(x)-1,ncol(x))]),sort.by.statistic=TRUE,
-	n=Inf,axis.pars=list(las=1),...){
+	n=Inf,axis.pars=list(las=1), auto.margin=TRUE, ...){
 	x <- x[order(abs(x[1]),decreasing=TRUE),]
 	if( is.finite(n) && n > 0 && n < nrow(x) ){
 		x <- x[1:n,]
 	}
 	y <- seq_len(nrow(x))
+
+	if (auto.margin){
+		oldpar <- graphics::par(no.readonly=TRUE)
+		on.exit(graphics::par(oldpar))
+		lmargin <- max(strwidth(rownames(x), "inches")) + 0.2
+		if ( lmargin > (par("fin")[1] / 2) ){
+			lmargin = par("fin")[1] / 2
+			warning("Warning: Plotting area too narrow to fit the Y axis labels.")
+		}
+		oldpar$mai[2] <- lmargin
+		par(mai=oldpar$mai)
+	}
+
 	plot( x[,1], y,xlab=xlab,xlim=xlim, yaxt="n", ylab="", ... )
 	do.call( axis, c( list( 2, at=y, labels=rownames(x)), axis.pars ) )
 	segments( x[,ncol(x)-1], y, x[,ncol(x)], y )

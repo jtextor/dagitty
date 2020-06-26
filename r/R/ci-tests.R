@@ -1,3 +1,5 @@
+#' @importFrom stats qchisq
+
 ## BEGIN functions that implement conditional independence tests
 
 .rmsea <- function( r ){
@@ -5,6 +7,13 @@
 		return( 0 )
 	}
 	sqrt( max( r$statistic/r$parameter-1, 0 ) / (sum(r$observed)-1) )
+}
+
+.conf.interval <- function(r, w ){
+	chi <- qchisq( w, df=r$parameter, ncp=r$statistic )
+	.rmsea( list( parameter=r$parameter,
+                      statistic=chi,
+                      observed=r$observed ) )
 }
 
 .chisq.test <- function( x ){
@@ -29,7 +38,8 @@
 	       observed=n ) 
 }
 
-.ci.test.chisq <- function( x, ind ){
+.ci.test.chisq <- function( x, ind, conf.level ){
+	w <- (1 - conf.level) / 2
 	if( length(ind$Z) > 0 ){
 	  # Determine sample size per stratum
 	  #rrn <- by(x[,c(ind$X,ind$Y)], x[,ind$Z], nrow)
@@ -41,9 +51,13 @@
 		if( any(rr.null) ){
 			rr <- rr[-which(rr.null)]
 		}
-		
+
 		rmsea <- weighted.mean( sapply( rr, .rmsea ),
-				       weights=sapply(rr,`[[`,'observed') )
+				        weights=sapply(rr,`[[`,'observed') )
+		rmsea.lower <- weighted.mean( sapply(rr, .conf.interval, w=w),
+		                              weights=sapply(rr, `[[`, 'observed') )
+		rmsea.upper <- weighted.mean( sapply(rr, .conf.interval, w=(1-w)),
+		                              weights=sapply(rr, `[[`, 'observed') )
 		tst <- list(
 			  parameter=sum(sapply(rr,`[[`,'parameter')),
 			  statistic=sum(sapply(rr,`[[`,'statistic'))
@@ -51,12 +65,16 @@
 	} else {
 		tst <- .chisq.test( x[,c(ind$X,ind$Y)] )
 		rmsea <- .rmsea(tst)
+		rmsea.lower <- .conf.interval(tst, w=w)
+		rmsea.upper <- .conf.interval(tst,w=(1-w))
 	}
 	r <- c(rmsea, 
 	       tst$statistic,tst$parameter,
-	       pchisq(tst$statistic,tst$parameter,lower.tail=FALSE)
+	       pchisq(tst$statistic,tst$parameter,lower.tail=FALSE),
+	       rmsea.lower, rmsea.upper
 	       )
-	names(r) <- c("rmsea","x2","df","p.value")
+	names(r) <- c("rmsea","x2","df","p.value",paste0("rmsea ",100*w,"%"),
+	              paste0("rmsea ",100*(1-w),"%"))
 	r
 }
 

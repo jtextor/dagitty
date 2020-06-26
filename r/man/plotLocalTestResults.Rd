@@ -4,9 +4,16 @@
 \alias{plotLocalTestResults}
 \title{Plot Results of Local Tests}
 \usage{
-plotLocalTestResults(x, xlab = "test statistic (95\% CI)",
-  xlim = range(x[, c(ncol(x) - 1, ncol(x))]), sort.by.statistic = TRUE,
-  n = Inf, axis.pars = list(las = 1), ...)
+plotLocalTestResults(
+  x,
+  xlab = "test statistic (95\% CI)",
+  xlim = range(x[, c(ncol(x) - 1, ncol(x))]),
+  sort.by.statistic = TRUE,
+  n = Inf,
+  axis.pars = list(las = 1),
+  auto.margin = TRUE,
+  ...
+)
 }
 \arguments{
 \item{x}{data frame; results of the local tests as returned by 
@@ -24,6 +31,9 @@ the test statistics diverges most from 0.}
 
 \item{axis.pars}{arguments to be passed on to \code{\link{axis}}
 when generating the Y axis for the plot.}
+
+\item{auto.margin}{logical. Computes the left margin to fit the 
+Y axis labels.}
 
 \item{...}{further arguments to be passed on to \code{\link{plot}}.}
 }

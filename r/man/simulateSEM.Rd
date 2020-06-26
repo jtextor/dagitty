@@ -4,9 +4,17 @@
 \alias{simulateSEM}
 \title{Simulate Data from Structural Equation Model}
 \usage{
-simulateSEM(x, b.default = NULL, b.lower = -0.6, b.upper = 0.6,
-  eps = 1, N = 500, standardized = TRUE, empirical = FALSE,
-  verbose = FALSE)
+simulateSEM(
+  x,
+  b.default = NULL,
+  b.lower = -0.6,
+  b.upper = 0.6,
+  eps = 1,
+  N = 500,
+  standardized = TRUE,
+  empirical = FALSE,
+  verbose = FALSE
+)
 }
 \arguments{
 \item{x}{the input graph, a DAG (which may contain bidirected edges).}
