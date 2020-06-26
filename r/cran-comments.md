@@ -10,3 +10,8 @@ On local systems:
 On win-builder:
 1 NOTE due to spell-checker false positives.
 
+## Downstream packages
+
+CausalQueries: All OK
+pcalg: ???
+ggdag: unit test is failing
