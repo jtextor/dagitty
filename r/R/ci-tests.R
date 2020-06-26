@@ -9,7 +9,7 @@
 	sqrt( max( r$statistic/r$parameter-1, 0 ) / (sum(r$observed)-1) )
 }
 
-.conf.interval <- function(r, w ){
+.conf.interval.chisq <- function( r, w ){
 	chi <- qchisq( w, df=r$parameter, ncp=r$statistic )
 	.rmsea( list( parameter=r$parameter,
                       statistic=chi,
@@ -48,31 +48,42 @@
 		rr <- by(x[,c(ind$X,ind$Y)], x[,ind$Z],
 			 .chisq.test)
 		rr.null <- sapply(rr,is.null)
-		if( any(rr.null) ){
-			rr <- rr[-which(rr.null)]
-		}
 
-		rmsea <- weighted.mean( sapply( rr, .rmsea ),
-				        weights=sapply(rr,`[[`,'observed') )
-		rmsea.lower <- weighted.mean( sapply(rr, .conf.interval, w=w),
-		                              weights=sapply(rr, `[[`, 'observed') )
-		rmsea.upper <- weighted.mean( sapply(rr, .conf.interval, w=(1-w)),
-		                              weights=sapply(rr, `[[`, 'observed') )
-		tst <- list(
-			  parameter=sum(sapply(rr,`[[`,'parameter')),
-			  statistic=sum(sapply(rr,`[[`,'statistic'))
-		)
+		if( all(rr.null) ){
+			tst <- list( parameter=0, statistic=0 )
+			rmsea.lower <- 0
+			rmsea.upper <- 0
+		} else {
+			if( any(rr.null) ){
+				rr <- rr[-which(rr.null)]
+			}
+
+			rmsea <- weighted.mean( sapply( rr, .rmsea ),
+				    weights=sapply(rr,`[[`,'observed') )
+			rmsea.lower <- weighted.mean( sapply(rr, .conf.interval.chisq, w=w),
+		    		weights=sapply(rr, `[[`, 'observed') )
+					rmsea.upper <- weighted.mean( sapply(rr, .conf.interval.chisq, w=(1-w)),
+		                 	weights=sapply(rr, `[[`, 'observed') )
+			tst <- list(
+			 	parameter=sum(sapply(rr,`[[`,'parameter')),
+			 	statistic=sum(sapply(rr,`[[`,'statistic'))
+			)
+		}
 	} else {
 		tst <- .chisq.test( x[,c(ind$X,ind$Y)] )
 		rmsea <- .rmsea(tst)
-		rmsea.lower <- .conf.interval(tst, w=w)
-		rmsea.upper <- .conf.interval(tst,w=(1-w))
+		rmsea.lower <- .conf.interval.chisq(tst, w=w)
+		rmsea.upper <- .conf.interval.chisq(tst,w=(1-w))
 	}
-	r <- c(rmsea, 
-	       tst$statistic,tst$parameter,
-	       pchisq(tst$statistic,tst$parameter,lower.tail=FALSE),
-	       rmsea.lower, rmsea.upper
-	       )
+
+	if( tst$parameter == 0 ){
+		r <- c(0,0,0,1,0,0)
+	} else {
+		r <- c(rmsea, 
+			tst$statistic,tst$parameter,
+	    	pchisq(tst$statistic,tst$parameter,lower.tail=FALSE),
+	      	rmsea.lower, rmsea.upper)
+	}
 	names(r) <- c("rmsea","x2","df","p.value",paste0("rmsea ",100*w,"%"),
 	              paste0("rmsea ",100*(1-w),"%"))
 	r
@@ -81,7 +92,7 @@
 .ci.test.chisq.perm <- function( x, ind, conf.level, R ){
 	requireNamespace("boot",quietly=TRUE)
 	bo <- boot::boot( x, function(data,i){
-		.ci.test.chisq(x[i,],ind)[1]
+		.ci.test.chisq(x[i,],ind,conf.level)[1]
 	}, R )
 	r <- c(
 		bo$t0,

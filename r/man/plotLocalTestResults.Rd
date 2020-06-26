@@ -4,16 +4,9 @@
 \alias{plotLocalTestResults}
 \title{Plot Results of Local Tests}
 \usage{
-plotLocalTestResults(
-  x,
-  xlab = "test statistic (95\% CI)",
-  xlim = range(x[, c(ncol(x) - 1, ncol(x))]),
-  sort.by.statistic = TRUE,
-  n = Inf,
-  axis.pars = list(las = 1),
-  auto.margin = TRUE,
-  ...
-)
+plotLocalTestResults(x, xlab = "test statistic (95\% CI)",
+  xlim = range(x[, c(ncol(x) - 1, ncol(x))]), sort.by.statistic = TRUE,
+  n = Inf, axis.pars = list(las = 1), auto.margin = TRUE, ...)
 }
 \arguments{
 \item{x}{data frame; results of the local tests as returned by 

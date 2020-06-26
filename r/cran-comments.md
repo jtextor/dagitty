@@ -1,9 +1,7 @@
 ## Test environments
-* local OS X 10.10.5, R 3.3.1, UTF-8 encoding
-* local OS X 10.10.5, R 3.3.1, ISO-8859-1 encoding
+* local OS X 10.14.6, R 3.6.1 
 * local ubuntu focal, R 4.0.1
 * win-builder (devel and release)
-* R-forge (linux and windows builds)
 
 ## R CMD check results
 On local systems:

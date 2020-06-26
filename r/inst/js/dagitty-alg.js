@@ -388,6 +388,7 @@ var Graph = Class.extend({
 			_.each(vv, visitAndPush)
 			r.push(v)
 		}
+		this.clearVisited()
 		return r
 	},
 	

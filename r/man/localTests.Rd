@@ -5,20 +5,11 @@
 \alias{ciTest}
 \title{Test Graph against Data}
 \usage{
-localTests(
-  x = NULL,
-  data = NULL,
-  type = c("cis", "cis.loess", "cis.chisq", "tetrads", "tetrads.within",
-    "tetrads.between", "tetrads.epistemic"),
-  tests = NULL,
-  sample.cov = NULL,
-  sample.nobs = NULL,
-  conf.level = 0.95,
-  R = NULL,
-  max.conditioning.variables = NULL,
-  tol = NULL,
-  loess.pars = NULL
-)
+localTests(x = NULL, data = NULL, type = c("cis", "cis.loess",
+  "cis.chisq", "tetrads", "tetrads.within", "tetrads.between",
+  "tetrads.epistemic"), tests = NULL, sample.cov = NULL,
+  sample.nobs = NULL, conf.level = 0.95, R = NULL,
+  max.conditioning.variables = NULL, tol = NULL, loess.pars = NULL)
 
 ciTest(X, Y, Z = NULL, data, ...)
 }
@@ -99,25 +90,20 @@ set.seed(123)
 d <- simulateSEM("dag{X->{U1 M2}->Y U1->M1}",.6,.6)
 
 # Postulate and test full mediation model without measurement error
-plotLocalTestResults(localTests( "dag{ X -> {M1 M2} -> Y }", d, "cis" ))
+r <- localTests( "dag{ X -> {M1 M2} -> Y }", d, "cis" )
+plotLocalTestResults( r )
 
 # Simulate data from example SEM
 g <- getExample("Polzer")
 d <- simulateSEM(g,.1,.1)
 
 # Compute independencies with at most 3 conditioning variables
-imp <- Filter(function(x) length(x$Z)<4, impliedConditionalIndependencies(g))
-plotLocalTestResults(localTests( g, d, "cis.loess", R=100, tests=imp, loess.pars=list(span=0.6) ))
+r <- localTests( g, d, "cis.loess", R=100, loess.pars=list(span=0.6),
+        max.conditioning.variables=3 )
+plotLocalTestResults( r )
 
-# Test independencies for categorical data
-odds2p <- function(o) exp(o)/(exp(o)+1)
-n <- 500
-X <- rbinom(n,1,.5)
-U1 <- rbinom(n,1,odds2p(4*X-2))
-M2 <- rbinom(n,1,odds2p(4*X-2))
-M1 <- rbinom(n,1,odds2p(2*U1-1))
-Y <- rbinom(n,1,odds2p(2*U1+2*M2))
-d <- data.frame(X,Y,U1,M1,M2)
-localTests("dag{X->{M1 M2}->Y}",data.frame(X,Y,U1,M1,M2),type="cis.chisq")
+# Test independencies for categorical data using chi-square test
+d <- simulateLogistic("dag{X->{U1 M2}->Y U1->M1}",2)
+localTests( "dag{X->{M1 M2}->Y}", d, type="cis.chisq" )
 
 }
