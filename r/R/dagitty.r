@@ -1344,15 +1344,25 @@ adjustmentSets <- function( x, exposure=NULL, outcome=NULL,
 #' \emph{Proceedings of UAI 2010.}
 #'
 #' @export
-isAdjustmentSet <- function( x, Z, exposure=exposures(x), outcome=outcomes(x) ){
+isAdjustmentSet <- function( x, Z, exposure=NULL, outcome=NULL ){
 	x <- as.dagitty( x )
 	.supportsTypes( x, c("dag","mag","pdag","pag") )
 	xv <- .getJSVar()
 	Zv <- .getJSVar()
-	.checkAllNames( x, c(Z,exposure,outcome) )
-	if( length(exposures(x)) == 0 || length(outcomes(x)) == 0 ){
+
+	if( is.null(exposure) ){
+		exposure <- exposures(x)
+	}
+	if( is.null(outcome) ){
+		outcome <- outcomes(x)
+	}
+	.checkAllNames( x, c(exposure, outcome) )
+	if( length(exposure) == 0 || length(outcome) == 0 ){
 		stop("Both exposure(s) and outcome(s) need to be set!")
 	}
+	exposures(x) <- exposure
+	outcomes(x) <- outcome
+
 	tryCatch({
 		.jsassigngraph( xv, x )
 		.jsassign( Zv, as.list(Z) )
@@ -2231,7 +2241,7 @@ paths <- function(x,from=exposures(x),to=outcomes(x),Z=list(),limit=100,directed
 #' @export
 dconnected <- function(x,X,Y=list(),Z=list()){
 	x <- as.dagitty(x)
-	.supportsTypes(x,c("dag","pdag","mag"))
+	.supportsTypes(x,c("dag","pdag","mag","pag"))
 	if( length(Z) == 0 ){
 		Z <- list()
 	}

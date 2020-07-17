@@ -867,6 +867,14 @@ var GraphAnalyzer = {
 	 * to X given Z.
 	 */
 	dConnected : function( g, X, Y, Z, AnZ ){
+		var go = g
+		if( g.getType() == "pag" ){
+			g = GraphTransformer.pagToPdag( g )
+			X = g.getVertex(X)
+			Y = g.getVertex(Y)
+			Z = g.getVertex(Z)
+			if( typeof AnZ !== 'undefined' ){ AnZ = g.getVertex( AnZ ) }
+		}
 		var forward_queue = []
 		var backward_queue = []
 		var forward_visited ={}
@@ -938,7 +946,7 @@ var GraphAnalyzer = {
 		if( Y.length > 0 ){
 			return false
 		} else {
-			return g.getVertex(
+			return go.getVertex(
 				_.union( Object.keys( forward_visited ), Object.keys( backward_visited ) ) 
 			)
 		}

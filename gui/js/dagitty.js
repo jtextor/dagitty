@@ -252,7 +252,7 @@ var Graph = Class.extend({
 		} else if( v instanceof Graph.Vertex ){
 			return this.vertices.get(v.id)
 		} else if( v instanceof Array ){
-			return v.map(function(vi){return this.vertices.get(vi)},this)
+			return v.map(this.getVertex,this)
 		} else {
 			throw( "Illegal value passed to getVertex : " + v )
 		}
@@ -1852,6 +1852,14 @@ var GraphAnalyzer = {
 	 * to X given Z.
 	 */
 	dConnected : function( g, X, Y, Z, AnZ ){
+		var go = g
+		if( g.getType() == "pag" ){
+			g = GraphTransformer.pagToPdag( g )
+			X = g.getVertex(X)
+			Y = g.getVertex(Y)
+			Z = g.getVertex(Z)
+			if( typeof AnZ !== 'undefined' ){ AnZ = g.getVertex( AnZ ) }
+		}
 		var forward_queue = []
 		var backward_queue = []
 		var forward_visited ={}
@@ -1923,7 +1931,7 @@ var GraphAnalyzer = {
 		if( Y.length > 0 ){
 			return false
 		} else {
-			return g.getVertex(
+			return go.getVertex(
 				_.union( Object.keys( forward_visited ), Object.keys( backward_visited ) ) 
 			)
 		}

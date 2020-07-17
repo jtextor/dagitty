@@ -20,4 +20,9 @@ test_that("CGs", {
 test_that("pags", {
 	expect_equal(length(adjustmentSets("dag{ X1->V1->X2->Y ; V1 -> X3 }",
 		c("X1","X2","X3"),"Y",type="all")),2)
+	expect_false(isAdjustmentSet('pag { 1 @-@ 2 @-@ 3 @-@ 4 2 @-@ 4 2[e] 4[o]}',list()))
+	expect_false(isAdjustmentSet('pag { u @-@ {{x[e]} @-@ {y[o]}} }',list()))
+	expect_false(isAdjustmentSet('pag { u @-@ {x[e]} @-@ {y[o]} }',list()))
+	expect_true(dconnected('pag { x @-@ y }',"x","y"))
+
 })
