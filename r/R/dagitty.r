@@ -1245,11 +1245,19 @@ plot.dagitty <- function( x,
 #' g <- dagitty("pdag { x[e] y[o] a -- {i z b}; {a z i} -> x -> y <- {z b} }")
 #' adjustmentSets( g )
 #' @export
-adjustmentSets <- function( x, exposure=exposures(x), outcome=outcomes(x), 
+adjustmentSets <- function( x, exposure=NULL, outcome=NULL, 
 	type=c("minimal","canonical","all"), effect=c("total","direct"),
 	max.results=Inf ){
 	effect <- match.arg( effect )
 	type <- match.arg( type )
+
+	if( is.null(exposure) ){
+		exposure <- exposures(x)
+	}
+	if( is.null(outcome) ){
+		outcome <- outcomes(x)
+	}
+
 	if( effect == "direct" && type != "minimal" ){
 		stop("Only minimal adjustment sets are supported for direct effects!")
 	}
@@ -1515,10 +1523,16 @@ impliedConditionalIndependencies <- function( x, type="missing.edge", max.result
 #' # A conditional instrumental variable
 #' instrumentalVariables( "dag{ i->x->y; x<->y ; y<-z->i }", "x", "y" )
 #' @export
-instrumentalVariables <- function( x, exposure=exposures(x), outcome=outcomes(x) ){
+instrumentalVariables <- function( x, exposure=NULL, outcome=NULL ){
 	x <- as.dagitty( x )
 	.supportsTypes( x, "dag" )
 	.checkAllNames( x, c(exposure, outcome) )
+	if( is.null(exposure) ){
+		exposure <- exposures(x)
+	}
+	if( is.null(outcome) ){
+		outcome <- outcomes(x)
+	}
 	if( length(exposure) != 1 || length(outcome) != 1 ){
 		stop("Both exposure(s) and outcome(s) need to be set to exactly one variable!")
 	}

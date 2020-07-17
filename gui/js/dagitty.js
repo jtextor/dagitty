@@ -4454,6 +4454,8 @@ var ObservedGraph = Class.extend({
 
 var GraphSerializer = {
 
+	SHORTEN_SYNTAX : true,
+
 	toDot : function( g ){
 		var n = g.getName(), bb = g.getBoundingBox()
 		return (g.getType()+" "+(n == null?"":n)+"{\n" + 
@@ -4492,7 +4494,7 @@ var GraphSerializer = {
 				return GraphSerializer.dotQuoteVid( v.id ) +
 					" ["+properties.join(",")+"]"
 			} else {
-				if( v.getAdjacentNodes().length == 0 ){
+				if( !this.SHORTEN_SYNTAX || v.getAdjacentNodes().length == 0 ){
 					return GraphSerializer.dotQuoteVid( v.id )
 				} else {
 					return ""

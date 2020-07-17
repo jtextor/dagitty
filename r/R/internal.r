@@ -84,6 +84,10 @@
 		ct$source(system.file("js/dagitty-alg.js",package="dagitty"))
 		ct$source(system.file("js/RUtil.js",package="dagitty"))
 		ct$source(system.file("js/example-dags.js",package="dagitty"))
+
+		# Disabling the shorter syntax until ggdag can deal with it
+		ct$eval("GraphSerializer.SHORTEN_SYNTAX = false")
+
 		assign("ct",ct,.dagitty.cache)
 	}
 	get("ct",.dagitty.cache)
