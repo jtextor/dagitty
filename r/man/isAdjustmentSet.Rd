@@ -4,7 +4,7 @@
 \alias{isAdjustmentSet}
 \title{Adjustment Criterion}
 \usage{
-isAdjustmentSet(x, Z, exposure = exposures(x), outcome = outcomes(x))
+isAdjustmentSet(x, Z, exposure = NULL, outcome = NULL)
 }
 \arguments{
 \item{x}{the input graph, a DAG, MAG, PDAG, or PAG.}
