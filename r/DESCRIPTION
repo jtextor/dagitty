@@ -34,5 +34,6 @@ Suggests:
     knitr,
     base64enc (>= 0.1-3),
     lavaan,
-    testthat
+    testthat,
+    markdown
 RoxygenNote: 7.1.1
