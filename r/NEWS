@@ -1,10 +1,10 @@
 dagitty v0.3 (Release date: 2020-06-11)
-
+==============
 Changes:
  * toString: added option 'singular' and 'bnlearn'
  * toMAG: added function to create a MAG from a given DAG
  * impliedConditionalIndependencies: adds option 'all.pairs' for 'type' argument
- * instrumentalVariables: added new algorithm (Benito et al. (2015))
+ * instrumentalVariables: added new algorithm (van der Zander et al., 2015)
  * simulateLogistic: added function to simulate binary data
  * localTests: added option 'cis.chisq' for argument 'type' to test categorical variables
  * isCollider: added function to check for colliders in structure
