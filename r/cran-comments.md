@@ -5,6 +5,11 @@ No incompatbile changes have been made.
 * local OS X 10.14.6, R 3.6.1 
 * local ubuntu 18.04 (bionic), R 4.0.1
 * local Windows 10, R 4.1.0
+* remote macOS 10.15.5, R 4.0.2
+* remote Windows Server x64, R 4.0.2
+* remote ubuntu 18.04, R 4.0.2
+
+Remote tests were done using github actions.
 
 ## R CMD check results
 On local systems:
