@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta http-equiv="Content-type" content="text/html; charset=UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+
+<link rel="stylesheet"
+	href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css"
+	integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh"
+	crossorigin="anonymous">
+
+<title>Embedding DAGitty in your own HTML file</title>
+<link rel="stylesheet" type="text/css"  href="../content.css"/>
+</head>
+<body>
+
+<div class="container">
+			<h1>How to embed DAGitty in your own HTML file</h1>
+
+			<p>
+				The DAGitty javascript library can be used independently of the
+				graphical user interface, and allows you to embed graphs into
+				your own HTML pages. These graphs are manipulable using the 
+				standard mouse and keyboard interface as the DAGitty user
+				interface. You could use this, for example, to create interactive
+				tutorials like the ones found on this site.
+			</p>
+
+			<h2>Basic Procedure</h2>
+
+			<p><strong>Step 1:</strong>
+				Include the DAGitty JavaScript library in the header of your page.</p>
+
+			<p style="background: #ccf; padding: 1em">
+			<code>
+				&lt;script src="http://www.dagitty.net/lib/dagitty-3.0.js"&gt;&lt;/script&gt;
+			</code>
+			</p>
+
+			<p><strong>Step 2:</strong> 
+				Include a "div"-tag in your page that has the "dagitty" class. Inside this
+				element, put the code of the DAG that you want to show initially. Use CSS
+				to determine the size of the element.
+			</p>
+
+			<p style="background: #ccf; padding: 1em">
+			<code>
+&lt;div class="dagitty" style="width:20em; height:20em"&gt;<br/>
+&nbsp;&nbsp;dag {<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;I [pos="1,0"]<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;X [exposure,pos="0,2"]<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;Y [outcome,pos="2,2"]<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;X -&gt; { I -&gt; Y }<br/>
+&nbsp;&nbsp;}<br/>
+&lt;/div&gt;
+			</code>
+			</p>
+
+			<p>By default, the graph structure will not be editable &ndash; you will not be
+			able to add or delete nodes or edges. If you want this to be possible,
+				you need to add the attribute <code>data-mutable="true"</code> to the div tag.</p>
+
+			<p><strong>Step 3:</strong> 
+				Run the function "DAGitty.setup()" after the document has loaded.
+			</p>
+
+			<p style="background: #ccf; padding: 1em">
+			<code>
+				&lt;body onload="DAGitty.setup()"&gt;
+			</code>
+			</p>
+
+			<h2>Examples</h2>
+
+			<ul>
+				<li><a href="embed-example1.html">Example 1</a> &mdash; just shows how to embed a DAG</li>
+				<li><a href="embed-example2.html">Example 2</a> &mdash; shows how to interact with an embedded DAG using JavaScript</li>
+			</ul>
+
+			<p>
+				Also check out the more complex examples linked under "Tutorials" 
+				from the <a href="index.html">front page</a>.
+			</p>
+
+		</div>
+
+	</body>
+</html>
