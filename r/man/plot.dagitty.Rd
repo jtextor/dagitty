@@ -4,8 +4,13 @@
 \alias{plot.dagitty}
 \title{Plot Graph}
 \usage{
-\method{plot}{dagitty}(x, abbreviate.names = FALSE,
-  show.coefficients = FALSE, ...)
+\method{plot}{dagitty}(
+  x,
+  abbreviate.names = FALSE,
+  show.coefficients = FALSE,
+  nodenames = NULL,
+  ...
+)
 }
 \arguments{
 \item{x}{the input graph, a DAG, MAG, or PDAG.}
@@ -15,10 +20,18 @@
 \item{show.coefficients}{logical. Whether to plot coefficients defined in the graph syntax
 on the edges.}
 
+\item{nodenames}{If not NULL, a named vector or expression list 
+to rename the nodes.}
+
 \item{...}{not used.}
 }
 \description{
 A simple plot method to quickly visualize a graph. This is intended mainly for 
 simple visualization purposes and not as a full-fledged graph drawing
 function.
+}
+\details{
+If \code{nodenames} is not \code{NULL}, it should be a 
+ named vector of characters or expressions to use to rename (some of) 
+ the nodes, e.g. node \code{"X"} could be renamed using \code{expression(X = alpha^2)}.
 }

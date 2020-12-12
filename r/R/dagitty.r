@@ -1075,7 +1075,13 @@ graphLayout <- function( x, method="spring" ){
 #' @param abbreviate.names logical. Whether to abbreviate variable names.
 #' @param show.coefficients logical. Whether to plot coefficients defined in the graph syntax
 #'  on the edges.
+#' @param nodenames If not NULL, a named vector or expression list 
+#'  to rename the nodes.  
 #' @param ... not used.
+#' 
+#' @details If \code{nodenames} is not \code{NULL}, it should be a 
+#'  named vector of characters or expressions to use to rename (some of) 
+#'  the nodes, e.g. node \code{"X"} could be renamed using \code{expression(X = alpha^2)}.
 #'
 #' @export
 plot.dagitty <- function( x,
@@ -1116,8 +1122,10 @@ plot.dagitty <- function( x,
 	ylim <- c(-max(coords$y+wy/2),-min(coords$y-wy/2))
 	plot( NA, xlim=xlim, ylim=ylim, xlab="", ylab="", bty="n",
 		xaxt="n", yaxt="n" )
-	wx <- strwidth("xx") + sapply( labels, strwidth )
-	wy <- strheight("\n") + sapply( labels, strheight )
+	wx <- sapply( labels, strwidth ) + strwidth("xx") 
+	names(wx) <- names(coords$x)
+	wy <- sapply( labels, strheight ) + strheight("\n")
+	names(wy) <- names(coords$x)
 	asp <- par("pin")[1]/diff(par("usr")[1:2]) /
 		(par("pin")[2]/diff(par("usr")[3:4]))
 	ex <- edges(x)
