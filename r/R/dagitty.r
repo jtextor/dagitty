@@ -1081,6 +1081,7 @@ graphLayout <- function( x, method="spring" ){
 plot.dagitty <- function( x,
 	abbreviate.names=FALSE, 
 	show.coefficients=FALSE,
+	nodenames=NULL,
 	... ){	
 	x <- as.dagitty( x )
 	.supportsTypes(x,c("dag","mag","pdag"))
@@ -1095,13 +1096,17 @@ plot.dagitty <- function( x,
 	} else {
 		labels <- names(coords$x)
 	}
+	if(!is.null(nodenames)){
+	  names(labels) <- names(coords$x)
+	  labels[names(nodenames)] <- nodenames
+	}
 	omar <- par("mar")
 	par(mar=rep(0,4))
 	plot.new()
 	par(new=TRUE)
-	wx <- sapply( paste0("mm",labels), 
+	wx <- strwidth("mm",units="inches") + sapply( labels, 
 		function(s) strwidth(s,units="inches") )
-	wy <- sapply( paste0("\n",labels), 
+	wy <- strheight("\n") + sapply( labels, 
 		function(s) strheight(s,units="inches") )
 	ppi.x <- dev.size("in")[1] / (max(coords$x)-min(coords$x))
 	ppi.y <- dev.size("in")[2] / (max(coords$y)-min(coords$y))
@@ -1111,10 +1116,8 @@ plot.dagitty <- function( x,
 	ylim <- c(-max(coords$y+wy/2),-min(coords$y-wy/2))
 	plot( NA, xlim=xlim, ylim=ylim, xlab="", ylab="", bty="n",
 		xaxt="n", yaxt="n" )
-	wx <- sapply( labels, 
-		function(s) strwidth(paste0("xx",s)) )
-	wy <- sapply( labels,
-		function(s) strheight(paste0("\n",s)) )
+	wx <- strwidth("xx") + sapply( labels, strwidth )
+	wy <- strheight("\n") + sapply( labels, strheight )
 	asp <- par("pin")[1]/diff(par("usr")[1:2]) /
 		(par("pin")[2]/diff(par("usr")[3:4]))
 	ex <- edges(x)
