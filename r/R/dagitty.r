@@ -1075,12 +1075,19 @@ graphLayout <- function( x, method="spring" ){
 #' @param abbreviate.names logical. Whether to abbreviate variable names.
 #' @param show.coefficients logical. Whether to plot coefficients defined in the graph syntax
 #'  on the edges.
+#' @param nodenames If not NULL, a named vector or expression list 
+#'  to rename the nodes.  
 #' @param ... not used.
+#' 
+#' @details If \code{nodenames} is not \code{NULL}, it should be a 
+#'  named vector of characters or expressions to use to rename (some of) 
+#'  the nodes, e.g. node \code{"X"} could be renamed using \code{expression(X = alpha^2)}.
 #'
 #' @export
 plot.dagitty <- function( x,
 	abbreviate.names=FALSE, 
 	show.coefficients=FALSE,
+	nodenames=NULL,
 	... ){	
 	x <- as.dagitty( x )
 	.supportsTypes(x,c("dag","mag","pdag"))
@@ -1095,14 +1102,25 @@ plot.dagitty <- function( x,
 	} else {
 		labels <- names(coords$x)
 	}
+	if(!is.null(nodenames)){
+	  names(labels) <- names(coords$x)
+	  if(is.null(names(nodenames)))
+	    stop("'nodenames' must be named")
+	  if(!all(names(nodenames) %in% names(labels)))
+	    stop("node(s) not found: ", 
+	         paste0("'", setdiff(names(nodenames), names(labels)), "'", 
+	               collapse = ","))
+	  labels[names(nodenames)] <- nodenames
+	  names(labels) <- names(coords$x) # If coerced to expression, names are lost
+	}
 	omar <- par("mar")
 	par(mar=rep(0,4))
 	plot.new()
 	par(new=TRUE)
-	wx <- sapply( paste0("mm",labels), 
-		function(s) strwidth(s,units="inches") )
-	wy <- sapply( paste0("\n",labels), 
-		function(s) strheight(s,units="inches") )
+	wx <- sapply( labels, 
+	              function(s) strwidth(s,units="inches") ) + strwidth("mm",units="inches")
+	wy <- sapply( labels, 
+	              function(s) strheight(s,units="inches") ) + strheight("\n")
 	ppi.x <- dev.size("in")[1] / (max(coords$x)-min(coords$x))
 	ppi.y <- dev.size("in")[2] / (max(coords$y)-min(coords$y))
 	wx <- wx/ppi.x
@@ -1111,10 +1129,8 @@ plot.dagitty <- function( x,
 	ylim <- c(-max(coords$y+wy/2),-min(coords$y-wy/2))
 	plot( NA, xlim=xlim, ylim=ylim, xlab="", ylab="", bty="n",
 		xaxt="n", yaxt="n" )
-	wx <- sapply( labels, 
-		function(s) strwidth(paste0("xx",s)) )
-	wy <- sapply( labels,
-		function(s) strheight(paste0("\n",s)) )
+	wx <- sapply( labels, strwidth ) + strwidth("xx") 
+	wy <- sapply( labels, strheight ) + strheight("\n")
 	asp <- par("pin")[1]/diff(par("usr")[1:2]) /
 		(par("pin")[2]/diff(par("usr")[3:4]))
 	ex <- edges(x)
