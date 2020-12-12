@@ -1104,16 +1104,23 @@ plot.dagitty <- function( x,
 	}
 	if(!is.null(nodenames)){
 	  names(labels) <- names(coords$x)
+	  if(is.null(names(nodenames)))
+	    stop("'nodenames' must be named")
+	  if(!all(names(nodenames) %in% names(labels)))
+	    stop("node(s) not found: ", 
+	         paste0("'", setdiff(names(nodenames), names(labels)), "'", 
+	               collapse = ","))
 	  labels[names(nodenames)] <- nodenames
+	  names(labels) <- names(coords$x) # If coerced to expression, names are lost
 	}
 	omar <- par("mar")
 	par(mar=rep(0,4))
 	plot.new()
 	par(new=TRUE)
-	wx <- strwidth("mm",units="inches") + sapply( labels, 
-		function(s) strwidth(s,units="inches") )
-	wy <- strheight("\n") + sapply( labels, 
-		function(s) strheight(s,units="inches") )
+	wx <- sapply( labels, 
+	              function(s) strwidth(s,units="inches") ) + strwidth("mm",units="inches")
+	wy <- sapply( labels, 
+	              function(s) strheight(s,units="inches") ) + strheight("\n")
 	ppi.x <- dev.size("in")[1] / (max(coords$x)-min(coords$x))
 	ppi.y <- dev.size("in")[2] / (max(coords$y)-min(coords$y))
 	wx <- wx/ppi.x
@@ -1123,9 +1130,7 @@ plot.dagitty <- function( x,
 	plot( NA, xlim=xlim, ylim=ylim, xlab="", ylab="", bty="n",
 		xaxt="n", yaxt="n" )
 	wx <- sapply( labels, strwidth ) + strwidth("xx") 
-	names(wx) <- names(coords$x)
 	wy <- sapply( labels, strheight ) + strheight("\n")
-	names(wy) <- names(coords$x)
 	asp <- par("pin")[1]/diff(par("usr")[1:2]) /
 		(par("pin")[2]/diff(par("usr")[3:4]))
 	ex <- edges(x)
