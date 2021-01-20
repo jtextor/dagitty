@@ -1075,13 +1075,19 @@ graphLayout <- function( x, method="spring" ){
 #' @param abbreviate.names logical. Whether to abbreviate variable names.
 #' @param show.coefficients logical. Whether to plot coefficients defined in the graph syntax
 #'  on the edges.
+#' @param adjust.coefficients numerical. Adjustment for coefficient labels; the distance between 
+#'  the edge labels and the midpoint of the edge can be controlled using this paramer. 
+#'  Can also be a vector of 2 numbers for separate horizontal and vertical adjustment. NA means
+#'  no adjustment (default).
 #' @param ... not used.
 #'
 #' @export
 plot.dagitty <- function( x,
 	abbreviate.names=FALSE, 
 	show.coefficients=FALSE,
-	... ){	
+	adjust.coefficients=NA,
+	... ){
+	parms <- list(...)	
 	x <- as.dagitty( x )
 	.supportsTypes(x,c("dag","mag","pdag"))
 	coords <- coordinates( x )
@@ -1107,8 +1113,18 @@ plot.dagitty <- function( x,
 	ppi.y <- dev.size("in")[2] / (max(coords$y)-min(coords$y))
 	wx <- wx/ppi.x
 	wy <- wy/ppi.y
-	xlim <- c(min(coords$x-wx/2),max(coords$x+wx/2))
-	ylim <- c(-max(coords$y+wy/2),-min(coords$y-wy/2))
+	if( 'xlim' %in% names(parms) ){
+		xlim <- parms$xlim
+	} else {
+		xlim <- c(min(coords$x-wx/2),max(coords$x+wx/2))
+	}
+
+	if( 'ylim' %in% names(parms) ){
+		ylim <- parms$ylim
+	} else {
+		ylim <- c(-max(coords$y+wy/2),-min(coords$y-wy/2))
+	}
+
 	plot( NA, xlim=xlim, ylim=ylim, xlab="", ylab="", bty="n",
 		xaxt="n", yaxt="n" )
 	wx <- sapply( labels, 
@@ -1180,7 +1196,11 @@ plot.dagitty <- function( x,
 		aym <- (ay1+ay2)/2
 		axm[ic] <- axc[ic]
 		aym[ic] <- ayc[ic]
-		text( axm, -aym, as.character(ex$a)) #, adj=0.5*c(sign(ax1-ax2),sign(ay1-ay2)) )
+		if( length(adjust.coefficients)==1 ){
+			text( axm, -aym, as.character(ex$a), adj=adjust.coefficients*c(sign(ax1-ax2),sign(ay1-ay2)) )
+		} else if( length(adjust.coefficients)==2 ){
+			text( axm, -aym, as.character(ex$a), adj=adjust.coefficients )		
+		}
 	}
 	text( coords$x, -coords$y, labels )
 	par(mar=omar)
@@ -2139,7 +2159,8 @@ ciTest <- function(X,Y,Z=NULL,data,...){
 plotLocalTestResults <- function(x,xlab="test statistic (95% CI)",
 	xlim=range(x[,c(ncol(x)-1,ncol(x))]),sort.by.statistic=TRUE,
 	n=Inf,axis.pars=list(las=1), auto.margin=TRUE, ...){
-	x <- x[order(abs(x[1]),decreasing=TRUE),]
+	# Sort by first column, which is expected to contain a test statistic.
+	x <- x[order(abs(x[[1]]),decreasing=TRUE),]
 	if( is.finite(n) && n > 0 && n < nrow(x) ){
 		x <- x[1:n,]
 	}

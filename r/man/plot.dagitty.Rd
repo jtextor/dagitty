@@ -4,8 +4,13 @@
 \alias{plot.dagitty}
 \title{Plot Graph}
 \usage{
-\method{plot}{dagitty}(x, abbreviate.names = FALSE,
-  show.coefficients = FALSE, ...)
+\method{plot}{dagitty}(
+  x,
+  abbreviate.names = FALSE,
+  show.coefficients = FALSE,
+  adjust.coefficients = NA,
+  ...
+)
 }
 \arguments{
 \item{x}{the input graph, a DAG, MAG, or PDAG.}
@@ -14,6 +19,11 @@
 
 \item{show.coefficients}{logical. Whether to plot coefficients defined in the graph syntax
 on the edges.}
+
+\item{adjust.coefficients}{numerical. Adjustment for coefficient labels; the distance between 
+the edge labels and the midpoint of the edge can be controlled using this paramer. 
+Can also be a vector of 2 numbers for separate horizontal and vertical adjustment. NA means
+no adjustment (default).}
 
 \item{...}{not used.}
 }

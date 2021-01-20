@@ -4,8 +4,12 @@
 \alias{adjustmentSets}
 \title{Covariate Adjustment Sets}
 \usage{
-adjustmentSets(x, exposure = NULL, outcome = NULL,
-  type = c("minimal", "canonical", "all"), effect = c("total", "direct"),
+adjustmentSets(
+  x,
+  exposure = NULL,
+  outcome = NULL,
+  type = c("minimal", "canonical", "all"),
+  effect = c("total", "direct"),
   max.results = Inf
 )
 }

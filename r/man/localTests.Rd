@@ -5,11 +5,20 @@
 \alias{ciTest}
 \title{Test Graph against Data}
 \usage{
-localTests(x = NULL, data = NULL, type = c("cis", "cis.loess",
-  "cis.chisq", "tetrads", "tetrads.within", "tetrads.between",
-  "tetrads.epistemic"), tests = NULL, sample.cov = NULL,
-  sample.nobs = NULL, conf.level = 0.95, R = NULL,
-  max.conditioning.variables = NULL, tol = NULL, loess.pars = NULL)
+localTests(
+  x = NULL,
+  data = NULL,
+  type = c("cis", "cis.loess", "cis.chisq", "tetrads", "tetrads.within",
+    "tetrads.between", "tetrads.epistemic"),
+  tests = NULL,
+  sample.cov = NULL,
+  sample.nobs = NULL,
+  conf.level = 0.95,
+  R = NULL,
+  max.conditioning.variables = NULL,
+  tol = NULL,
+  loess.pars = NULL
+)
 
 ciTest(X, Y, Z = NULL, data, ...)
 }
