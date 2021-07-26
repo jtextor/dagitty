@@ -33,7 +33,8 @@ Imports:
 Suggests:
     knitr,
     base64enc (>= 0.1-3),
-    lavaan,
     testthat,
-    markdown
+    markdown,
+	rmarkdown,
+	lavaan
 RoxygenNote: 7.1.1
