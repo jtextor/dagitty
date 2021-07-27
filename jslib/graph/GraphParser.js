@@ -20,11 +20,6 @@
 
 var GraphParser = {
 	VALIDATE_GRAPH_STRUCTURE : false,
-	/**
-		This is work in progress ... not safe to use yet.
-		For the time being, edge statements are assumed to come line 
-		by line.
-	*/
 	
 	parseDot : function( code ){
 		"use strict"
@@ -112,6 +107,10 @@ var GraphParser = {
 					case "adjusted":
 					case "a":
 						g.addAdjustedNode( n )
+						break
+					case "selected":
+					case "s":
+						g.addSelectedNode( n )
 						break
 					case "pos":
 						pos = parse_position( s.attributes[i][1] )
@@ -357,12 +356,18 @@ var GraphParser = {
 		if( adjacencyListOrMatrix.match( /^[\s01]+$/ ) !== null ){
 			return this.parseAdjacencyMatrix( adjacencyListOrMatrix, vertexLabelsAndWeights )
 		} else {
-			// [\s\S] is like . but also matches newline!
-			var isdot = firstarg.trim().match(  /^(digraph|graph|dag|pdag|mag|pag)(\s+\w+)?\s*\{([\s\S]*)\}$/mi )
+			// [\s\S] is like . but also matches newline
+			var isdot = firstarg.match(  /^(digraph|graph|dag|pdag|mag|pag)(\s+\w+)?\s*\{([\s\S]*)\}$/mi )
 			if( isdot && isdot.length > 1 ){
 				return this.parseDot( firstarg )
 			} else {
-				return this.parseAdjacencyList( adjacencyListOrMatrix, vertexLabelsAndWeights )
+				var hasarrow = firstarg.match( /(->|<->|<-)/mi )
+				// allow users to omit explicit "dag{ ... }" if at least one arrow is also specified
+				if( hasarrow  && hasarrow.length >= 1  ){
+					return this.parseDot( "dag{"+firstarg+"}" )
+				} else {
+					return this.parseAdjacencyList( adjacencyListOrMatrix, vertexLabelsAndWeights )
+				}
 			}
 		}
 	}

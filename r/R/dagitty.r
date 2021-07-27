@@ -534,9 +534,9 @@ toMAG <- function( x ){
 #' or a new v-structure (a sugraph a -> m <- b, where a and b are not adjacent).
 #' 
 #' \code{equivalentDAGs(x,n)} enumerates at most \code{n} DAGs that are Markov equivalent
-#' to \code{x}.
+#' to the input DAG or CPDAG \code{x}.
 #'
-#' @param x the input graph, a DAG.
+#' @param x the input graph, a DAG (or CPDAG for \code{equivalentDAGs}).
 #' @param n maximal number of returned graphs.
 #' @name EquivalentModels
 #' @examples
@@ -562,7 +562,7 @@ equivalenceClass <- function( x ){
 #' @export
 equivalentDAGs <- function( x, n=100 ){
 	x <- as.dagitty(x)
-	.supportsTypes( x, "dag" )
+	.supportsTypes( x, c("dag","pdag") )
 	xv <- .getJSVar()
 	r <- NULL
 	tryCatch({
@@ -1011,8 +1011,15 @@ canonicalize <- function( x ){
 #' ## Which kinds of edges are used in the Shrier example?
 #' levels( edges( getExample("Shrier") )$e )
 #' @export 
-edges <- function( x ){
-	x <- as.dagitty( x )
+edges <- function( x ) UseMethod("edges")
+
+#' @export
+edges.character <- function( x ){
+	edges( dagitty( x ) )
+}
+
+#' @export
+edges.dagitty <- function( x ){
 	xv <- .getJSVar()
 	tryCatch({
 		.jsassigngraph( xv, x )
@@ -1699,9 +1706,8 @@ lavaanToGraph <- function( x, digits=3, ... ){
 
 #' @export
 toString.dagitty <- function( x, format="dagitty", ... ){
-	x <- as.dagitty( x )
 	format <- match.arg( format, 
-		c("dagitty","tikz","lavaan","dagitty.old","bnlearn","singular") )
+		c("dagitty","tikz","lavaan","dagitty.old","bnlearn","edgelist","singular") )
 	r <- NULL
 	if( format == "dagitty" ){
 		r <- as.character( x )
@@ -1714,7 +1720,13 @@ toString.dagitty <- function( x, format="dagitty", ... ){
 		}, error=function(e){
 			stop( e )
 		},finally={.deleteJSVar(xv)})
-	} else if( format %in% c("lavaan","tikz","bnlearn","singular") ){
+	} else if( format %in% c("lavaan","tikz","singular","edgelist","bnlearn") ){
+		if( format %in% c("bnlearn","edgelist") ){
+			.supportsTypes( x, "dag" )
+			if( any( edges(x)[,"e"] == "<->" ) ){
+				stop( paste0("Bidirected edges not supported in ",format,"!" ) )
+			}
+		} 
 		xv <- .getJSVar()
 		tryCatch({
 			.jsassign( xv, as.character(x) )
@@ -1728,6 +1740,55 @@ toString.dagitty <- function( x, format="dagitty", ... ){
 	}
 	r
 } 
+
+
+#' Convert from DAGitty object to other graph types
+#'
+#' Converts its argument from a DAGitty object (or character string describing it)
+#' to another package's format, if possible.
+#'
+#' @param x a \code{dagitty} object or a character string.
+#' @param to destination format, currently one of "dagitty", "tikz", "lavaan", "bnlearn", or "causaleffect".
+#' @param ... further arguments passed on to methods (currently unused)
+#' @export
+convert <- function( x, to, ... ) UseMethod("convert")
+
+#' @export
+convert.character <- function( x, to, ... ){
+	convert( dagitty( x ), to, ... )
+}
+
+#' @export
+convert.dagitty <- function( x, to, ... ){
+	to <- match.arg( to, 
+		c("dagitty","tikz","lavaan","dagitty.old","bnlearn","singular","causaleffect","edgelist") )
+	if( to %in% c("dagitty","tikz","lavaan","dagitty.old","bnlearn","singular","edgelist") ){
+		return( toString( x, to ) )
+	}
+	if( to == "causaleffect" ){
+		.supportsTypes( x, "dag" )
+		if( !requireNamespace( "igraph", quietly=TRUE ) ){
+			stop("This function requires the package 'igraph'!")
+		}
+		ge <- edges( x )
+		ee <- character()
+		i.bidirected <- c()
+		for( i in seq_len( nrow(ge) ) ){
+			if( ge[i,"e"] == "->" ){
+				ee <- c( ee, ge[i,"v"], ge[i,"w"] )
+			} else if( ge[i,"e"] == "<->" ){
+				i.bidirected <- c(i.bidirected, length(ee)/2+1,length(ee)/2+2)
+				ee <- c( ee, ge[i,"v"], ge[i,"w"], ge[i,"w"], ge[i,"v"] )
+			}
+		}
+		g <- igraph::make_graph( ee, directed=TRUE, isolates=setdiff( names(x), ee ) )
+		if( length(i.bidirected) > 0 ){
+			g <- igraph::set.edge.attribute( g, "description", i.bidirected, "U" )
+		}
+		return( g )
+	}
+	NULL
+}
 
 #' Parse DAGitty Graph
 #'
@@ -2457,6 +2518,29 @@ as.dagitty <- function( x, ... ) UseMethod("as.dagitty")
 
 #' @export
 as.dagitty.character <- function( x, ... ) dagitty( x )
+
+#' @export
+as.dagitty.bn <- function( x, ... ){
+	nodes <- names( x$nodes )
+	ee <- c()
+	if( nrow(x$arcs) > 0 ){
+		ee <- apply(x$arcs, 1, function(a) {
+			if( nrow(merge(data.frame(from=a[2],to=a[1]),x$arcs))>0 ){
+				if( a[1] < a[2] ){
+					paste(a[1],"--",a[2])
+				} else { 
+					""
+				}
+			} else {
+				paste(a[1],"->",a[2])
+			}
+		})
+	}
+	dagitty(paste("pdag{ " , 
+		paste(nodes, collapse="\n"), 
+		paste(ee, collapse="\n"), 
+		" }"))
+}
 
 #' @export
 as.dagitty.default <- function( x, ... ){

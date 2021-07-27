@@ -133,7 +133,7 @@ var Graph = Class.extend({
 	// additional getter and setter methods for these properties are mixed in below,
 	// see code after definition of this class 
 	managed_vertex_property_names : ["source","target","adjustedNode",
-		"latentNode","selectionNode"],
+		"latentNode","selectedNode"],
 	init : function(){
 		this.vertices = new Hash()
 		this.edges = []
@@ -1978,7 +1978,7 @@ var GraphAnalyzer = {
 		var de_y = g_bd.descendantsOf( [g_bd.getVertex(y)] )
 		for( i = 0 ; i < vv.length ; i ++ ){
 			var z = vv[i]
-			if( !g.isLatentNode( z ) && !g.isSelectionNode( z ) ){
+			if( !g.isLatentNode( z ) && !g.isSelectedNode( z ) ){
 				W = GraphAnalyzer.ancestralInstrument( g, x, y, z, g_bd, de_y )
 				if( W !== false ){
 					r.push( [z,W] )
@@ -2811,11 +2811,6 @@ GraphLayouter.Spring.prototype = {
 
 var GraphParser = {
 	VALIDATE_GRAPH_STRUCTURE : false,
-	/**
-		This is work in progress ... not safe to use yet.
-		For the time being, edge statements are assumed to come line 
-		by line.
-	*/
 	
 	parseDot : function( code ){
 		"use strict"
@@ -2903,6 +2898,10 @@ var GraphParser = {
 					case "adjusted":
 					case "a":
 						g.addAdjustedNode( n )
+						break
+					case "selected":
+					case "s":
+						g.addSelectedNode( n )
 						break
 					case "pos":
 						pos = parse_position( s.attributes[i][1] )
@@ -3148,12 +3147,18 @@ var GraphParser = {
 		if( adjacencyListOrMatrix.match( /^[\s01]+$/ ) !== null ){
 			return this.parseAdjacencyMatrix( adjacencyListOrMatrix, vertexLabelsAndWeights )
 		} else {
-			// [\s\S] is like . but also matches newline!
-			var isdot = firstarg.trim().match(  /^(digraph|graph|dag|pdag|mag|pag)(\s+\w+)?\s*\{([\s\S]*)\}$/mi )
+			// [\s\S] is like . but also matches newline
+			var isdot = firstarg.match(  /^(digraph|graph|dag|pdag|mag|pag)(\s+\w+)?\s*\{([\s\S]*)\}$/mi )
 			if( isdot && isdot.length > 1 ){
 				return this.parseDot( firstarg )
 			} else {
-				return this.parseAdjacencyList( adjacencyListOrMatrix, vertexLabelsAndWeights )
+				var hasarrow = firstarg.match( /(->|<->|<-|--)/mi )
+				// allow users to omit explicit "dag{ ... }" if at least one arrow is also specified
+				if( hasarrow  && hasarrow.length >= 1  ){
+					return this.parseDot( "dag{"+firstarg+"}" )
+				} else {
+					return this.parseAdjacencyList( adjacencyListOrMatrix, vertexLabelsAndWeights )
+				}
 			}
 		}
 	}
@@ -3326,7 +3331,7 @@ var GraphTransformer = {
 			V = g.getSources().
 			concat(g.getTargets()).
 			concat(g.getAdjustedNodes()).
-			concat(g.getSelectionNodes())
+			concat(g.getSelectedNodes())
 		}
 		var g_an = this.inducedSubgraph( g, g.anteriorsOf( V ) )
 		return g_an
@@ -3722,7 +3727,7 @@ var GraphTransformer = {
 			case Graph.Edgetype.Undirected:
 				while( rg.getVertex( "S"+i ) ){ i ++ }
 				v = new Graph.Vertex({id:"S"+i})
-				rg.addVertex( v ); rg.addSelectionNode( v )
+				rg.addVertex( v ); rg.addSelectedNode( v )
 				rg.addEdge(e.v2,v)
 				rg.addEdge(e.v1,v)
 				S.push(v)
@@ -4474,7 +4479,7 @@ var GraphSerializer = {
 			g.isTarget(v) && properties.push("outcome")
 			g.isAdjustedNode(v) && properties.push("adjusted")
 			g.isLatentNode(v) && properties.push("latent")
-			g.isSelectionNode(v) && properties.push("selected")
+			g.isSelectedNode(v) && properties.push("selected")
 			if( typeof v.layout_pos_x!== "undefined"  ){
 				properties.push( "pos=\"" + 
 					v.layout_pos_x.toFixed(3) + "," + 
@@ -4678,6 +4683,18 @@ var GraphSerializer = {
 			}
 		}
 		return r
+	},
+
+	toEdgelist : function( g ){
+		var ee = g.getEdges(), r = []
+		_.each( ee, function(e){
+			r.push( "('" + 
+					e.v1.id.replace( /'/g, "\\'" ) +
+					"','" + 
+					e.v2.id.replace( /'/g, "\\'" ) +
+			"')" ) 
+		} )
+		return "["+r.join(",")+"]"
 	},
 
 	toBnlearn : function( g ){

@@ -45,8 +45,8 @@ by an edge \eqn{v} -> \eqn{w}.
 \code{parents(x,v)} finds all variables \code{w} connected to \code{v} 
 by an edge \eqn{w} -> \eqn{v}.
 
-\code{markovBlanket(x,v}) returns \code{v}'s parents, its children, and all other
-parents of its children in \code{x}. The Markov blanket always renders \code{v} independent
+\code{markovBlanket(x,v}) returns \code{x}'s parents, its children, and all other
+parents of its children. The Markov blanket always renders \code{x} independent
 of all other nodes in the graph.
 
 By convention, \code{descendants(x,v)} and \code{ancestors(x,v)} include 

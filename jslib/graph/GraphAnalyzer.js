@@ -998,7 +998,7 @@ var GraphAnalyzer = {
 		var de_y = g_bd.descendantsOf( [g_bd.getVertex(y)] )
 		for( i = 0 ; i < vv.length ; i ++ ){
 			var z = vv[i]
-			if( !g.isLatentNode( z ) && !g.isSelectionNode( z ) ){
+			if( !g.isLatentNode( z ) && !g.isSelectedNode( z ) ){
 				W = GraphAnalyzer.ancestralInstrument( g, x, y, z, g_bd, de_y )
 				if( W !== false ){
 					r.push( [z,W] )

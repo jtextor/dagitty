@@ -1,3 +1,10 @@
+dagitty v.0.3-2
+==============
+Changes:
+ * New export options for the causal.effect package and for Python-style edge lists
+ * DAGs can now be specified without the enclosing "dag { ... }" if the specification 
+   contains at least one directed or bi-directed arrow.
+
 dagitty v0.3 (Release date: 2020-06-11)
 ==============
 Changes:

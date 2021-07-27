@@ -20,7 +20,7 @@ var GraphSerializer = {
 			g.isTarget(v) && properties.push("outcome")
 			g.isAdjustedNode(v) && properties.push("adjusted")
 			g.isLatentNode(v) && properties.push("latent")
-			g.isSelectionNode(v) && properties.push("selected")
+			g.isSelectedNode(v) && properties.push("selected")
 			if( typeof v.layout_pos_x!== "undefined"  ){
 				properties.push( "pos=\"" + 
 					v.layout_pos_x.toFixed(3) + "," + 
@@ -224,6 +224,18 @@ var GraphSerializer = {
 			}
 		}
 		return r
+	},
+
+	toEdgelist : function( g ){
+		var ee = g.getEdges(), r = []
+		_.each( ee, function(e){
+			r.push( "('" + 
+					e.v1.id.replace( /'/g, "\\'" ) +
+					"','" + 
+					e.v2.id.replace( /'/g, "\\'" ) +
+			"')" ) 
+		} )
+		return "["+r.join(",")+"]"
 	},
 
 	toBnlearn : function( g ){

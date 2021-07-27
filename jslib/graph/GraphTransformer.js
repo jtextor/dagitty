@@ -166,7 +166,7 @@ var GraphTransformer = {
 			V = g.getSources().
 			concat(g.getTargets()).
 			concat(g.getAdjustedNodes()).
-			concat(g.getSelectionNodes())
+			concat(g.getSelectedNodes())
 		}
 		var g_an = this.inducedSubgraph( g, g.anteriorsOf( V ) )
 		return g_an
@@ -562,7 +562,7 @@ var GraphTransformer = {
 			case Graph.Edgetype.Undirected:
 				while( rg.getVertex( "S"+i ) ){ i ++ }
 				v = new Graph.Vertex({id:"S"+i})
-				rg.addVertex( v ); rg.addSelectionNode( v )
+				rg.addVertex( v ); rg.addSelectedNode( v )
 				rg.addEdge(e.v2,v)
 				rg.addEdge(e.v1,v)
 				S.push(v)

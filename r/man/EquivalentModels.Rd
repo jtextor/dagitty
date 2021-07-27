@@ -11,7 +11,7 @@ equivalenceClass(x)
 equivalentDAGs(x, n = 100)
 }
 \arguments{
-\item{x}{the input graph, a DAG.}
+\item{x}{the input graph, a DAG (or CPDAG for \code{equivalentDAGs}).}
 
 \item{n}{maximal number of returned graphs.}
 }
@@ -24,7 +24,7 @@ or a new v-structure (a sugraph a -> m <- b, where a and b are not adjacent).
 }
 \details{
 \code{equivalentDAGs(x,n)} enumerates at most \code{n} DAGs that are Markov equivalent
-to \code{x}.
+to the input DAG or CPDAG \code{x}.
 }
 \examples{
 # How many equivalent DAGs are there for the sports DAG example?
