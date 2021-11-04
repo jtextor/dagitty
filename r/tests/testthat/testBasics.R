@@ -63,6 +63,12 @@ test_that("path tracing", {
 
 })
 
+
+test_that( "cycles", {
+	expect_equal( findCycle( coll ), list() )
+	expect_equal( findCycle( "dag{ a -> b -> a }" ), c("a","b","a") )
+} )
+
 test_that("ci tests", {
 	expect_equal( nrow(localTests( coll, simulateSEM(coll), type="cis" )), 1 )
 	expect_equal( nrow(localTests( coll, sample.cov=cov(simulateSEM(coll,N=500)), 

@@ -1404,11 +1404,13 @@ isAdjustmentSet <- function( x, Z, exposure=NULL, outcome=NULL ){
 
 #' Test for Cycles
 #'
-#' Returns \code{TRUE} if the given graph does not contain a directed cycle.
+#' \code{isAcyclic(x)} returns \code{TRUE} if the given graph does not contain a directed cycle.
+#'
+#' \code{findCycle(x)} will try to find at least one cycle in x and return it as a list of node names.
 #'
 #' @param x the input graph, of any graph type.
 #'
-#' @details This function will only consider simple directed edges in the
+#' @details These functions will only consider simple directed edges in the
 #' given graph.
 #'
 #' @examples
@@ -1429,6 +1431,44 @@ isAcyclic <- function( x ){
 	},finally={
 		.deleteJSVar(xv)
 	})
+	r
+}
+
+#' @rdname isAcyclic
+#' @export
+findCycle <- function( x ){
+	x <- as.dagitty( x )
+	xv <- .getJSVar()
+	xv2 <- .getJSVar()
+	xv3 <- .getJSVar()
+	tryCatch({
+		.jsassigngraph( xv, x )
+		vv <- names( x )
+		.jseval( paste0("var cycle = ''; var cc = '';
+				for( ",xv2," of ",xv,".getVertices() ){
+					",xv,".clearVisited();
+					",xv3," = GraphAnalyzer.searchCycleFrom(",xv2,")
+					if( typeof ",xv3," != 'undefined' ){
+						break
+					}
+				}
+				if( typeof ",xv3," == 'undefined' ){
+					",xv," = []
+				} else {
+					",xv," = ",xv3,"
+				}
+			") )
+		r <- .jsget(xv)
+	},finally={
+		.deleteJSVar(xv); .deleteJSVar(xv2); .deleteJSVar(xv3)
+	})
+	if( length(r) > 0 ){
+		for( vi in seq_along(r) ){
+			if( sum( r == r[vi] ) > 1 ){
+				r <- r[vi:length(r)]; break
+			}
+		}
+	}
 	r
 }
 

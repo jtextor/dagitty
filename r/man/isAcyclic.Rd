@@ -2,18 +2,23 @@
 % Please edit documentation in R/dagitty.r
 \name{isAcyclic}
 \alias{isAcyclic}
+\alias{findCycle}
 \title{Test for Cycles}
 \usage{
 isAcyclic(x)
+
+findCycle(x)
 }
 \arguments{
 \item{x}{the input graph, of any graph type.}
 }
 \description{
-Returns \code{TRUE} if the given graph does not contain a directed cycle.
+\code{isAcyclic(x)} returns \code{TRUE} if the given graph does not contain a directed cycle.
 }
 \details{
-This function will only consider simple directed edges in the
+\code{findCycle(x)} will try to find at least one cycle in x and return it as a list of node names.
+
+These functions will only consider simple directed edges in the
 given graph.
 }
 \examples{
