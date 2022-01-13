@@ -219,6 +219,8 @@ function causalEffectEstimates(){
 			displayAdjustmentInfo("direct"); break
 		case "instrument" :
 			displayInstrumentInfo(); break
+		case "treeid" :
+			displayTreeIDInfo(); break
 	}
 }
 
@@ -332,6 +334,82 @@ function displayInstrumentInfo(){
 	}
 	document.getElementById("causal_effect").innerHTML = "<p>Instruments and conditional instruments:</p>"
 		+ ivsToHtml( ivs )
+}
+
+function getVertexParent(v){
+  var pa = Model.dag.getVertex(v).getParents()
+  if (pa.length != 1) return "(invalid parents)";
+  return pa[0].id
+}
+function showTreeFASTP(id) {
+  var q = getVertexParent(id)
+  var res = window.lastTreeIDResults.results[id][0]
+  var msg =  "The effect λ"+q+id+" of "+q + " on "+id+" is given by: \n"
+  if (res.propagate) {
+    var j = id
+    var i = res.propagate
+    var p = getVertexParent(i)
+    msg += "( λ"+p+i+" σ"+p+j + " - σ"+i+j+ " ) / ( λ"+p+i+" σ"+p+q + " - σ" + i + q+")\n"
+/*          //return ( r*σ2+(p)*σ1  + s*(t*σ2+q*σ1) )/((r)*σ4+(p)*σ3+s*(t*σ4+q*σ3))
+          console.log("p: "+p)
+          console.log(j)
+          console.log(sigma[p][j])
+          var si1 = sigma[p][j]
+          var si2 = sigma[i][j].negate()
+          var si3 = sigma[p][q]
+          var si4 = sigma[i][q].negate()*/
+     msg += "\n which is equivalent to \n"
+  }
+  msg += res.fastp.join("\n\nOR\n")
+  alert(msg)
+}
+function treeIDResultsToHtml( tid ){
+  window.lastTreeIDResults = tid
+  function resultsToHtmlForKID(kID){
+    var r = "";
+    _.each(tid.results, function edgeIdToHtml(v, k){
+      if (v[0].fastp.length != kID) return
+      console.log(v[0])
+      if (v[0].fastp) {
+        r += "<li>Effect of "+getVertexParent(k)+" on " + k + ":<br><a href='javascript:showTreeFASTP( \""+k+"\")'>"
+        if (v[0].instrument) {
+          r += "instrumental variable " + v[0].instrument
+        }
+        if (v[0].propagate) {
+          r += "propagate from " + v[0].propagate
+        }
+        if (v[0].missingCycles) {
+          if (v[0].missingCycles.length == 1)
+            r += "missing cycle " + v[0].missingCycles[0].join(", ")
+          else
+            r += "missing cycles " + _.map(v[0].missingCycles, function(c){return c.join(", ")}).join(" and ")
+        }
+        r += "</a></li>"
+      }
+    })
+    return r
+  }
+  
+  var temp = resultsToHtmlForKID(1)
+  var r = ""
+  if (temp) r += "<p>Identifiable edges:</p><ul>" + temp + "</ul>"
+  var temp = resultsToHtmlForKID(2)
+  if (temp) r += "<p><font color='red'>≤ 2-Identifiable</font> edges:</p><ul>" + temp + "</ul>"
+  return r
+}
+
+function displayTreeIDInfo(){
+	if( Model.dag.getSources().length != 0 || 
+		Model.dag.getTargets().length != 0 ){
+		document.getElementById("causal_effect").innerHTML = "<p>Do not mark exposure and outcome nodes for TreeID. TreeID tests for <emph>each</emph> node whether it and its parent are identifiable as outcome and exposure nodes. </p>"
+		//return
+	}
+	var tid = GraphAnalyzer.treeID( Model.dag )
+	if( tid === false ){
+		document.getElementById("causal_effect").innerHTML = "<p>TreeID is not supported for this kind of DAG. It requires a tree graph.</p>"
+		return
+	}
+	document.getElementById("causal_effect").innerHTML = treeIDResultsToHtml( tid )
 }
 
 function displayImplicationInfo( full ){
