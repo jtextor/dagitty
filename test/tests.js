@@ -12,6 +12,9 @@ QUnit.test( "multivariate polynomials", function( assert ) {
   assert.equal(MPoly("-2"), "-2")
   assert.equal(MPoly("1.234E8"), "123400000")
   assert.equal(MPoly("-1.234e8"), "-123400000")
+  assert.equal(MPoly("a"), "a")
+  assert.equal(MPoly("b"), "b")
+  assert.equal(MPoly("abc123"), "abc123")
   assert.equal(MPoly("x"), "x")
   assert.equal(MPoly("x^2"), "x^2")
   assert.equal(MPoly("x^2 y^3"), "x^2 y^3")
@@ -76,6 +79,7 @@ QUnit.test( "multivariate polynomials", function( assert ) {
   assert.equal(MPoly("x").sub(MPoly("x + y")).isZero(), false)
 
 
+  assert.equal(MPoly("0").eval({"x": MPoly("7")}), "0")
   assert.equal(MPoly("x").eval({"x": MPoly("7")}), "7")
   assert.equal(MPoly("x").eval({"x": MPoly("y")}), "y")
   assert.equal(MPoly("x").eval({"x": MPoly("x + y")}), "x + y")
@@ -92,6 +96,16 @@ QUnit.test( "multivariate polynomials", function( assert ) {
   assert.equal(MPoly("x^3").eval({"x": MPoly("2 x + 10 y")}), "600 x y^2 + 120 x^2 y + 8 x^3 + 1000 y^3")
   assert.equal(MPoly("x^4").eval({"x": MPoly("x + y")}), "4 x y^3 + 6 x^2 y^2 + 4 x^3 y + x^4 + y^4")
   assert.equal(MPoly("x^4").eval({"x": MPoly("2 x + 10 y")}), "8000 x y^3 + 2400 x^2 y^2 + 320 x^3 y + 16 x^4 + 10000 y^4")
+
+
+  assert.equal(MPoly("0").evalNumeric({"x": 7}), 0)
+  assert.equal(MPoly("123").evalNumeric({"x": 7}), 123)
+  assert.equal(MPoly("x").evalNumeric({"x": 7}), 7)
+  assert.equal(MPoly("x^2").evalNumeric({"x": 7}), 49)
+  assert.equal(MPoly("x y").evalNumeric({"x": 7, "y": 3}), 21)
+  assert.equal(MPoly("x y + z + a").evalNumeric({"x": 7, "y": 2, "z": 1000, "a": 200}), 1214)
+  assert.equal(MPoly("x^3").evalNumeric({"x": 3}), 27)
+  assert.equal(MPoly("x^4").evalNumeric({"x": 3}), 81)
 })
 
 

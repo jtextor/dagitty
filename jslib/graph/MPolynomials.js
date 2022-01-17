@@ -86,7 +86,7 @@ MPoly.prototype.toString = function(formatting){
   formatting = formatting ? formatting : {}
   var PLUS = "PLUS" in formatting ? formatting.PLUS : " + "
   var SUB = "SUB" in formatting ? formatting.SUB : " - "
-  var TIMES = "TIMES" in formatting ? formatting.TIMES : "*"
+  var TIMES = "TIMES" in formatting ? formatting.TIMES : " "
   var POWER = "POWER" in formatting ? formatting.POWER : "^"
   if (this.length == 0) return "0"
   return this.map(function(term, i){
@@ -102,7 +102,7 @@ MPoly.prototype.toString = function(formatting){
       temp.push(factor.toString())
     for (var i=1; i < term.length; i+=2) {
       var exp = term[i+1] == 1 ? "" : POWER + term[i+1]
-      temp.push(term[i] + exp)
+      temp.push(MPolyHelper.variableToString(term[i]) + exp)
     }
     return add + temp.join(TIMES)
   }).join("")
@@ -113,25 +113,98 @@ MPoly.prototype.slice = function (from, to){
   return res
 }
 MPoly.prototype.eval = function(insert){
-  var newsum = []
+  var replacements
+  if (_.isArray(insert)) replacements = insert
+  else {
+    var replacements = new Array(MPolyHelper.variableCount + 1)
+    for (p in insert) 
+      replacements[MPolyHelper.variableFromString(p, true)] = insert[p]
+  }
+
+  var newsum = null
+  for (var i=0;i<this.length;i++) {
+    var old = this[i]
+    var kept = new Array(old.length) 
+    kept[0] = old[0]
+    var keptlength = 1
+    var newproduct = null 
+    for (var j=1;j<old.length;j+=2) {
+      if (old[j] in replacements) {
+        var replacement = replacements[old[j]]
+        for (var k=0;k<old[j+1];k++) {
+          if (newproduct !== null) newproduct = newproduct.mul(replacement)
+          else newproduct = replacement
+        }
+      } else {
+        kept[keptlength] = old[j]
+        kept[keptlength+1] = old[j+1]
+        keptlength+=2
+      }
+    }
+    if (keptlength != kept.length) kept = kept.slice(0, keptlength)
+    var keptpoly = MPoly([kept])
+    if (newproduct !== null) newproduct = newproduct.mul(keptpoly)
+    else newproduct = keptpoly
+    if (newsum !== null) newsum = newsum.add(newproduct)
+    else newsum = newproduct
+//    console.log(newsum)
+  }
+  if (newsum === null) newsum = MPoly.zero
+  return newsum
+}
+MPoly.prototype.evalNumeric = function(insert, options){
+  var replacements
+  if (_.isArray(insert)) replacements = insert
+  else {
+    var replacements = new Array(MPolyHelper.variableCount + 1)
+    for (p in insert) 
+      replacements[MPolyHelper.variableFromString(p, true)] = insert[p]
+  }
+  if (!options) options = {}
+  var MUL = "mul" in options ? options.mul : function(x,y){return x*y}
+  var ADD = "add" in options ? options.add : function(x,y){return x+y}
+
+  var newsum = 0
+  for (var i=0;i<this.length;i++) {
+    var old = this[i]
+    var newproduct = old[0]
+    for (var j=1;j<old.length;j+=2) {
+      if (old[j] in replacements) {
+        var replacement = replacements[old[j]]
+        for (var k=0;k<old[j+1];k++) 
+          newproduct = MUL(newproduct, replacement)
+      } else throw "No value given for " + MPolyHelper.variableToString(old[j])
+    }
+    newsum = ADD(newsum, newproduct)
+//    console.log(newsum)
+  }
+  return newsum
+}
+/*MPoly.prototype.evalCustom = function(insert, options){
+  var zero = "zero" in options ? options.zero : MPoly.zero
+  var one = "one" in options ? options.one : MPoly.one
+  var mul = "mul" in options ? options.mul : MPoly.mul
+  var add = "add" in options ? options.add : MPoly.add
+  var newsum = zero
   for (var i=0;i<this.length;i++) {
     var old = this[i]
     var kept = [old[0]]
-    var newproduct = []
+    var newproduct = 1
     for (var j=1;j<old.length;j+=2) {
-      if (old[j] in insert) {
-        for (var k=0;k<old[j+1];k++)
-          newproduct.push(insert[old[j]])
+      if (old[j] in replacements) {
+        var replacement = replacements[old[j]]
+        for (var k=0;k<old[j+1];k++) 
+          newproduct.push(replacement)
       } else {
         kept.push(old[j])
         kept.push(old[j+1])
       }
     }
     newproduct.push(MPoly([kept]))
-    newsum.push(MPoly.mul.apply(null, newproduct))
+    newsum.push(mul.apply(null, newproduct))
   }
-  return MPoly.add.apply(null, newsum)
-}
+  return add.apply(null, newsum)
+}*/
 MPoly.mul = function(){
   switch (arguments.length) {
     case 0: return MPoly.one
@@ -190,7 +263,7 @@ var MPolyHelper = {
     resa[0] = factor
     for (var i=0;i < monos.length; i++) {
       if ( /[+*^-]/.test(monos[i][0]) ) throw "Monomials cannot contain math symbols. Separate monomials by space or *"
-      resa[2*i + 1] = monos[i][0]
+      resa[2*i + 1] = MPolyHelper.variableFromString(monos[i][0])
       resa[2*i + 2] = monos[i][1]
     }
     return resa
@@ -220,6 +293,9 @@ var MPolyHelper = {
     else return 0
   },
   mulSubTerms: function(p, q){
+   // console.log(p)
+   // console.log(q)
+    //console.log(p.length + q.length - 1)
     var res = new Array(p.length + q.length - 1)
     res[0] = p[0] * q[0]
     var i = 1
@@ -272,6 +348,21 @@ var MPolyHelper = {
          j++
        }
      return res.slice(0, j)
+  },
+  variableCount: 0,
+  variableToStringMap: ["empty"],
+  stringToVariableMap: {},
+  variableToString: function(vidx){
+    if (vidx in MPolyHelper.variableToStringMap) return MPolyHelper.variableToStringMap[vidx]
+    throw "Unknown variable ID: " + vidx
+  },
+  variableFromString: function(v, mustExists){
+    if (v in MPolyHelper.stringToVariableMap) return MPolyHelper.stringToVariableMap[v]
+    if (mustExists) throw "Unknown variable: " + v
+    MPolyHelper.variableCount++
+    MPolyHelper.stringToVariableMap[v] = MPolyHelper.variableCount
+    MPolyHelper.variableToStringMap[MPolyHelper.variableCount] = v
+    return MPolyHelper.variableCount
   }
 }
 

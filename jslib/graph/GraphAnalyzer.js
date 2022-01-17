@@ -1778,6 +1778,35 @@ var GraphAnalyzer = {
         console.log(toponodes[i].id + "  " + toponodes[j].id + " -> " +treksum)
       }
 
+    var MASKED_ZERO = 1 << 26
+    var MASK = (1 << 26) - 1
+    function mulMasked(x, y){
+      while (x < 0) x += MASKED_ZERO
+      while (y < 0) y += MASKED_ZERO
+      return (x*y) & MASK
+    }
+    function addMasked(x, y){
+      while (x < 0) x += MASKED_ZERO
+      while (y < 0) y += MASKED_ZERO
+      return (x+y) & MASK
+    }
+    var maskedEval = {"add": addMasked, "mul": mulMasked}
+    function simulateMasked(){
+      var i
+      var j
+      var inputs = new Array(MPolyHelper.variableCount + 1)
+      for (i=0;i<inputs.length;i++) inputs[i] = i + 1
+      var evaled = {}
+      for (i = 0; i < n; i++ )
+        for (j = i; j < n; j++ ) {
+          evaled[sigma[i][j].toString()] = sigmaexpand[i][j].evalNumeric(inputs, maskedEval)
+        }
+      console.log(evaled)
+      return evaled
+    }
+    var simulated = [simulateMasked()]
+
+
     
     var FASTP = {
       __proto__: Array,
@@ -1822,6 +1851,12 @@ var GraphAnalyzer = {
       console.log(q)
       console.log(q+"")
       return q.isZero()
+    }
+    function isZeroSigmaPolyNumeric(p){
+      console.log("isZeroSigmaPolyNumeric")
+      var q = p.evalNumeric(simulated[0], maskedEval)
+      console.log(q)
+      return q == 0
     }
     
     var ID = Array(n)
@@ -1957,6 +1992,45 @@ console.log(pre)
                FASTP.make(minus_b, ONE, two_a, ZERO, ss) ]
     }
 
+    function fastpMightSatisfyQuadraticEquation(fastp, abc) {
+      //a ( ( p + q sqrt(s) ) / ( r + t sqrt(s) ) )^2 + b ( p + q sqrt(s) ) / ( r + t sqrt(s) ) + c = 0
+      //a ( p + q sqrt(s) )^2 + b ( p + q sqrt(s) ) ( r + t sqrt(s) ) + c ( r + t sqrt(s) )^2  = 0
+      //a ( p^2 + 2 p q sqrt(s) + q^2 s) + b ( p r + p t sqrt(s) + q r sqrt(s) + q t sqrt(s) sqrt(s) ) + c (r^2 + 2  r t sqrt(s) + t^2 s) = 0
+      //a (p^2 + q^2 s) + b ( p r + q s t ) + c r^2 + c t^2 s + ( 2 a p q + b p t + b q r + 2 c r t ) sqrt(s) = 0
+      //a (p^2 + q^2 s) + b ( p r + q s t ) + c r^2 + c t^2 s = - ( 2 a p q + b p t + b q r + 2 c r t ) sqrt(s)
+      var a = abc[0]
+      var b = abc[1]
+      var c = abc[2]
+      var p = fastp.p()
+      var q = fastp.q()
+      var r = fastp.r()
+      var s = fastp.s()
+      var t = fastp.t()
+      if (!s) return isZeroSigmaPoly(  ADD(MUL(a,p,p), MUL(b,p,r), MUL(c,r, r) ) )
+      app_aqqs_bpr_bqst_crr_ctts = ADD(MUL(a,p,p), MUL(a,q,q,s), MUL(b,p,r), MUL(b,q,s,t), MUL(c,r, r), MUL(c,t,t,s))
+      var TWO = MPoly("2")
+      apq2_bpt_bqr_2crt =  ADD(MUL(TWO,a,p,q), MUL(b,p,t), MUL(b,q,r),  MUL(TWO, c,r,t))
+      console.log("A")
+      //console.log(ap_bpr_bqst_cr.sqr()+"")
+      //console.log(aq_bpt_bqr_ct.sqr().mul(s)+"")
+      //console.log("faster??" + isZeroSigmaPoly(ap_bpr_bqst_cr))
+      var combined = app_aqqs_bpr_bqst_crr_ctts.sqr().sub( apq2_bpt_bqr_2crt.sqr().mul(s)  ) 
+      console.log("B")
+      console.log("test")
+      var temp = app_aqqs_bpr_bqst_crr_ctts.evalNumeric(simulated[0], maskedEval)
+     /* console.log(mulMasked(temp,temp))
+      var temp = aq_bpt_bqr_2ct.evalNumeric(simulated[0], maskedEval)
+      console.log(mulMasked(temp,temp))
+      var temp2 = s.evalNumeric(simulated[0], maskedEval)
+      console.log(mulMasked(mulMasked(temp,temp), temp2))
+      console.log("C")
+      //throw "abort"
+      */
+      var res = isZeroSigmaPolyNumeric( combined )  
+      console.log("E")
+      return res
+    }
+
     function solveMissingCycle(cycle){
       console.log("solve: "+cycle.join( " "))
       var i = cycle[0]
@@ -1970,35 +2044,12 @@ console.log(pre)
         ID[i] = {"missingCycles": [cycle.slice()], fastp: [ FASTP.makeFraction( abc[2].negate(), abc[1] ) ] }
       } else if (!(i in ID)){
         ID[i] = {"missingCycles": [cycle.slice()], fastp: solveQuadraticEquation(abc) }
+       // alert(fastpMightSatisfyQuadraticEquation(ID[i].fastp[0], abc))
       } else {
-        var newfastp = _.map( ID[i].fastp, function(fastp) { 
-          //a ( ( p + q sqrt(s) ) / ( r + t sqrt(s) ) )^2 + b ( p + q sqrt(s) ) / ( r + t sqrt(s) ) + c = 0
-          //a ( p + q sqrt(s) ) + b ( p + q sqrt(s) ) ( r + t sqrt(s) ) + c ( r + t sqrt(s) )  = 0
-          //a p + a q sqrt(s) + b ( p r + p t sqrt(s) + q r sqrt(s) + q t sqrt(s) sqrt(s) ) + c r + c t sqrt(s) = 0
-          //a p + b ( p r + q s t ) + c r + ( a q + b p t + b q r + c t ) sqrt(s) = 0
-          //a p + b ( p r + q s t ) + c r = - ( a q + b p t + b q r + c t ) sqrt(s)
-          var a = abc[0]
-          var b = abc[1]
-          var c = abc[2]
-          var p = fastp.p()
-          var q = fastp.q()
-          var r = fastp.r()
-          var s = fastp.s()
-          var t = fastp.t()
-          if (!s) return isZeroSigmaPoly( ADD(MUL(a,p), MUL(b,p,r), MUL(c,r)) )
-          ap_bpr_bqst_cr = ADD(MUL(a,p), MUL(b,p,r), MUL(b,q,s,t), MUL(c,r))
-          aq_bpt_bqr_ct =  ADD(MUL(a,q), MUL(b,p,t), MUL(b,q,r),   MUL(c,t))
-          console.log("A")
-          console.log(ap_bpr_bqst_cr.sqr()+"")
-          console.log(aq_bpt_bqr_ct.sqr().mul(s)+"")
-          var combined = ap_bpr_bqst_cr.sqr().sub( aq_bpt_bqr_ct.sqr().mul(s)  ) 
-          console.log("B")
-          //throw "abort"
-          var res = isZeroSigmaPoly( combined )  
-          console.log("E")
-          return res
-        } )
+      return
+        var newfastp = _.filter( ID[i].fastp, fastpMightSatisfyQuadraticEquation )
         //compare with other solutions
+        if (newfastp.length == 0) throw "Inconsistent solutions"
         if (newfastp.length == ID[i].fastp.length) return
         ID[i].fastp = newfastp
         if (!ID[i].missingCycles) ID[i].missingCycles = [cycle.slice()]

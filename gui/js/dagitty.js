@@ -2763,6 +2763,35 @@ var GraphAnalyzer = {
         console.log(toponodes[i].id + "  " + toponodes[j].id + " -> " +treksum)
       }
 
+    var MASKED_ZERO = 1 << 26
+    var MASK = (1 << 26) - 1
+    function mulMasked(x, y){
+      while (x < 0) x += MASKED_ZERO
+      while (y < 0) y += MASKED_ZERO
+      return (x*y) & MASK
+    }
+    function addMasked(x, y){
+      while (x < 0) x += MASKED_ZERO
+      while (y < 0) y += MASKED_ZERO
+      return (x+y) & MASK
+    }
+    var maskedEval = {"add": addMasked, "mul": mulMasked}
+    function simulateMasked(){
+      var i
+      var j
+      var inputs = new Array(MPolyHelper.variableCount + 1)
+      for (i=0;i<inputs.length;i++) inputs[i] = i + 1
+      var evaled = {}
+      for (i = 0; i < n; i++ )
+        for (j = i; j < n; j++ ) {
+          evaled[sigma[i][j].toString()] = sigmaexpand[i][j].evalNumeric(inputs, maskedEval)
+        }
+      console.log(evaled)
+      return evaled
+    }
+    var simulated = [simulateMasked()]
+
+
     
     var FASTP = {
       __proto__: Array,
@@ -2807,6 +2836,12 @@ var GraphAnalyzer = {
       console.log(q)
       console.log(q+"")
       return q.isZero()
+    }
+    function isZeroSigmaPolyNumeric(p){
+      console.log("isZeroSigmaPolyNumeric")
+      var q = p.evalNumeric(simulated[0], maskedEval)
+      console.log(q)
+      return q == 0
     }
     
     var ID = Array(n)
@@ -2942,6 +2977,45 @@ console.log(pre)
                FASTP.make(minus_b, ONE, two_a, ZERO, ss) ]
     }
 
+    function fastpMightSatisfyQuadraticEquation(fastp, abc) {
+      //a ( ( p + q sqrt(s) ) / ( r + t sqrt(s) ) )^2 + b ( p + q sqrt(s) ) / ( r + t sqrt(s) ) + c = 0
+      //a ( p + q sqrt(s) )^2 + b ( p + q sqrt(s) ) ( r + t sqrt(s) ) + c ( r + t sqrt(s) )^2  = 0
+      //a ( p^2 + 2 p q sqrt(s) + q^2 s) + b ( p r + p t sqrt(s) + q r sqrt(s) + q t sqrt(s) sqrt(s) ) + c (r^2 + 2  r t sqrt(s) + t^2 s) = 0
+      //a (p^2 + q^2 s) + b ( p r + q s t ) + c r^2 + c t^2 s + ( 2 a p q + b p t + b q r + 2 c r t ) sqrt(s) = 0
+      //a (p^2 + q^2 s) + b ( p r + q s t ) + c r^2 + c t^2 s = - ( 2 a p q + b p t + b q r + 2 c r t ) sqrt(s)
+      var a = abc[0]
+      var b = abc[1]
+      var c = abc[2]
+      var p = fastp.p()
+      var q = fastp.q()
+      var r = fastp.r()
+      var s = fastp.s()
+      var t = fastp.t()
+      if (!s) return isZeroSigmaPoly(  ADD(MUL(a,p,p), MUL(b,p,r), MUL(c,r, r) ) )
+      app_aqqs_bpr_bqst_crr_ctts = ADD(MUL(a,p,p), MUL(a,q,q,s), MUL(b,p,r), MUL(b,q,s,t), MUL(c,r, r), MUL(c,t,t,s))
+      var TWO = MPoly("2")
+      apq2_bpt_bqr_2crt =  ADD(MUL(TWO,a,p,q), MUL(b,p,t), MUL(b,q,r),  MUL(TWO, c,r,t))
+      console.log("A")
+      //console.log(ap_bpr_bqst_cr.sqr()+"")
+      //console.log(aq_bpt_bqr_ct.sqr().mul(s)+"")
+      //console.log("faster??" + isZeroSigmaPoly(ap_bpr_bqst_cr))
+      var combined = app_aqqs_bpr_bqst_crr_ctts.sqr().sub( apq2_bpt_bqr_2crt.sqr().mul(s)  ) 
+      console.log("B")
+      console.log("test")
+      var temp = app_aqqs_bpr_bqst_crr_ctts.evalNumeric(simulated[0], maskedEval)
+     /* console.log(mulMasked(temp,temp))
+      var temp = aq_bpt_bqr_2ct.evalNumeric(simulated[0], maskedEval)
+      console.log(mulMasked(temp,temp))
+      var temp2 = s.evalNumeric(simulated[0], maskedEval)
+      console.log(mulMasked(mulMasked(temp,temp), temp2))
+      console.log("C")
+      //throw "abort"
+      */
+      var res = isZeroSigmaPolyNumeric( combined )  
+      console.log("E")
+      return res
+    }
+
     function solveMissingCycle(cycle){
       console.log("solve: "+cycle.join( " "))
       var i = cycle[0]
@@ -2955,35 +3029,12 @@ console.log(pre)
         ID[i] = {"missingCycles": [cycle.slice()], fastp: [ FASTP.makeFraction( abc[2].negate(), abc[1] ) ] }
       } else if (!(i in ID)){
         ID[i] = {"missingCycles": [cycle.slice()], fastp: solveQuadraticEquation(abc) }
+       // alert(fastpMightSatisfyQuadraticEquation(ID[i].fastp[0], abc))
       } else {
-        var newfastp = _.map( ID[i].fastp, function(fastp) { 
-          //a ( ( p + q sqrt(s) ) / ( r + t sqrt(s) ) )^2 + b ( p + q sqrt(s) ) / ( r + t sqrt(s) ) + c = 0
-          //a ( p + q sqrt(s) ) + b ( p + q sqrt(s) ) ( r + t sqrt(s) ) + c ( r + t sqrt(s) )  = 0
-          //a p + a q sqrt(s) + b ( p r + p t sqrt(s) + q r sqrt(s) + q t sqrt(s) sqrt(s) ) + c r + c t sqrt(s) = 0
-          //a p + b ( p r + q s t ) + c r + ( a q + b p t + b q r + c t ) sqrt(s) = 0
-          //a p + b ( p r + q s t ) + c r = - ( a q + b p t + b q r + c t ) sqrt(s)
-          var a = abc[0]
-          var b = abc[1]
-          var c = abc[2]
-          var p = fastp.p()
-          var q = fastp.q()
-          var r = fastp.r()
-          var s = fastp.s()
-          var t = fastp.t()
-          if (!s) return isZeroSigmaPoly( ADD(MUL(a,p), MUL(b,p,r), MUL(c,r)) )
-          ap_bpr_bqst_cr = ADD(MUL(a,p), MUL(b,p,r), MUL(b,q,s,t), MUL(c,r))
-          aq_bpt_bqr_ct =  ADD(MUL(a,q), MUL(b,p,t), MUL(b,q,r),   MUL(c,t))
-          console.log("A")
-          console.log(ap_bpr_bqst_cr.sqr()+"")
-          console.log(aq_bpt_bqr_ct.sqr().mul(s)+"")
-          var combined = ap_bpr_bqst_cr.sqr().sub( aq_bpt_bqr_ct.sqr().mul(s)  ) 
-          console.log("B")
-          //throw "abort"
-          var res = isZeroSigmaPoly( combined )  
-          console.log("E")
-          return res
-        } )
+      return
+        var newfastp = _.filter( ID[i].fastp, fastpMightSatisfyQuadraticEquation )
         //compare with other solutions
+        if (newfastp.length == 0) throw "Inconsistent solutions"
         if (newfastp.length == ID[i].fastp.length) return
         ID[i].fastp = newfastp
         if (!ID[i].missingCycles) ID[i].missingCycles = [cycle.slice()]
@@ -5355,7 +5406,7 @@ MPoly.prototype.toString = function(formatting){
   formatting = formatting ? formatting : {}
   var PLUS = "PLUS" in formatting ? formatting.PLUS : " + "
   var SUB = "SUB" in formatting ? formatting.SUB : " - "
-  var TIMES = "TIMES" in formatting ? formatting.TIMES : "*"
+  var TIMES = "TIMES" in formatting ? formatting.TIMES : " "
   var POWER = "POWER" in formatting ? formatting.POWER : "^"
   if (this.length == 0) return "0"
   return this.map(function(term, i){
@@ -5371,7 +5422,7 @@ MPoly.prototype.toString = function(formatting){
       temp.push(factor.toString())
     for (var i=1; i < term.length; i+=2) {
       var exp = term[i+1] == 1 ? "" : POWER + term[i+1]
-      temp.push(term[i] + exp)
+      temp.push(MPolyHelper.variableToString(term[i]) + exp)
     }
     return add + temp.join(TIMES)
   }).join("")
@@ -5382,25 +5433,98 @@ MPoly.prototype.slice = function (from, to){
   return res
 }
 MPoly.prototype.eval = function(insert){
-  var newsum = []
+  var replacements
+  if (_.isArray(insert)) replacements = insert
+  else {
+    var replacements = new Array(MPolyHelper.variableCount + 1)
+    for (p in insert) 
+      replacements[MPolyHelper.variableFromString(p, true)] = insert[p]
+  }
+
+  var newsum = null
+  for (var i=0;i<this.length;i++) {
+    var old = this[i]
+    var kept = new Array(old.length) 
+    kept[0] = old[0]
+    var keptlength = 1
+    var newproduct = null 
+    for (var j=1;j<old.length;j+=2) {
+      if (old[j] in replacements) {
+        var replacement = replacements[old[j]]
+        for (var k=0;k<old[j+1];k++) {
+          if (newproduct !== null) newproduct = newproduct.mul(replacement)
+          else newproduct = replacement
+        }
+      } else {
+        kept[keptlength] = old[j]
+        kept[keptlength+1] = old[j+1]
+        keptlength+=2
+      }
+    }
+    if (keptlength != kept.length) kept = kept.slice(0, keptlength)
+    var keptpoly = MPoly([kept])
+    if (newproduct !== null) newproduct = newproduct.mul(keptpoly)
+    else newproduct = keptpoly
+    if (newsum !== null) newsum = newsum.add(newproduct)
+    else newsum = newproduct
+//    console.log(newsum)
+  }
+  if (newsum === null) newsum = MPoly.zero
+  return newsum
+}
+MPoly.prototype.evalNumeric = function(insert, options){
+  var replacements
+  if (_.isArray(insert)) replacements = insert
+  else {
+    var replacements = new Array(MPolyHelper.variableCount + 1)
+    for (p in insert) 
+      replacements[MPolyHelper.variableFromString(p, true)] = insert[p]
+  }
+  if (!options) options = {}
+  var MUL = "mul" in options ? options.mul : function(x,y){return x*y}
+  var ADD = "add" in options ? options.add : function(x,y){return x+y}
+
+  var newsum = 0
+  for (var i=0;i<this.length;i++) {
+    var old = this[i]
+    var newproduct = old[0]
+    for (var j=1;j<old.length;j+=2) {
+      if (old[j] in replacements) {
+        var replacement = replacements[old[j]]
+        for (var k=0;k<old[j+1];k++) 
+          newproduct = MUL(newproduct, replacement)
+      } else throw "No value given for " + MPolyHelper.variableToString(old[j])
+    }
+    newsum = ADD(newsum, newproduct)
+//    console.log(newsum)
+  }
+  return newsum
+}
+/*MPoly.prototype.evalCustom = function(insert, options){
+  var zero = "zero" in options ? options.zero : MPoly.zero
+  var one = "one" in options ? options.one : MPoly.one
+  var mul = "mul" in options ? options.mul : MPoly.mul
+  var add = "add" in options ? options.add : MPoly.add
+  var newsum = zero
   for (var i=0;i<this.length;i++) {
     var old = this[i]
     var kept = [old[0]]
-    var newproduct = []
+    var newproduct = 1
     for (var j=1;j<old.length;j+=2) {
-      if (old[j] in insert) {
-        for (var k=0;k<old[j+1];k++)
-          newproduct.push(insert[old[j]])
+      if (old[j] in replacements) {
+        var replacement = replacements[old[j]]
+        for (var k=0;k<old[j+1];k++) 
+          newproduct.push(replacement)
       } else {
         kept.push(old[j])
         kept.push(old[j+1])
       }
     }
     newproduct.push(MPoly([kept]))
-    newsum.push(MPoly.mul.apply(null, newproduct))
+    newsum.push(mul.apply(null, newproduct))
   }
-  return MPoly.add.apply(null, newsum)
-}
+  return add.apply(null, newsum)
+}*/
 MPoly.mul = function(){
   switch (arguments.length) {
     case 0: return MPoly.one
@@ -5459,7 +5583,7 @@ var MPolyHelper = {
     resa[0] = factor
     for (var i=0;i < monos.length; i++) {
       if ( /[+*^-]/.test(monos[i][0]) ) throw "Monomials cannot contain math symbols. Separate monomials by space or *"
-      resa[2*i + 1] = monos[i][0]
+      resa[2*i + 1] = MPolyHelper.variableFromString(monos[i][0])
       resa[2*i + 2] = monos[i][1]
     }
     return resa
@@ -5489,6 +5613,9 @@ var MPolyHelper = {
     else return 0
   },
   mulSubTerms: function(p, q){
+   // console.log(p)
+   // console.log(q)
+    //console.log(p.length + q.length - 1)
     var res = new Array(p.length + q.length - 1)
     res[0] = p[0] * q[0]
     var i = 1
@@ -5541,6 +5668,21 @@ var MPolyHelper = {
          j++
        }
      return res.slice(0, j)
+  },
+  variableCount: 0,
+  variableToStringMap: ["empty"],
+  stringToVariableMap: {},
+  variableToString: function(vidx){
+    if (vidx in MPolyHelper.variableToStringMap) return MPolyHelper.variableToStringMap[vidx]
+    throw "Unknown variable ID: " + vidx
+  },
+  variableFromString: function(v, mustExists){
+    if (v in MPolyHelper.stringToVariableMap) return MPolyHelper.stringToVariableMap[v]
+    if (mustExists) throw "Unknown variable: " + v
+    MPolyHelper.variableCount++
+    MPolyHelper.stringToVariableMap[v] = MPolyHelper.variableCount
+    MPolyHelper.variableToStringMap[MPolyHelper.variableCount] = v
+    return MPolyHelper.variableCount
   }
 }
 
