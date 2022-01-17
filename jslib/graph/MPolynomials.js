@@ -86,7 +86,7 @@ MPoly.prototype.toString = function(formatting){
   formatting = formatting ? formatting : {}
   var PLUS = "PLUS" in formatting ? formatting.PLUS : " + "
   var SUB = "SUB" in formatting ? formatting.SUB : " - "
-  var TIMES = "TIMES" in formatting ? formatting.TIMES : " "
+  var TIMES = "TIMES" in formatting ? formatting.TIMES : "*"
   var POWER = "POWER" in formatting ? formatting.POWER : "^"
   if (this.length == 0) return "0"
   return this.map(function(term, i){
@@ -164,10 +164,10 @@ MPoly.prototype.evalNumeric = function(insert, options){
   var MUL = "mul" in options ? options.mul : function(x,y){return x*y}
   var ADD = "add" in options ? options.add : function(x,y){return x+y}
 
-  var newsum = 0
+  var newsum = 0n
   for (var i=0;i<this.length;i++) {
     var old = this[i]
-    var newproduct = old[0]
+    var newproduct = BigInt(old[0])
     for (var j=1;j<old.length;j+=2) {
       if (old[j] in replacements) {
         var replacement = replacements[old[j]]

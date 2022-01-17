@@ -1778,24 +1778,30 @@ var GraphAnalyzer = {
         console.log(toponodes[i].id + "  " + toponodes[j].id + " -> " +treksum)
       }
 
-    var MASKED_ZERO = 1 << 26
+    /*var MASKED_ZERO = 1 << 26
     var MASK = (1 << 26) - 1
     function mulMasked(x, y){
-      while (x < 0) x += MASKED_ZERO
-      while (y < 0) y += MASKED_ZERO
       return (x*y) & MASK
     }
     function addMasked(x, y){
-      while (x < 0) x += MASKED_ZERO
-      while (y < 0) y += MASKED_ZERO
+
       return (x+y) & MASK
+    }*/
+    function mulMasked(x, y){
+      return x*y
     }
+    function addMasked(x, y){
+
+      return x+y
+    }//*/
     var maskedEval = {"add": addMasked, "mul": mulMasked}
     function simulateMasked(){
       var i
       var j
       var inputs = new Array(MPolyHelper.variableCount + 1)
-      for (i=0;i<inputs.length;i++) inputs[i] = i + 1
+      var MASK = 1 << 50
+      for (i=0;i<inputs.length;i++) inputs[i] = BigInt( Math.floor((MASK)*Math.random()) + 1 )
+      // i + 1
       var evaled = {}
       for (i = 0; i < n; i++ )
         for (j = i; j < n; j++ ) {
@@ -1852,12 +1858,6 @@ var GraphAnalyzer = {
       console.log(q+"")
       return q.isZero()
     }
-    function isZeroSigmaPolyNumeric(p){
-      console.log("isZeroSigmaPolyNumeric")
-      var q = p.evalNumeric(simulated[0], maskedEval)
-      console.log(q)
-      return q == 0
-    }
     
     var ID = Array(n)
     
@@ -1879,7 +1879,7 @@ console.log(        ID[j])
           var rhs = y.mul(fastp.r()).sub(fastp.p().mul(x))
           if ( !fastp.s() ) return isZeroSigmaPoly( rhs )
           //that is s^2*(q*x-t*y)^2 = (y*r-p*x)^2 
-          var temp = fastp.s().mul( fastp.q().mul(x).sub(t.mul(y)).sqr() ).sub( rhs.sqr()  )
+          var temp = fastp.s().mul( fastp.q().mul(x).sub(fastp.t().mul(y)).sqr() ).sub( rhs.sqr()  )
           return isZeroSigmaPoly(temp)
         })) return
         var newfastp = _.map(ID[i].fastp, function(fastp){ 
@@ -1892,8 +1892,8 @@ console.log(        ID[j])
           var si2 = sigma[i][j].negate()
           var si3 = sigma[p][q]
           var si4 = sigma[i][q].negate()
-          return FASTP.make(  fastp.r().mul(si2).add(fastp.p().mul(si1)), fastp.s() ? fastp.t().mul(si2).add(fastp.q.mul(si1)) : null,
-                              fastp.r().mul(si4).add(fastp.p().mul(si3)), fastp.s() ? fastp.t().mul(si4).add(fastp.q.mul(si3)) : null,
+          return FASTP.make(  fastp.r().mul(si2).add(fastp.p().mul(si1)), fastp.s() ? fastp.t().mul(si2).add(fastp.q().mul(si1)) : null,
+                              fastp.r().mul(si4).add(fastp.p().mul(si3)), fastp.s() ? fastp.t().mul(si4).add(fastp.q().mul(si3)) : null,
                               fastp.s() )
         }  )
         ID[j] = {"propagate": i, fastp: newfastp }
@@ -2007,28 +2007,30 @@ console.log(pre)
       var s = fastp.s()
       var t = fastp.t()
       if (!s) return isZeroSigmaPoly(  ADD(MUL(a,p,p), MUL(b,p,r), MUL(c,r, r) ) )
+      
+      a = a.evalNumeric(simulated[0], maskedEval)
+      b = b.evalNumeric(simulated[0], maskedEval)
+      c = c.evalNumeric(simulated[0], maskedEval)
+      p = p.evalNumeric(simulated[0], maskedEval)
+      q = q.evalNumeric(simulated[0], maskedEval)
+      r = r.evalNumeric(simulated[0], maskedEval)
+      s = s.evalNumeric(simulated[0], maskedEval)
+      t = t.evalNumeric(simulated[0], maskedEval)
+      
+      var app_aqqs_bpr_bqst_crr_ctts = (a*p*p) + (a*q*q*s) + (b*p*r) + (b*q*s*t) + (c*r*r) + (c*t*t*s)
+      var minus_2apq_bpt_bqr_2crt = - ((2n*a*p*q) + (b*p*t) + (b*q*r) +  (2n* c*r*t))
+      
+      if (app_aqqs_bpr_bqst_crr_ctts < 0 && minus_2apq_bpt_bqr_2crt > 0) return false
+      if (app_aqqs_bpr_bqst_crr_ctts > 0 && minus_2apq_bpt_bqr_2crt < 0) return false
+      if (app_aqqs_bpr_bqst_crr_ctts != 0 && minus_2apq_bpt_bqr_2crt == 0) return false
+      if (app_aqqs_bpr_bqst_crr_ctts == 0 && minus_2apq_bpt_bqr_2crt != 0 && s != 0) return false
+      
+      return app_aqqs_bpr_bqst_crr_ctts**2n == (minus_2apq_bpt_bqr_2crt**2n) * s
+      
+/*    Symbolic approach does not work (too slow and loses sign)
       app_aqqs_bpr_bqst_crr_ctts = ADD(MUL(a,p,p), MUL(a,q,q,s), MUL(b,p,r), MUL(b,q,s,t), MUL(c,r, r), MUL(c,t,t,s))
       var TWO = MPoly("2")
-      apq2_bpt_bqr_2crt =  ADD(MUL(TWO,a,p,q), MUL(b,p,t), MUL(b,q,r),  MUL(TWO, c,r,t))
-      console.log("A")
-      //console.log(ap_bpr_bqst_cr.sqr()+"")
-      //console.log(aq_bpt_bqr_ct.sqr().mul(s)+"")
-      //console.log("faster??" + isZeroSigmaPoly(ap_bpr_bqst_cr))
-      var combined = app_aqqs_bpr_bqst_crr_ctts.sqr().sub( apq2_bpt_bqr_2crt.sqr().mul(s)  ) 
-      console.log("B")
-      console.log("test")
-      var temp = app_aqqs_bpr_bqst_crr_ctts.evalNumeric(simulated[0], maskedEval)
-     /* console.log(mulMasked(temp,temp))
-      var temp = aq_bpt_bqr_2ct.evalNumeric(simulated[0], maskedEval)
-      console.log(mulMasked(temp,temp))
-      var temp2 = s.evalNumeric(simulated[0], maskedEval)
-      console.log(mulMasked(mulMasked(temp,temp), temp2))
-      console.log("C")
-      //throw "abort"
-      */
-      var res = isZeroSigmaPolyNumeric( combined )  
-      console.log("E")
-      return res
+      apq2_bpt_bqr_2crt =  ADD(MUL(TWO,a,p,q), MUL(b,p,t), MUL(b,q,r),  MUL(TWO, c,r,t))*/
     }
 
     function solveMissingCycle(cycle){
@@ -2046,8 +2048,7 @@ console.log(pre)
         ID[i] = {"missingCycles": [cycle.slice()], fastp: solveQuadraticEquation(abc) }
        // alert(fastpMightSatisfyQuadraticEquation(ID[i].fastp[0], abc))
       } else {
-      return
-        var newfastp = _.filter( ID[i].fastp, fastpMightSatisfyQuadraticEquation )
+        var newfastp = _.filter( ID[i].fastp, function(fastp) { return fastpMightSatisfyQuadraticEquation(fastp, abc) } )
         //compare with other solutions
         if (newfastp.length == 0) throw "Inconsistent solutions"
         if (newfastp.length == ID[i].fastp.length) return
@@ -2083,6 +2084,7 @@ console.log(pre)
       })
     }
 
+    //solveMissingCycle([nodeidx(g.getVertex("1")),nodeidx(g.getVertex("2")),nodeidx(g.getVertex("4")), nodeidx(g.getVertex("1"))])
     //solveMissingCycle([nodeidx(g.getVertex("1")),nodeidx(g.getVertex("2")),nodeidx(g.getVertex("3")),nodeidx(g.getVertex("4")), nodeidx(g.getVertex("1"))])
     for( i = 1 ; i < n; i++ ) {
       if (i in ID && ID[i].fastp.length == 1) continue;
