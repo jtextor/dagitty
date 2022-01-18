@@ -1724,7 +1724,6 @@ var GraphAnalyzer = {
         nontreenodes.push(toponodes[i].id)
       }
     }
-    console.log(pa)
     
     var D = this.graphToAdjacencyMatrix(g, toponodes, Graph.Edgetype.Directed)
     var B = this.graphToAdjacencyMatrix(g, toponodes, Graph.Edgetype.Bidirected)
@@ -1732,7 +1731,6 @@ var GraphAnalyzer = {
     var missingSpouses = _.map(B, function(a, i) { 
       return _.filter(_.map(a, function(v, j) { return  v || i == j ? -1 : j }), function (x) { return x >= 0 } )
     } )
-    console.log(missingSpouses)
     var sigma = _.map(toponodes, function(xxx, f){
       return _.map(toponodes, function(xxx, t){ 
         return MPoly("s"+Math.min(f,t)+"_"+Math.max(f,t))
@@ -1760,7 +1758,7 @@ var GraphAnalyzer = {
     for (i = 0; i < n; i++ )
       for (j = i; j < n; j++ ) {
         var treks = GraphAnalyzer.enumerateTreks(g, toponodes[i], toponodes[j])
-        console.log(treks)
+        //console.log(treks)
         var terms = _.map(treks, function(t){ return _.map(t, function(e) { 
           if (e instanceof Graph.Vertex) 
             return omega[nodeidx(e)][nodeidx(e)]
@@ -1775,18 +1773,9 @@ var GraphAnalyzer = {
         var treksum = _.reduce(trekProducts, function(a, b) { return a.add(b) })
         sigmaexpand[i][j] = sigmaexpand[j][i] = treksum
         sigmaevalobj[sigma[i][j]] = treksum
-        console.log(toponodes[i].id + "  " + toponodes[j].id + " -> " +treksum)
+        //console.log(toponodes[i].id + "  " + toponodes[j].id + " -> " +treksum)
       }
 
-    /*var MASKED_ZERO = 1 << 26
-    var MASK = (1 << 26) - 1
-    function mulMasked(x, y){
-      return (x*y) & MASK
-    }
-    function addMasked(x, y){
-
-      return (x+y) & MASK
-    }*/
     function mulMasked(x, y){
       return x*y
     }
@@ -1806,7 +1795,7 @@ var GraphAnalyzer = {
         for (j = i; j < n; j++ ) {
           evaled[sigma[i][j].toString()] = sigmaexpand[i][j].evalNumeric(inputs, maskedEval)
         }
-      console.log(evaled)
+      //console.log(evaled)
       return evaled
     }
     function findPrimes(n){
@@ -1871,10 +1860,8 @@ var GraphAnalyzer = {
     }
     
     function isZeroSigmaPoly(p){
-      console.log("isZeroSigmaPoly")
+      //console.log("isZeroSigmaPoly")
       var q = p.eval(sigmaevalobj)
-      console.log(q)
-      console.log(q+"")
       return q.isZero()
     }
     
@@ -1885,8 +1872,6 @@ var GraphAnalyzer = {
       _.each( missingSpouses[i], function(j) {
         if (j == 0) return 
         var q = pa[j]
-        console.log(j)
-console.log(        ID[j])
         if (ID[j] && ID[j].fastp.length <= ID[i].fastp.length) return       
         if (_.find(ID[i].fastp, function(fastp){ 
           var tempeval = {}
@@ -1896,9 +1881,6 @@ console.log(        ID[j])
         var newfastp = _.map(ID[i].fastp, function(fastp){ 
           //insert fastp in (l*σ1 + σ2)/(l * σ3 + σ4 )   
           //return ( r*σ2+(p)*σ1  + s*(t*σ2+q*σ1) )/((r)*σ4+(p)*σ3+s*(t*σ4+q*σ3))
-          console.log("p: "+p)
-          console.log(j)
-          console.log(sigma[p][j])
           var si1 = sigma[p][j]
           var si2 = sigma[i][j].negate()
           var si3 = sigma[p][q]
@@ -1945,9 +1927,6 @@ console.log(        ID[j])
     //  var vars = cycle.slice(0, k)
       var eqs = _.map(new Array(k), function(x,i) { return bidiEquation(cycle[i], cycle[i+1]) } )
       while (k > 2) {
-        //console.log("eqs:")
-        //console.log(eqs)
-        //console.log(eqs.join("\n"))
         var newk = Math.ceil(k/2)
         var newvars = Array(newk)
         var neweqs = Array(newk)
@@ -1967,9 +1946,6 @@ console.log(        ID[j])
         eqs = neweqs
       }
       if (k == 2) {
-        //console.log("eqs2:")
-        //console.log(eqs)
-        //console.log(eqs.join("\n"))
         eqs[0] = [ DET2(eqs[0][A], eqs[1][C],  eqs[1][A], eqs[0][B]),
                    DET2(eqs[0][A], eqs[1][D],  eqs[1][A], eqs[0][D]),
                    DET2(eqs[0][C], eqs[1][C],  eqs[1][B], eqs[0][B]),
@@ -1981,22 +1957,9 @@ console.log(        ID[j])
       var c = eqs[0][3]
       return [a,b,c]
     }
-function logabc(abc, pre){
-console.log(pre)
-      var a = abc[0]
-      var b = abc[1]
-      var c = abc[2]
-      console.log("a:"+a)
-      console.log(a)
-      console.log("b:"+b)
-      console.log(b)
-      console.log("c:"+c)
-      console.log(c)
 
-}
     function solveQuadraticEquation(abc){
       //assume a != 0
-      logabc(abc, "quadratic")
       var a = abc[0]
       var b = abc[1]
       var c = abc[2]
@@ -2052,7 +2015,7 @@ console.log(pre)
     }
 
     function solveMissingCycle(cycle){
-      console.log("solve: "+cycle.join( " "))
+      //console.log("solve: "+cycle.join( " "))
       var i = cycle[0]
       //cycle to quadratic equation
       var abc = missingCycleToQuadraticEquation(cycle)
@@ -2060,7 +2023,6 @@ console.log(pre)
       var aIsZero = isZeroSigmaPoly(abc[0])
       if (aIsZero && isZeroSigmaPoly(abc[1])) return
       if (aIsZero) {
-        logabc(abc, "-c/b")
         ID[i] = {"missingCycles": [cycle.slice()], fastp: [ FASTP.makeFraction( abc[2].negate(), abc[1] ) ] }
       } else if (!(i in ID)){
         ID[i] = {"missingCycles": [cycle.slice()], fastp: solveQuadraticEquation(abc) }
@@ -2103,8 +2065,7 @@ console.log(pre)
       })
     }
 
-    //solveMissingCycle([nodeidx(g.getVertex("1")),nodeidx(g.getVertex("2")),nodeidx(g.getVertex("4")), nodeidx(g.getVertex("1"))])
-    //solveMissingCycle([nodeidx(g.getVertex("1")),nodeidx(g.getVertex("2")),nodeidx(g.getVertex("3")),nodeidx(g.getVertex("4")), nodeidx(g.getVertex("1"))])
+
     for ( forceCycleLength = 3; forceCycleLength < n; forceCycleLength++) {
       var solutionsChanged = false
       for( i = 1 ; i < n; i++ ) {
@@ -2127,7 +2088,6 @@ console.log(pre)
         var identification = {fastp: ID[i].fastp}
         if ("instrument" in ID[i]) identification.instrument = toponodes[ID[i].instrument].id
         if ("propagate" in ID[i]) identification.propagate = toponodes[ID[i].propagate].id
-        console.log(ID[i].missingCycles)
         _.map(["missingCycles", "propagatedMissingCycles", "oldPropagatedMissingCycles", "oldMissingCycles"], function(mcid){
           if (mcid in ID[i]) identification[mcid] = _.map( ID[i][mcid], function(c) {
             return _.map(c, function(v){ return toponodes[v].id } ) 
