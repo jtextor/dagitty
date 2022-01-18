@@ -356,18 +356,11 @@ function showTreeFASTP(id) {
     var i = res.propagate
     var p = getVertexParent(i)
     msg += "( λ"+p+i+" σ"+p+j + " - σ"+i+j+ " ) / ( λ"+p+i+" σ"+p+q + " - σ" + i + q+")\n"
-/*          //return ( r*σ2+(p)*σ1  + s*(t*σ2+q*σ1) )/((r)*σ4+(p)*σ3+s*(t*σ4+q*σ3))
-          console.log("p: "+p)
-          console.log(j)
-          console.log(sigma[p][j])
-          var si1 = sigma[p][j]
-          var si2 = sigma[i][j].negate()
-          var si3 = sigma[p][q]
-          var si4 = sigma[i][q].negate()*/
-     msg += "\n which is equivalent to \n"
+    msg += "\n which is equivalent to \n"
   }
   msg += res.fastp.join("\n\nOR\n")
-  if (res.missingCycles || res.oldPropagatedMissingCycles || res.oldMissingCycles || res.propagatedMissingCycles) {
+  function alen(a){ return a ? a.length : 0 }
+  if (alen(res.missingCycles) + alen(res.oldPropagatedMissingCycles) + alen(res.oldMissingCycles) + alen(res.propagatedMissingCycles) > 0) {
     msg += "\n\n\nThe calculation used cycles: \n"
     var mc = []
     _.map(["missingCycles", "propagatedMissingCycles", "oldPropagatedMissingCycles", "oldMissingCycles"], function(mcid){ 
@@ -416,13 +409,16 @@ function displayTreeIDInfo(){
 	if( Model.dag.getSources().length != 0 || 
 		Model.dag.getTargets().length != 0 ){
 		document.getElementById("causal_effect").innerHTML = "<p>Do not mark exposure and outcome nodes for TreeID. TreeID tests for <emph>each</emph> node whether it and its parent are identifiable as outcome and exposure nodes. </p>"
-		//return
-	}
-	var tid = GraphAnalyzer.treeID( Model.dag )
-	if( tid === false ){
-		document.getElementById("causal_effect").innerHTML = "<p>TreeID is not supported for this kind of DAG. It requires a tree graph.</p>"
 		return
 	}
+  var tid
+  try {
+	  tid = GraphAnalyzer.treeID( Model.dag )
+  } catch (e) {
+    alert(e)
+		document.getElementById("causal_effect").innerHTML = "<p>"+e+"</p>"
+    return
+  }
 	document.getElementById("causal_effect").innerHTML = treeIDResultsToHtml( tid )
 }
 

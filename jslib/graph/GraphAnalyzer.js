@@ -2042,7 +2042,7 @@ var GraphAnalyzer = {
 
     var visitedInCycle = new Array(n)
     var forceCycleLength
-    var foundCycle
+    var longerCyclesMightExists
     function findMissingCycle(cyclePrefix) {
       var s = cyclePrefix[0]
       var e = cyclePrefix[cyclePrefix.length - 1]
@@ -2056,7 +2056,10 @@ var GraphAnalyzer = {
           }
           return false
         }
-        if (cyclePrefix.length >= forceCycleLength) return false
+        if (cyclePrefix.length >= forceCycleLength) {
+          longerCyclesMightExists = true
+          return false
+        }
         visitedInCycle[j] = true
         cyclePrefix.push(j)
         if (findMissingCycle(cyclePrefix)) return true
@@ -2068,18 +2071,22 @@ var GraphAnalyzer = {
 
     for ( forceCycleLength = 3; forceCycleLength < n; forceCycleLength++) {
       var solutionsChanged = false
+      longerCyclesMightExists = false
+      allEdgesIdentified = true
       for( i = 1 ; i < n; i++ ) {
         var oldPossibleSolutionCount = i in ID ? ID[i].fastp.length : 9999
         if (oldPossibleSolutionCount == 1) continue;
         visitedInCycle[i] = true
         findMissingCycle([i])
         visitedInCycle[i] = false
-        if (i in ID && ID[i].fastp.length < oldPossibleSolutionCount) {
+        var newPossibleSolutionCount = i in ID ? ID[i].fastp.length : 9999
+        if (newPossibleSolutionCount < oldPossibleSolutionCount) {
           solutionsChanged = true
           propagate(i)
         }
+        allEdgesIdentified = allEdgesIdentified && newPossibleSolutionCount == 1
       }
-      if (!solutionsChanged) break
+      if (!longerCyclesMightExists || allEdgesIdentified) break
     }
       
     var IDobject = {}

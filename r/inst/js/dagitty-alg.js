@@ -2704,7 +2704,6 @@ var GraphAnalyzer = {
         nontreenodes.push(toponodes[i].id)
       }
     }
-    console.log(pa)
     
     var D = this.graphToAdjacencyMatrix(g, toponodes, Graph.Edgetype.Directed)
     var B = this.graphToAdjacencyMatrix(g, toponodes, Graph.Edgetype.Bidirected)
@@ -2712,7 +2711,6 @@ var GraphAnalyzer = {
     var missingSpouses = _.map(B, function(a, i) { 
       return _.filter(_.map(a, function(v, j) { return  v || i == j ? -1 : j }), function (x) { return x >= 0 } )
     } )
-    console.log(missingSpouses)
     var sigma = _.map(toponodes, function(xxx, f){
       return _.map(toponodes, function(xxx, t){ 
         return MPoly("s"+Math.min(f,t)+"_"+Math.max(f,t))
@@ -2740,7 +2738,7 @@ var GraphAnalyzer = {
     for (i = 0; i < n; i++ )
       for (j = i; j < n; j++ ) {
         var treks = GraphAnalyzer.enumerateTreks(g, toponodes[i], toponodes[j])
-        console.log(treks)
+        //console.log(treks)
         var terms = _.map(treks, function(t){ return _.map(t, function(e) { 
           if (e instanceof Graph.Vertex) 
             return omega[nodeidx(e)][nodeidx(e)]
@@ -2755,18 +2753,9 @@ var GraphAnalyzer = {
         var treksum = _.reduce(trekProducts, function(a, b) { return a.add(b) })
         sigmaexpand[i][j] = sigmaexpand[j][i] = treksum
         sigmaevalobj[sigma[i][j]] = treksum
-        console.log(toponodes[i].id + "  " + toponodes[j].id + " -> " +treksum)
+        //console.log(toponodes[i].id + "  " + toponodes[j].id + " -> " +treksum)
       }
 
-    /*var MASKED_ZERO = 1 << 26
-    var MASK = (1 << 26) - 1
-    function mulMasked(x, y){
-      return (x*y) & MASK
-    }
-    function addMasked(x, y){
-
-      return (x+y) & MASK
-    }*/
     function mulMasked(x, y){
       return x*y
     }
@@ -2775,22 +2764,41 @@ var GraphAnalyzer = {
       return x+y
     }//*/
     var maskedEval = {"add": addMasked, "mul": mulMasked}
-    function simulateMasked(){
+    function simulateNumeric(variableValue){
       var i
       var j
       var inputs = new Array(MPolyHelper.variableCount + 1)
-      var MASK = 1 << 50
-      for (i=0;i<inputs.length;i++) inputs[i] = BigInt( Math.floor((MASK)*Math.random()) + 1 )
+      for (i=0;i<inputs.length;i++) inputs[i] = BigInt(variableValue(i))
       // i + 1
       var evaled = {}
       for (i = 0; i < n; i++ )
         for (j = i; j < n; j++ ) {
           evaled[sigma[i][j].toString()] = sigmaexpand[i][j].evalNumeric(inputs, maskedEval)
         }
-      console.log(evaled)
+      //console.log(evaled)
       return evaled
     }
-    var simulated = [simulateMasked()]
+    function findPrimes(n){
+      var primes = [2,3,5,7,11,13]
+      var cp = 17
+      for (;primes.length < n;) {
+        var isPrime = true
+        for (var j=0;j<primes.length;j++)
+          if (cp % primes[j] == 0) {
+            isPrime = false
+            break
+          }
+        if (isPrime) primes.push(cp)
+        cp += 2
+      }
+      return primes
+    }
+    var primes = findPrimes(3*(MPolyHelper.variableCount + 1) + 20 )
+    var simulated = [
+                    simulateNumeric(function(){ return Math.floor((1 << 52)*Math.random()) + 1 }),
+                    simulateNumeric(function(i){ return primes[3*i+20] })
+                    //simulateNumeric(function(i){ return 1 }) this would be stupid, but it works
+                    ]
 
 
     
@@ -2832,10 +2840,8 @@ var GraphAnalyzer = {
     }
     
     function isZeroSigmaPoly(p){
-      console.log("isZeroSigmaPoly")
+      //console.log("isZeroSigmaPoly")
       var q = p.eval(sigmaevalobj)
-      console.log(q)
-      console.log(q+"")
       return q.isZero()
     }
     
@@ -2846,28 +2852,15 @@ var GraphAnalyzer = {
       _.each( missingSpouses[i], function(j) {
         if (j == 0) return 
         var q = pa[j]
-        console.log(j)
-console.log(        ID[j])
         if (ID[j] && ID[j].fastp.length <= ID[i].fastp.length) return       
         if (_.find(ID[i].fastp, function(fastp){ 
-          var x = sigma[p][q]
-          var y = sigma[i][q]
-          //test fastp*x - y = 0
-          //that is (q*s+p)*x-(s*t+r)*y = 0
-          //that is s*(x*q-y*t)+p*x-y*r = 0
-          //that is s*(x*q-y*t) = y*r - p*x
-          var rhs = y.mul(fastp.r()).sub(fastp.p().mul(x))
-          if ( !fastp.s() ) return isZeroSigmaPoly( rhs )
-          //that is s^2*(q*x-t*y)^2 = (y*r-p*x)^2 
-          var temp = fastp.s().mul( fastp.q().mul(x).sub(fastp.t().mul(y)).sqr() ).sub( rhs.sqr()  )
-          return isZeroSigmaPoly(temp)
+          var tempeval = {}
+          tempeval[lambda[p][i]] = MPoly("0")
+          return sigmaexpand[p][i].eval(tempeval).isZero()
         })) return
         var newfastp = _.map(ID[i].fastp, function(fastp){ 
           //insert fastp in (l*σ1 + σ2)/(l * σ3 + σ4 )   
           //return ( r*σ2+(p)*σ1  + s*(t*σ2+q*σ1) )/((r)*σ4+(p)*σ3+s*(t*σ4+q*σ3))
-          console.log("p: "+p)
-          console.log(j)
-          console.log(sigma[p][j])
           var si1 = sigma[p][j]
           var si2 = sigma[i][j].negate()
           var si3 = sigma[p][q]
@@ -2914,9 +2907,6 @@ console.log(        ID[j])
     //  var vars = cycle.slice(0, k)
       var eqs = _.map(new Array(k), function(x,i) { return bidiEquation(cycle[i], cycle[i+1]) } )
       while (k > 2) {
-        //console.log("eqs:")
-        //console.log(eqs)
-        //console.log(eqs.join("\n"))
         var newk = Math.ceil(k/2)
         var newvars = Array(newk)
         var neweqs = Array(newk)
@@ -2936,9 +2926,6 @@ console.log(        ID[j])
         eqs = neweqs
       }
       if (k == 2) {
-        //console.log("eqs2:")
-        //console.log(eqs)
-        //console.log(eqs.join("\n"))
         eqs[0] = [ DET2(eqs[0][A], eqs[1][C],  eqs[1][A], eqs[0][B]),
                    DET2(eqs[0][A], eqs[1][D],  eqs[1][A], eqs[0][D]),
                    DET2(eqs[0][C], eqs[1][C],  eqs[1][B], eqs[0][B]),
@@ -2950,22 +2937,9 @@ console.log(        ID[j])
       var c = eqs[0][3]
       return [a,b,c]
     }
-function logabc(abc, pre){
-console.log(pre)
-      var a = abc[0]
-      var b = abc[1]
-      var c = abc[2]
-      console.log("a:"+a)
-      console.log(a)
-      console.log("b:"+b)
-      console.log(b)
-      console.log("c:"+c)
-      console.log(c)
 
-}
     function solveQuadraticEquation(abc){
       //assume a != 0
-      logabc(abc, "quadratic")
       var a = abc[0]
       var b = abc[1]
       var c = abc[2]
@@ -2983,35 +2957,37 @@ console.log(pre)
       //a ( p^2 + 2 p q sqrt(s) + q^2 s) + b ( p r + p t sqrt(s) + q r sqrt(s) + q t sqrt(s) sqrt(s) ) + c (r^2 + 2  r t sqrt(s) + t^2 s) = 0
       //a (p^2 + q^2 s) + b ( p r + q s t ) + c r^2 + c t^2 s + ( 2 a p q + b p t + b q r + 2 c r t ) sqrt(s) = 0
       //a (p^2 + q^2 s) + b ( p r + q s t ) + c r^2 + c t^2 s = - ( 2 a p q + b p t + b q r + 2 c r t ) sqrt(s)
-      var a = abc[0]
-      var b = abc[1]
-      var c = abc[2]
-      var p = fastp.p()
-      var q = fastp.q()
-      var r = fastp.r()
-      var s = fastp.s()
-      var t = fastp.t()
-      if (!s) return isZeroSigmaPoly(  ADD(MUL(a,p,p), MUL(b,p,r), MUL(c,r, r) ) )
-      
-      a = a.evalNumeric(simulated[0], maskedEval)
-      b = b.evalNumeric(simulated[0], maskedEval)
-      c = c.evalNumeric(simulated[0], maskedEval)
-      p = p.evalNumeric(simulated[0], maskedEval)
-      q = q.evalNumeric(simulated[0], maskedEval)
-      r = r.evalNumeric(simulated[0], maskedEval)
-      s = s.evalNumeric(simulated[0], maskedEval)
-      t = t.evalNumeric(simulated[0], maskedEval)
-      
-      var app_aqqs_bpr_bqst_crr_ctts = (a*p*p) + (a*q*q*s) + (b*p*r) + (b*q*s*t) + (c*r*r) + (c*t*t*s)
-      var minus_2apq_bpt_bqr_2crt = - ((2n*a*p*q) + (b*p*t) + (b*q*r) +  (2n* c*r*t))
-      
-      if (app_aqqs_bpr_bqst_crr_ctts < 0 && minus_2apq_bpt_bqr_2crt > 0) return false
-      if (app_aqqs_bpr_bqst_crr_ctts > 0 && minus_2apq_bpt_bqr_2crt < 0) return false
-      if (app_aqqs_bpr_bqst_crr_ctts != 0 && minus_2apq_bpt_bqr_2crt == 0) return false
-      if (app_aqqs_bpr_bqst_crr_ctts == 0 && minus_2apq_bpt_bqr_2crt != 0 && s != 0) return false
-      
-      return app_aqqs_bpr_bqst_crr_ctts**2n == (minus_2apq_bpt_bqr_2crt**2n) * s
-      
+      for (var i=0;i<simulated.length;i++) {
+        var a = abc[0]
+        var b = abc[1]
+        var c = abc[2]
+        var p = fastp.p()
+        var q = fastp.q()
+        var r = fastp.r()
+        var s = fastp.s()
+        var t = fastp.t()
+        if (!s) return isZeroSigmaPoly(  ADD(MUL(a,p,p), MUL(b,p,r), MUL(c,r, r) ) )
+        
+        a = a.evalNumeric(simulated[i], maskedEval)
+        b = b.evalNumeric(simulated[i], maskedEval)
+        c = c.evalNumeric(simulated[i], maskedEval)
+        p = p.evalNumeric(simulated[i], maskedEval)
+        q = q.evalNumeric(simulated[i], maskedEval)
+        r = r.evalNumeric(simulated[i], maskedEval)
+        s = s.evalNumeric(simulated[i], maskedEval)
+        t = t.evalNumeric(simulated[i], maskedEval)
+        
+        var app_aqqs_bpr_bqst_crr_ctts = (a*p*p) + (a*q*q*s) + (b*p*r) + (b*q*s*t) + (c*r*r) + (c*t*t*s)
+        var minus_2apq_bpt_bqr_2crt = - ((2n*a*p*q) + (b*p*t) + (b*q*r) +  (2n* c*r*t))
+        
+        if (app_aqqs_bpr_bqst_crr_ctts < 0 && minus_2apq_bpt_bqr_2crt > 0) return false
+        if (app_aqqs_bpr_bqst_crr_ctts > 0 && minus_2apq_bpt_bqr_2crt < 0) return false
+        if (app_aqqs_bpr_bqst_crr_ctts != 0 && minus_2apq_bpt_bqr_2crt == 0) return false
+        if (app_aqqs_bpr_bqst_crr_ctts == 0 && minus_2apq_bpt_bqr_2crt != 0 && s != 0) return false
+        if (app_aqqs_bpr_bqst_crr_ctts**2n != (minus_2apq_bpt_bqr_2crt**2n) * s) return false
+      }
+        
+      return true
 /*    Symbolic approach does not work (too slow and loses sign)
       app_aqqs_bpr_bqst_crr_ctts = ADD(MUL(a,p,p), MUL(a,q,q,s), MUL(b,p,r), MUL(b,q,s,t), MUL(c,r, r), MUL(c,t,t,s))
       var TWO = MPoly("2")
@@ -3019,7 +2995,7 @@ console.log(pre)
     }
 
     function solveMissingCycle(cycle){
-      console.log("solve: "+cycle.join( " "))
+      //console.log("solve: "+cycle.join( " "))
       var i = cycle[0]
       //cycle to quadratic equation
       var abc = missingCycleToQuadraticEquation(cycle)
@@ -3027,7 +3003,6 @@ console.log(pre)
       var aIsZero = isZeroSigmaPoly(abc[0])
       if (aIsZero && isZeroSigmaPoly(abc[1])) return
       if (aIsZero) {
-        logabc(abc, "-c/b")
         ID[i] = {"missingCycles": [cycle.slice()], fastp: [ FASTP.makeFraction( abc[2].negate(), abc[1] ) ] }
       } else if (!(i in ID)){
         ID[i] = {"missingCycles": [cycle.slice()], fastp: solveQuadraticEquation(abc) }
@@ -3047,7 +3022,7 @@ console.log(pre)
 
     var visitedInCycle = new Array(n)
     var forceCycleLength
-    var foundCycle
+    var longerCyclesMightExists
     function findMissingCycle(cyclePrefix) {
       var s = cyclePrefix[0]
       var e = cyclePrefix[cyclePrefix.length - 1]
@@ -3061,7 +3036,10 @@ console.log(pre)
           }
           return false
         }
-        if (cyclePrefix.length >= forceCycleLength) return false
+        if (cyclePrefix.length >= forceCycleLength) {
+          longerCyclesMightExists = true
+          return false
+        }
         visitedInCycle[j] = true
         cyclePrefix.push(j)
         if (findMissingCycle(cyclePrefix)) return true
@@ -3070,22 +3048,25 @@ console.log(pre)
       })
     }
 
-    //solveMissingCycle([nodeidx(g.getVertex("1")),nodeidx(g.getVertex("2")),nodeidx(g.getVertex("4")), nodeidx(g.getVertex("1"))])
-    //solveMissingCycle([nodeidx(g.getVertex("1")),nodeidx(g.getVertex("2")),nodeidx(g.getVertex("3")),nodeidx(g.getVertex("4")), nodeidx(g.getVertex("1"))])
+
     for ( forceCycleLength = 3; forceCycleLength < n; forceCycleLength++) {
       var solutionsChanged = false
+      longerCyclesMightExists = false
+      allEdgesIdentified = true
       for( i = 1 ; i < n; i++ ) {
         var oldPossibleSolutionCount = i in ID ? ID[i].fastp.length : 9999
         if (oldPossibleSolutionCount == 1) continue;
         visitedInCycle[i] = true
         findMissingCycle([i])
         visitedInCycle[i] = false
-        if (i in ID && ID[i].fastp.length < oldPossibleSolutionCount) {
+        var newPossibleSolutionCount = i in ID ? ID[i].fastp.length : 9999
+        if (newPossibleSolutionCount < oldPossibleSolutionCount) {
           solutionsChanged = true
           propagate(i)
         }
+        allEdgesIdentified = allEdgesIdentified && newPossibleSolutionCount == 1
       }
-      if (!solutionsChanged) break
+      if (!longerCyclesMightExists || allEdgesIdentified) break
     }
       
     var IDobject = {}
@@ -3094,7 +3075,6 @@ console.log(pre)
         var identification = {fastp: ID[i].fastp}
         if ("instrument" in ID[i]) identification.instrument = toponodes[ID[i].instrument].id
         if ("propagate" in ID[i]) identification.propagate = toponodes[ID[i].propagate].id
-        console.log(ID[i].missingCycles)
         _.map(["missingCycles", "propagatedMissingCycles", "oldPropagatedMissingCycles", "oldMissingCycles"], function(mcid){
           if (mcid in ID[i]) identification[mcid] = _.map( ID[i][mcid], function(c) {
             return _.map(c, function(v){ return toponodes[v].id } ) 
