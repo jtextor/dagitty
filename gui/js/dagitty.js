@@ -2855,17 +2855,9 @@ var GraphAnalyzer = {
 console.log(        ID[j])
         if (ID[j] && ID[j].fastp.length <= ID[i].fastp.length) return       
         if (_.find(ID[i].fastp, function(fastp){ 
-          var x = sigma[p][q]
-          var y = sigma[i][q]
-          //test fastp*x - y = 0
-          //that is (q*s+p)*x-(s*t+r)*y = 0
-          //that is s*(x*q-y*t)+p*x-y*r = 0
-          //that is s*(x*q-y*t) = y*r - p*x
-          var rhs = y.mul(fastp.r()).sub(fastp.p().mul(x))
-          if ( !fastp.s() ) return isZeroSigmaPoly( rhs )
-          //that is s^2*(q*x-t*y)^2 = (y*r-p*x)^2 
-          var temp = fastp.s().mul( fastp.q().mul(x).sub(fastp.t().mul(y)).sqr() ).sub( rhs.sqr()  )
-          return isZeroSigmaPoly(temp)
+          var tempeval = {}
+          tempeval[lambda[p][i]] = MPoly("0")
+          return sigmaexpand[p][i].eval(tempeval).isZero()
         })) return
         var newfastp = _.map(ID[i].fastp, function(fastp){ 
           //insert fastp in (l*σ1 + σ2)/(l * σ3 + σ4 )   
