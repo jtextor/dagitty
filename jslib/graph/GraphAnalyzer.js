@@ -1896,7 +1896,12 @@ console.log(        ID[j])
                               fastp.r().mul(si4).add(fastp.p().mul(si3)), fastp.s() ? fastp.t().mul(si4).add(fastp.q().mul(si3)) : null,
                               fastp.s() )
         }  )
-        ID[j] = {"propagate": i, fastp: newfastp }
+        ID[j] = {propagate: i, 
+                 fastp: newfastp, 
+                 propagatedMissingCycles: ID[i].missingCycles,
+                 oldMissingCycles: ID[j] ? ID[j].missingCycles : null, 
+                 oldPropagatedMissingCycles: ID[j] ? ID[j].propagatedMissingCycles : null, 
+                 }
         propagate(j)
       } )
     }
@@ -2061,21 +2066,22 @@ console.log(pre)
     }
 
     var visitedInCycle = new Array(n)
+    var forceCycleLength
+    var foundCycle
     function findMissingCycle(cyclePrefix) {
       var s = cyclePrefix[0]
       var e = cyclePrefix[cyclePrefix.length - 1]
       return _.find( missingSpouses[e], function(j) {
         if (visitedInCycle[j]) {
-          if (j == s && cyclePrefix.length >= 3) {
+          if (j == s && cyclePrefix.length == forceCycleLength) {
             cyclePrefix.push(j)
-            if (solveMissingCycle(cyclePrefix)) {
-              propagate(s)
-              return true;
-            }
+            if (solveMissingCycle(cyclePrefix)) 
+              return true
             cyclePrefix.pop()
           }
           return false
         }
+        if (cyclePrefix.length >= forceCycleLength) return false
         visitedInCycle[j] = true
         cyclePrefix.push(j)
         if (findMissingCycle(cyclePrefix)) return true
@@ -2086,11 +2092,20 @@ console.log(pre)
 
     //solveMissingCycle([nodeidx(g.getVertex("1")),nodeidx(g.getVertex("2")),nodeidx(g.getVertex("4")), nodeidx(g.getVertex("1"))])
     //solveMissingCycle([nodeidx(g.getVertex("1")),nodeidx(g.getVertex("2")),nodeidx(g.getVertex("3")),nodeidx(g.getVertex("4")), nodeidx(g.getVertex("1"))])
-    for( i = 1 ; i < n; i++ ) {
-      if (i in ID && ID[i].fastp.length == 1) continue;
-      visitedInCycle[i] = true
-      findMissingCycle([i])
-      visitedInCycle[i] = false
+    for ( forceCycleLength = 3; forceCycleLength < n; forceCycleLength++) {
+      var solutionsChanged = false
+      for( i = 1 ; i < n; i++ ) {
+        var oldPossibleSolutionCount = i in ID ? ID[i].fastp.length : 9999
+        if (oldPossibleSolutionCount == 1) continue;
+        visitedInCycle[i] = true
+        findMissingCycle([i])
+        visitedInCycle[i] = false
+        if (i in ID && ID[i].fastp.length < oldPossibleSolutionCount) {
+          solutionsChanged = true
+          propagate(i)
+        }
+      }
+      if (!solutionsChanged) break
     }
       
     var IDobject = {}
@@ -2100,9 +2115,11 @@ console.log(pre)
         if ("instrument" in ID[i]) identification.instrument = toponodes[ID[i].instrument].id
         if ("propagate" in ID[i]) identification.propagate = toponodes[ID[i].propagate].id
         console.log(ID[i].missingCycles)
-        if ("missingCycles" in ID[i]) identification.missingCycles = _.map( ID[i].missingCycles, function(c) {
-          return _.map(c, function(v){ return toponodes[v].id } ) 
-        })
+        _.map(["missingCycles", "propagatedMissingCycles", "oldPropagatedMissingCycles", "oldMissingCycles"], function(mcid){
+          if (mcid in ID[i]) identification[mcid] = _.map( ID[i][mcid], function(c) {
+            return _.map(c, function(v){ return toponodes[v].id } ) 
+          })
+        }) 
         IDobject[toponodes[i].id] = [ identification ]
       }
       

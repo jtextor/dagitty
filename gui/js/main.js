@@ -341,6 +341,12 @@ function getVertexParent(v){
   if (pa.length != 1) return "(invalid parents)";
   return pa[0].id
 }
+function missingCyclesToString(missingCycles) {
+  if ( missingCycles.length == 0 ) return
+  if ( missingCycles.length == 1 )
+    return "missing cycle " + missingCycles[0].join(", ")
+  return "missing cycles " + _.map(missingCycles, function(c){return c.join(", ")}).join(" and ")
+}
 function showTreeFASTP(id) {
   var q = getVertexParent(id)
   var res = window.lastTreeIDResults.results[id][0]
@@ -361,6 +367,14 @@ function showTreeFASTP(id) {
      msg += "\n which is equivalent to \n"
   }
   msg += res.fastp.join("\n\nOR\n")
+  if (res.missingCycles || res.oldPropagatedMissingCycles || res.oldMissingCycles || res.propagatedMissingCycles) {
+    msg += "\n\n\nThe calculation used cycles: \n"
+    var mc = []
+    _.map(["missingCycles", "propagatedMissingCycles", "oldPropagatedMissingCycles", "oldMissingCycles"], function(mcid){ 
+      if (res[mcid]) mc.push(missingCyclesToString(res[mcid])) 
+    })
+    msg += mc.join(", ")
+  }
   alert(msg)
 }
 function treeIDResultsToHtml( tid ){
@@ -375,14 +389,14 @@ function treeIDResultsToHtml( tid ){
         if (v[0].instrument) {
           r += "instrumental variable " + v[0].instrument
         }
-        if (v[0].propagate) {
+        if (v[0].propagate && (!v[0].missingCycles || !v[0].propagatedMissingCycles) ) {
           r += "propagate from " + v[0].propagate
         }
         if (v[0].missingCycles) {
-          if (v[0].missingCycles.length == 1)
-            r += "missing cycle " + v[0].missingCycles[0].join(", ")
-          else
-            r += "missing cycles " + _.map(v[0].missingCycles, function(c){return c.join(", ")}).join(" and ")
+          r += missingCyclesToString(v[0].missingCycles)
+          if (v[0].propagate && v[0].propagatedMissingCycles ) {
+            r += "<br>and " + missingCyclesToString(v[0].propagatedMissingCycles) + " propagated from " + v[0].propagate
+          }
         }
         r += "</a></li>"
       }
