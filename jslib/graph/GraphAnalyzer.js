@@ -1795,12 +1795,11 @@ var GraphAnalyzer = {
       return x+y
     }//*/
     var maskedEval = {"add": addMasked, "mul": mulMasked}
-    function simulateMasked(){
+    function simulateNumeric(variableValue){
       var i
       var j
       var inputs = new Array(MPolyHelper.variableCount + 1)
-      var MASK = 1 << 50
-      for (i=0;i<inputs.length;i++) inputs[i] = BigInt( Math.floor((MASK)*Math.random()) + 1 )
+      for (i=0;i<inputs.length;i++) inputs[i] = BigInt(variableValue(i))
       // i + 1
       var evaled = {}
       for (i = 0; i < n; i++ )
@@ -1810,7 +1809,27 @@ var GraphAnalyzer = {
       console.log(evaled)
       return evaled
     }
-    var simulated = [simulateMasked()]
+    function findPrimes(n){
+      var primes = [2,3,5,7,11,13]
+      var cp = 17
+      for (;primes.length < n;) {
+        var isPrime = true
+        for (var j=0;j<primes.length;j++)
+          if (cp % primes[j] == 0) {
+            isPrime = false
+            break
+          }
+        if (isPrime) primes.push(cp)
+        cp += 2
+      }
+      return primes
+    }
+    var primes = findPrimes(3*(MPolyHelper.variableCount + 1) + 20 )
+    var simulated = [
+                    simulateNumeric(function(){ return Math.floor((1 << 52)*Math.random()) + 1 }),
+                    simulateNumeric(function(i){ return primes[3*i+20] })
+                    //simulateNumeric(function(i){ return 1 }) this would be stupid, but it works
+                    ]
 
 
     
@@ -1995,35 +2014,37 @@ console.log(pre)
       //a ( p^2 + 2 p q sqrt(s) + q^2 s) + b ( p r + p t sqrt(s) + q r sqrt(s) + q t sqrt(s) sqrt(s) ) + c (r^2 + 2  r t sqrt(s) + t^2 s) = 0
       //a (p^2 + q^2 s) + b ( p r + q s t ) + c r^2 + c t^2 s + ( 2 a p q + b p t + b q r + 2 c r t ) sqrt(s) = 0
       //a (p^2 + q^2 s) + b ( p r + q s t ) + c r^2 + c t^2 s = - ( 2 a p q + b p t + b q r + 2 c r t ) sqrt(s)
-      var a = abc[0]
-      var b = abc[1]
-      var c = abc[2]
-      var p = fastp.p()
-      var q = fastp.q()
-      var r = fastp.r()
-      var s = fastp.s()
-      var t = fastp.t()
-      if (!s) return isZeroSigmaPoly(  ADD(MUL(a,p,p), MUL(b,p,r), MUL(c,r, r) ) )
-      
-      a = a.evalNumeric(simulated[0], maskedEval)
-      b = b.evalNumeric(simulated[0], maskedEval)
-      c = c.evalNumeric(simulated[0], maskedEval)
-      p = p.evalNumeric(simulated[0], maskedEval)
-      q = q.evalNumeric(simulated[0], maskedEval)
-      r = r.evalNumeric(simulated[0], maskedEval)
-      s = s.evalNumeric(simulated[0], maskedEval)
-      t = t.evalNumeric(simulated[0], maskedEval)
-      
-      var app_aqqs_bpr_bqst_crr_ctts = (a*p*p) + (a*q*q*s) + (b*p*r) + (b*q*s*t) + (c*r*r) + (c*t*t*s)
-      var minus_2apq_bpt_bqr_2crt = - ((2n*a*p*q) + (b*p*t) + (b*q*r) +  (2n* c*r*t))
-      
-      if (app_aqqs_bpr_bqst_crr_ctts < 0 && minus_2apq_bpt_bqr_2crt > 0) return false
-      if (app_aqqs_bpr_bqst_crr_ctts > 0 && minus_2apq_bpt_bqr_2crt < 0) return false
-      if (app_aqqs_bpr_bqst_crr_ctts != 0 && minus_2apq_bpt_bqr_2crt == 0) return false
-      if (app_aqqs_bpr_bqst_crr_ctts == 0 && minus_2apq_bpt_bqr_2crt != 0 && s != 0) return false
-      
-      return app_aqqs_bpr_bqst_crr_ctts**2n == (minus_2apq_bpt_bqr_2crt**2n) * s
-      
+      for (var i=0;i<simulated.length;i++) {
+        var a = abc[0]
+        var b = abc[1]
+        var c = abc[2]
+        var p = fastp.p()
+        var q = fastp.q()
+        var r = fastp.r()
+        var s = fastp.s()
+        var t = fastp.t()
+        if (!s) return isZeroSigmaPoly(  ADD(MUL(a,p,p), MUL(b,p,r), MUL(c,r, r) ) )
+        
+        a = a.evalNumeric(simulated[i], maskedEval)
+        b = b.evalNumeric(simulated[i], maskedEval)
+        c = c.evalNumeric(simulated[i], maskedEval)
+        p = p.evalNumeric(simulated[i], maskedEval)
+        q = q.evalNumeric(simulated[i], maskedEval)
+        r = r.evalNumeric(simulated[i], maskedEval)
+        s = s.evalNumeric(simulated[i], maskedEval)
+        t = t.evalNumeric(simulated[i], maskedEval)
+        
+        var app_aqqs_bpr_bqst_crr_ctts = (a*p*p) + (a*q*q*s) + (b*p*r) + (b*q*s*t) + (c*r*r) + (c*t*t*s)
+        var minus_2apq_bpt_bqr_2crt = - ((2n*a*p*q) + (b*p*t) + (b*q*r) +  (2n* c*r*t))
+        
+        if (app_aqqs_bpr_bqst_crr_ctts < 0 && minus_2apq_bpt_bqr_2crt > 0) return false
+        if (app_aqqs_bpr_bqst_crr_ctts > 0 && minus_2apq_bpt_bqr_2crt < 0) return false
+        if (app_aqqs_bpr_bqst_crr_ctts != 0 && minus_2apq_bpt_bqr_2crt == 0) return false
+        if (app_aqqs_bpr_bqst_crr_ctts == 0 && minus_2apq_bpt_bqr_2crt != 0 && s != 0) return false
+        if (app_aqqs_bpr_bqst_crr_ctts**2n != (minus_2apq_bpt_bqr_2crt**2n) * s) return false
+      }
+        
+      return true
 /*    Symbolic approach does not work (too slow and loses sign)
       app_aqqs_bpr_bqst_crr_ctts = ADD(MUL(a,p,p), MUL(a,q,q,s), MUL(b,p,r), MUL(b,q,s,t), MUL(c,r, r), MUL(c,t,t,s))
       var TWO = MPoly("2")
