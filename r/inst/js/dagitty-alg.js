@@ -2841,6 +2841,9 @@ var GraphAnalyzer = {
     
     function isZeroSigmaPoly(p){
       //console.log("isZeroSigmaPoly")
+      for (var i=0;i<simulated.length;i++)
+        if (p.evalNumeric(simulated[i], maskedEval) != 0)
+          return false
       var q = p.eval(sigmaevalobj)
       return q.isZero()
     }
