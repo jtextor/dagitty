@@ -49,8 +49,13 @@ QUnit.test( "graph manipulation", function( assert ) {
 
 QUnit.test( "parsing and serializing", function( assert ) {
 	// GraphParser.VALIDATE_GRAPH_STRUCTURE = false;
+	//
+	//
+	assert.equal( $es( $p( "map -> pop" ) ), "map -> pop", "reserved words"  )
 
-	assert.equal( $p( "dag{{x->{a b}}}" ).edges.length, 2 )
+	assert.equal( $es( $p( "x -> y" ) ), "x -> y", "shorthand notation"  )
+
+	assert.equal( $p( "dag{{x->{a b}}}" ).edges.length, 2, "grouping" )
 
 	assert.equal( $p( "dag{{x->{a ; b}}}" ).edges.length, 2,
 		"semicolons" )
@@ -251,6 +256,8 @@ QUnit.test( "parsing and serializing", function( assert ) {
 		
 	assert.equal( $es($p( 
 			"dag{ U -> {a b c d} }" )), "U -> a\nU -> b\nU -> c\nU -> d" )
+
+
 });
 
 QUnit.test( "ancestry", function( assert ) {
