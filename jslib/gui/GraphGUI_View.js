@@ -533,9 +533,9 @@ var DAGittyGraphView = Class.extend({
 			break
 		case "causalodds":
 			g = this.getGraph()
-			if( g.getSources().length == 1 && g.getTargets().length == 1 && g.getSelectedNodes().length == 1 ){
-				g_causal = GraphTransformer.causalFlowGraph(g)
-				g_bias = GraphTransformer.activeSelectionBiasGraph( g, g.getSources()[0], g.getTargets()[0], g.getSelectedNodes()[0] )
+			g_causal = GraphTransformer.causalFlowGraph(g)
+			if( g.getSources().length == 1 && g.getTargets().length == 1 && g.getSelectedNodes().length > 0 ){
+				g_bias = GraphTransformer.activeSelectionBiasGraph( g, g.getSources()[0], g.getTargets()[0], g.getSelectedNodes() )
 			}
 			break
 		default:

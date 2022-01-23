@@ -3425,17 +3425,17 @@ var GraphTransformer = {
 	/** Retain subgraph that contains the paths linking X to S conditioned on Y.
  	  * Take nodes into account that have already been adjusted for. 
  	  */
-	activeSelectionBiasGraph : function( g, x, y, s ){
+	activeSelectionBiasGraph : function( g, x, y, S ){
 		var r = new Graph()
 		_.each( g.getVertices(), function(v){ r.addVertex(v.id) } )
 		g = g.clone()
-		g.removeSelectedNode( s )
+		_.each( S, function(s){ g.removeSelectedNode( s ) } )
 		_.each( this.activeBiasGraph( g ).getEdges(), function(e) {
 			r.addEdge( e.v1.id, e.v2.id, e.directed )
 		} )
 		g.addAdjustedNode( y )
 		g.removeTarget( y )
-		g.addTarget( s )
+		_.each( S, function(s){ g.addTarget( s ) } )
 		_.each( this.activeBiasGraph( g ).getEdges(), function(e) {
 			r.addEdge( e.v1.id, e.v2.id, e.directed )
 		} )
@@ -6953,9 +6953,9 @@ var DAGittyGraphView = Class.extend({
 			break
 		case "causalodds":
 			g = this.getGraph()
-			if( g.getSources().length == 1 && g.getTargets().length == 1 && g.getSelectedNodes().length == 1 ){
-				g_causal = GraphTransformer.causalFlowGraph(g)
-				g_bias = GraphTransformer.activeSelectionBiasGraph( g, g.getSources()[0], g.getTargets()[0], g.getSelectedNodes()[0] )
+			g_causal = GraphTransformer.causalFlowGraph(g)
+			if( g.getSources().length == 1 && g.getTargets().length == 1 && g.getSelectedNodes().length > 0 ){
+				g_bias = GraphTransformer.activeSelectionBiasGraph( g, g.getSources()[0], g.getTargets()[0], g.getSelectedNodes() )
 			}
 			break
 		default:

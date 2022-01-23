@@ -3420,17 +3420,17 @@ var GraphTransformer = {
 	/** Retain subgraph that contains the paths linking X to S conditioned on Y.
  	  * Take nodes into account that have already been adjusted for. 
  	  */
-	activeSelectionBiasGraph : function( g, x, y, s ){
+	activeSelectionBiasGraph : function( g, x, y, S ){
 		var r = new Graph()
 		_.each( g.getVertices(), function(v){ r.addVertex(v.id) } )
 		g = g.clone()
-		g.removeSelectedNode( s )
+		_.each( S, function(s){ g.removeSelectedNode( s ) } )
 		_.each( this.activeBiasGraph( g ).getEdges(), function(e) {
 			r.addEdge( e.v1.id, e.v2.id, e.directed )
 		} )
 		g.addAdjustedNode( y )
 		g.removeTarget( y )
-		g.addTarget( s )
+		_.each( S, function(s){ g.addTarget( s ) } )
 		_.each( this.activeBiasGraph( g ).getEdges(), function(e) {
 			r.addEdge( e.v1.id, e.v2.id, e.directed )
 		} )
