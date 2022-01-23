@@ -6,7 +6,11 @@ var $es = function(g){ return GraphSerializer.toDotEdgeStatements(g) }
 QUnit.test( "graph manipulation", function( assert ) {
 
 	var g = $p( "dag G { x <-> x }" )
-	assert.equal( g.areAdjacent("x","x"), true )
+	assert.equal( g.areAdjacent("x","x"), true, "self loop" )
+
+	g = $p( "map <-> pop" )
+	g.changeEdge( g.getEdge("map","pop",Graph.Edgetype.Bidirected), Graph.Edgetype.Directed )
+	assert.equal( $es( g  ), "map -> pop", "reserved words"  )
 
 	g = $p( "dag G { x <-> y }" )
 	assert.equal( g.areAdjacent("x","y"), true )
@@ -280,6 +284,10 @@ QUnit.test( "separators", function( assert ) {
 	function verts(a) {
 		return _.isArray(a) ? a.map(function(vid){return g.getVertex(vid)}) : [g.getVertex(a)]
 	}
+
+
+	g = $p("length -> push -> pop map -> { length push }")
+	assert.equal( GraphAnalyzer.listMinimalImplications( g ).length, 2, "reserverd words" )
 	
 	g = GraphTransformer.backDoorGraph(TestGraphs.small1())
 	assert.equal( sep_2_str( GraphAnalyzer.listMinimalSeparators(g) ), "{}" )

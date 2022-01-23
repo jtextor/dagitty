@@ -1513,9 +1513,7 @@ var GraphAnalyzer = {
 		var g2 = g.clone()
 		var vv = g2.vertices.values()
 		// this ignores adjusted vertices for now 
-		for( var i = 0 ; i < vv.length ; i ++ ){
-			g2.removeAllAdjustedNodes()
-		}
+		g2.removeAllAdjustedNodes()
 		var n = 0
 		for( i = 0 ; i < vv.length ; i ++ ){
 			for( var j = i+1 ; j < vv.length ; j ++ ){
@@ -1691,7 +1689,7 @@ var GraphAnalyzer = {
 		}
 		
 		gr = g.clone(false)
-		visited = []
+		visited = {} 
 		
 		var followEdges = function( u, v, kin, edgetype, reverse ){
 			var st = []
@@ -2234,7 +2232,7 @@ var GraphAnalyzer = {
 	 *  a subset of vertices 
 	 */
 	connectedComponentAvoiding : function( g, V, U ){
-		var visited = [], q = [], r = []
+		var visited = {}, q = [], r = []
 		if( U instanceof Array ){
 			_.each( U, function(u){ visited[u.id]=1 })
 		}
@@ -3157,7 +3155,7 @@ var GraphParser = {
 			if( isdot && isdot.length > 1 ){
 				return this.parseDot( firstarg )
 			} else {
-				var hasarrow = firstarg.match( /(->|<->|<-|--)/mi )
+				var hasarrow = firstarg.match( /(->|<->|<-)/mi )
 				// allow users to omit explicit "dag{ ... }" if at least one arrow is also specified
 				if( hasarrow  && hasarrow.length >= 1  ){
 					return this.parseDot( "dag{"+firstarg+"}" )
