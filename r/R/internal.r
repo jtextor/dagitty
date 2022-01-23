@@ -277,8 +277,16 @@
 }
 
 .checkName <- function(x, v) {
-  if (!(v %in% names(x))) 
-    stop(paste(v, "is not a variable in `x`"))
+	# allow "no" names for convenience
+	if( length(v) == 0 ){
+		return()
+	}
+	if( length(v) > 1 ){
+		stop("This function expects a variable name")
+	}
+  	if (!(v %in% names(x))){
+    	stop(paste(v, "is not a variable in `x`"))
+	}
 }
 
 .checkAllNames <- function(x, vv) {
