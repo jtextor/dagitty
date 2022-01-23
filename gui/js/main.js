@@ -75,6 +75,7 @@ var GUI = {
 		document.getElementById("variable_label").innerText = vid
 		document.getElementById("variable_exposure").checked = Model.dag.isSource(vid)
 		document.getElementById("variable_outcome").checked = Model.dag.isTarget(vid)
+		document.getElementById("variable_selected").checked = Model.dag.isSelectedNode(vid)
 		document.getElementById("variable_adjusted").checked = Model.dag.isAdjustedNode(vid)
 		document.getElementById("variable_unobserved").checked = Model.dag.isLatentNode( vid )
 	},
@@ -212,6 +213,12 @@ function setsToHTML( sets ){
 }
 
 function causalEffectEstimates(){
+	if( Model.dag.getSelectedNodes().length > 0 ){
+		displayCausalMsg("I cannot determine causal effects for DAGs with selection nodes."); return 
+	}
+	if( GraphAnalyzer.containsCycle( Model.dag ) ){
+		displayCausalMsg("I cannot determine causal effects for cyclic models."); return 
+	}
 	switch( document.getElementById("causal_effect_kind").value ){
 		case "adj_total" :
 			displayAdjustmentInfo("total"); break
@@ -246,6 +253,11 @@ function msasToHtml( msas ){
 	} else {
 		return "";
 	}
+}
+
+function displayCausalMsg( wh ){	
+	document.getElementById("causal_effect").innerHTML 
+		= "<p>"+wh+"</p>";
 }
 
 function displayAdjustmentInfo( kind ){	

@@ -68,7 +68,9 @@ var ObservedGraph = Class.extend({
 		"addLatentNode" : "change",
 		"removeLatentNode" : "change",
 		"addAdjustedNode" : "change",
-		"removeAdjustedNode" : "change"
+		"removeAdjustedNode" : "change",
+		"addSelectedNode" : "change",
+		"removeSelectedNode" : "change"
 	},
 
 	observe : function( event, listener ){

@@ -342,6 +342,30 @@ e:"e0 x\n"+
 	"PER DET\n",
 
 	l: "van Kampen, 2014"
-}
+},
 
+{
+	"d": `
+dag {
+Age [adjusted,pos="-1.973,-0.123"]
+HRT [exposure,pos="-0.536,-0.016"]
+Occ [pos="-1.645,0.432"]
+S [selected,pos="0.925,-0.500"]
+Smo [pos="-0.879,0.441"]
+TCI [outcome,pos="0.488,0.090"]
+Thist [pos="-0.569,1.027"]
+Age -> HRT
+Age -> Occ
+Age -> S [pos="-0.945,-0.571"]
+Age -> TCI [pos="-0.264,-0.456"]
+HRT -> TCI
+Occ -> Smo
+Occ -> Thist
+Smo -> HRT
+Smo -> TCI
+TCI -> S
+Thist -> TCI
+}`,
+	l: "Didelez et al, 2010"
+	}
 ]; 

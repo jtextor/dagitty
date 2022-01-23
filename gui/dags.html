@@ -178,6 +178,7 @@
             <li><a href="#" onclick="how('To set the exposure variable, click/tap it and check &quot;exposure&quot; in the &quot;variable&quot; tab, or move the mouse over it and press the &quot;e&quot; key on your keyboard.')">Set exposure variable</a></li>
             <li><a href="#" onclick="how('To set the outcome variable, click/tap it and check &quot;outcome&quot; in the &quot;variable&quot; tab, or move the mouse over it and press the &quot;o&quot; key on your keyboard.')">Set outcome variable</a></li>
             <li><a href="#" onclick="how('To toggle adjustment for a variable, click/tap it and check &quot;adjusted&quot in the &quot;variable&quot; tab, or move the mouse over it and press the &quot;a&quot; key on your keyboard.')">Adjust for variable</a></li>
+            <li><a href="#" onclick="how('To toggle selection status for a variable, click/tap it and check &quot;selected&quot in the &quot;variable&quot; tab, or move the mouse over it and press the &quot;s&quot; key on your keyboard.')">Define a selection variable</a></li>
             <li><a href="#" onclick="how('To toggle observed status for a variable, click/tap it and check &quot;unobserved&quot; in the &quot;variable&quot; tab, or move the mouse over it and press the &quot;u&quot; key on your keyboard.')">Make a variable unobserved (latent)</a></li>
          </ul>
       </li>
@@ -233,6 +234,9 @@ E -&gt; D
       <p><input type="checkbox" checked="checked" id="variable_adjusted"
          onclick="GUI.set_variable_status('adjustedNode',this.checked)" />
          	<label for="variable_adjusted">adjusted</label></p>
+      <p><input type="checkbox" checked="checked" id="variable_selected"
+         onclick="GUI.set_variable_status('selectedNode',this.checked)" />
+         	<label for="variable_selected">selected</label></p>
       <p><input type="checkbox" checked="checked" id="variable_unobserved"
          onclick="GUI.set_variable_status('latentNode',this.checked)" />
          	<label for="variable_unobserved">unobserved</label></p>
@@ -259,6 +263,9 @@ E -&gt; D
       <p><input type="radio" checked="checked" id="dagview_dag" name="dagview"
          onclick="GUI.set_view_mode('normal')" /> 
          	<label for="dagview_dag">normal</label></p>
+      <p><input type="radio" name="dagview" id="dagview_causalodds"
+         onclick="GUI.set_view_mode('causalodds')"/>
+         	<label for="dagview_causalodds">causal odds ratio</label></p>
       <p><input type="radio" name="dagview" id="dagview_moral"
          onclick="GUI.set_view_mode('moral')"/>
          	<label for="dagview_moral">moral graph</label></p>
