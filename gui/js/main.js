@@ -363,10 +363,17 @@ function showTreeFASTP(id) {
   if (alen(res.missingCycles) + alen(res.oldPropagatedMissingCycles) + alen(res.oldMissingCycles) + alen(res.propagatedMissingCycles) > 0) {
     msg += "\n\n\nThe calculation used cycles: \n"
     var mc = []
-    _.map(["missingCycles", "propagatedMissingCycles", "oldPropagatedMissingCycles", "oldMissingCycles"], function(mcid){ 
+    _.map(["missingCycles", "propagatedMissingCycles", "oldMissingCycles"], function(mcid){ 
       if (res[mcid]) mc.push(missingCyclesToString(res[mcid])) 
     })
     msg += mc.join(", ")
+  }
+  if (res.propagatePath){
+    msg += "\n\n\n"
+    msg += "The solution propagated from:"+res.propagatePath.join("<->")
+    if (res.missingCycles) {
+      msg += "\n(One cycle was found that yielded 2 possible solutions which propagated here. Another cycle was found which elimated one of the solutions, yielding one unique solution.) "
+    }
   }
   alert(msg)
 }

@@ -2878,12 +2878,13 @@ var GraphAnalyzer = {
                               fastp.s() )
         }  )
         ID[j] = {propagate: i, 
+                 propagatePath: "propagate" in ID[i] ? ID[i].propagatePath.concat([i]) : [i], 
                  fastp: newfastp, 
-                 propagatedMissingCycles: ID[i].missingCycles,
-                 oldMissingCycles: ID[j] ? ID[j].missingCycles : null, 
-                 oldPropagatedMissingCycles: ID[j] ? ID[j].propagatedMissingCycles : null, 
+                 propagatedMissingCycles: "propagate" in ID[i] ? ID[i].propagatedMissingCycles : ID[i].missingCycles,
+                 oldMissingCycles: ID[j] ? ID[j].missingCycles : null
+                // oldPropagatedMissingCycles: ID[j] ? ID[j].propagatedMissingCycles : null, 
                  }
-        propagate(j)
+          propagate(j)
       } )
     }
     
@@ -3077,16 +3078,19 @@ var GraphAnalyzer = {
       if (!longerCyclesMightExists || allEdgesIdentified) break
     }
       
+    function nodeIdxToNodeIdArray(a){
+      return _.map(a, function(v){ return toponodes[v].id } ) 
+    }
+      
     var IDobject = {}
     for ( i = 0; i < n; i++ )
       if (i in ID) {
         var identification = {fastp: ID[i].fastp}
         if ("instrument" in ID[i]) identification.instrument = toponodes[ID[i].instrument].id
         if ("propagate" in ID[i]) identification.propagate = toponodes[ID[i].propagate].id
-        _.map(["missingCycles", "propagatedMissingCycles", "oldPropagatedMissingCycles", "oldMissingCycles"], function(mcid){
-          if (mcid in ID[i]) identification[mcid] = _.map( ID[i][mcid], function(c) {
-            return _.map(c, function(v){ return toponodes[v].id } ) 
-          })
+        if ("propagatePath" in ID[i]) identification.propagatePath = nodeIdxToNodeIdArray(ID[i].propagatePath)
+        _.map(["missingCycles", "propagatedMissingCycles", "oldMissingCycles"], function(mcid){
+          if (mcid in ID[i]) identification[mcid] = _.map( ID[i][mcid], nodeIdxToNodeIdArray )
         }) 
         IDobject[toponodes[i].id] = [ identification ]
       }
