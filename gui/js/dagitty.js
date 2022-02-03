@@ -3157,7 +3157,7 @@ var GraphParser = {
 			if( isdot && isdot.length > 1 ){
 				return this.parseDot( firstarg )
 			} else {
-				var hasarrow = firstarg.match( /(->|<->|<-|--)/mi )
+				var hasarrow = firstarg.match( /(->|<->|<-)/mi )
 				// allow users to omit explicit "dag{ ... }" if at least one arrow is also specified
 				if( hasarrow  && hasarrow.length >= 1  ){
 					return this.parseDot( "dag{"+firstarg+"}" )
@@ -6603,6 +6603,9 @@ var DAGittyGraphView = Class.extend({
 		case 65: //a
 			if(v) this.toggleVertexProperty(v,"adjustedNode")
 			break
+		case 66: //b
+			if(v) this.impl.touchVertexShape( this.getVertexShape(v.id), e, true )
+			break
 		case 67: //c
 			if(v) this.impl.touchVertexShape( this.getVertexShape(v.id), e )
 			break
@@ -6668,11 +6671,12 @@ var DAGittyGraphView = Class.extend({
 		this.view_mode = m
 		this.drawGraph()
 	},
-	connectVertices : function( v1, v2 ){
+	connectVertices : function( v1, v2, bidi ){
 		if( this.dialogOpen() ){ return }
 		if( v1 == v2 ) return
 
-		this.lastEdge = this.getController().toggleEdgeFromTo( v1, v2 )
+		if (bidi) this.getController().toggleEdgeBidi( v1, v2 )
+		else this.lastEdge = this.getController().toggleEdgeFromTo( v1, v2, bidi )
 	},
 	newVertex : function( n ){
 		if( !n ){
@@ -7172,6 +7176,23 @@ var DAGittyController = Class.extend({
 		} else {
 			this.getObservedGraph().addEdge( v1, v2, Graph.Edgetype.Directed )
 			return done()
+		}
+	},
+	toggleEdgeBidi : function( v1, v2 ){
+		var e = this.getGraph().getEdge( v1, v2, Graph.Edgetype.Bidirected )
+		if (e) {
+			this.getObservedGraph().deleteEdge( e.v1, e.v2, e.directed )
+			return
+		}
+		e = this.getObservedGraph().addEdge( v1, v2, Graph.Edgetype.Bidirected )
+		if (v1.incomingEdges.length + v1.outgoingEdges.length > 1 && _.isNumber(v1.layout_pos_x) && _.isNumber(v2.layout_pos_x) ){
+			//curve the edge
+			var dx = v2.layout_pos_x - v1.layout_pos_x
+			var dy = v2.layout_pos_y - v1.layout_pos_y
+			var dlen = Math.sqrt(dx*dx + dy*dy)
+			e.layout_pos_x = v1.layout_pos_x + dx/2 - dy / 2 / dlen // changes model
+			e.layout_pos_y = v1.layout_pos_y + dy/2 + dx / 2 / dlen // changes model
+			this.graphChanged()
 		}
 	},
 	/* 
@@ -7702,7 +7723,7 @@ var GraphGUI_SVG = Class.extend({
 			this.unsetLastHoveredElement, this
 		) )
 	},
-	touchVertexShape : function( el, e ){
+	touchVertexShape : function( el, e, bidi ){
 		this.last_touched_element = {"vertex" : el, "last_touch" : e.identifier}
 		this.start_x = this.pointerX(e)-this.getContainer().offsetLeft
 		this.start_y = this.pointerY(e)-this.getContainer().offsetTop
@@ -7710,7 +7731,7 @@ var GraphGUI_SVG = Class.extend({
 		if( pel ){
 			this.unmarkVertexShape()
 			if( pel != el ){
-				this.callEventListener( "vertex_connect", [pel.v, el.v] )
+				this.callEventListener( "vertex_connect", [pel.v, el.v, bidi] )
 			} else {
 				this.cancel_next_click = true 
 			}

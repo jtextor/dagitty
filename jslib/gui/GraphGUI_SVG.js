@@ -271,7 +271,7 @@ var GraphGUI_SVG = Class.extend({
 			this.unsetLastHoveredElement, this
 		) )
 	},
-	touchVertexShape : function( el, e ){
+	touchVertexShape : function( el, e, bidi ){
 		this.last_touched_element = {"vertex" : el, "last_touch" : e.identifier}
 		this.start_x = this.pointerX(e)-this.getContainer().offsetLeft
 		this.start_y = this.pointerY(e)-this.getContainer().offsetTop
@@ -279,7 +279,7 @@ var GraphGUI_SVG = Class.extend({
 		if( pel ){
 			this.unmarkVertexShape()
 			if( pel != el ){
-				this.callEventListener( "vertex_connect", [pel.v, el.v] )
+				this.callEventListener( "vertex_connect", [pel.v, el.v, bidi] )
 			} else {
 				this.cancel_next_click = true 
 			}

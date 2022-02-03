@@ -206,6 +206,9 @@ var DAGittyGraphView = Class.extend({
 		case 65: //a
 			if(v) this.toggleVertexProperty(v,"adjustedNode")
 			break
+		case 66: //b
+			if(v) this.impl.touchVertexShape( this.getVertexShape(v.id), e, true )
+			break
 		case 67: //c
 			if(v) this.impl.touchVertexShape( this.getVertexShape(v.id), e )
 			break
@@ -271,11 +274,12 @@ var DAGittyGraphView = Class.extend({
 		this.view_mode = m
 		this.drawGraph()
 	},
-	connectVertices : function( v1, v2 ){
+	connectVertices : function( v1, v2, bidi ){
 		if( this.dialogOpen() ){ return }
 		if( v1 == v2 ) return
 
-		this.lastEdge = this.getController().toggleEdgeFromTo( v1, v2 )
+		if (bidi) this.getController().toggleEdgeBidi( v1, v2 )
+		else this.lastEdge = this.getController().toggleEdgeFromTo( v1, v2, bidi )
 	},
 	newVertex : function( n ){
 		if( !n ){

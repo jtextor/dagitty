@@ -143,6 +143,23 @@ var DAGittyController = Class.extend({
 			return done()
 		}
 	},
+	toggleEdgeBidi : function( v1, v2 ){
+		var e = this.getGraph().getEdge( v1, v2, Graph.Edgetype.Bidirected )
+		if (e) {
+			this.getObservedGraph().deleteEdge( e.v1, e.v2, e.directed )
+			return
+		}
+		e = this.getObservedGraph().addEdge( v1, v2, Graph.Edgetype.Bidirected )
+		if (v1.incomingEdges.length + v1.outgoingEdges.length > 1 && _.isNumber(v1.layout_pos_x) && _.isNumber(v2.layout_pos_x) ){
+			//curve the edge
+			var dx = v2.layout_pos_x - v1.layout_pos_x
+			var dy = v2.layout_pos_y - v1.layout_pos_y
+			var dlen = Math.sqrt(dx*dx + dy*dy)
+			e.layout_pos_x = v1.layout_pos_x + dx/2 - dy / 2 / dlen // changes model
+			e.layout_pos_y = v1.layout_pos_y + dy/2 + dx / 2 / dlen // changes model
+			this.graphChanged()
+		}
+	},
 	/* 
 		Handler that is called when an edge is clicked on. Cycles through the available types of edges.
 		For now, I do not support undirected edges.

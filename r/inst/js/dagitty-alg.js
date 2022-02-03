@@ -3152,7 +3152,7 @@ var GraphParser = {
 			if( isdot && isdot.length > 1 ){
 				return this.parseDot( firstarg )
 			} else {
-				var hasarrow = firstarg.match( /(->|<->|<-|--)/mi )
+				var hasarrow = firstarg.match( /(->|<->|<-)/mi )
 				// allow users to omit explicit "dag{ ... }" if at least one arrow is also specified
 				if( hasarrow  && hasarrow.length >= 1  ){
 					return this.parseDot( "dag{"+firstarg+"}" )
