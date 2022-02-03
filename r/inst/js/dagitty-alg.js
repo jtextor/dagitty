@@ -2691,20 +2691,36 @@ var GraphAnalyzer = {
     var n = g.getNumberOfVertices()      
     var topology = GraphAnalyzer.topologicalOrdering(g)
     var toponodes = new Array(n)
-    _.each(topology, function(index, id) { toponodes[index - 1] = g.getVertex(id) })
+    _.each(topology, function(index, id) { 
+      if (index < 1) return //GraphAnalyzer.topologicalOrdering returns 0 for isolated nodes
+      toponodes[index - 1] = g.getVertex(id) 
+    })
 
     function nodeidx(v) { return topology[v.id] - 1 }
 
-    var pa = Array(n)
-    var nontreenodes = []
-    for (i=n-1; i > 0; i -- ) {
-      var p = toponodes[i].getParents()
-      pa[i] = nodeidx(p[0])
-      if (p.length != 1) {
-        nontreenodes.push(toponodes[i].id)
+    var oldpa = _.map(toponodes, function(v) { return v ? v.getParents() : null })
+    var oldtoponodes = toponodes
+    var pa = []
+    toponodes = []
+    _.each(oldtoponodes, function(v, i) { 
+      var p = oldpa[i]
+      if (p && ( (p.length == 1) || (p.length == 0 && v.getChildren().length > 0)) ) {
+        pa.push(p)
+        toponodes.push(v)
       }
+    } )
+
+    var hasnontreenodes = toponodes.length != n
+    if (hasnontreenodes) {
+      n = toponodes.length
+      _.each(toponodes, function(n, i){ topology[n.id] = i + 1 })
     }
     
+    pa = _.map(pa, function(p) { 
+      if (p.length == 0) return null
+      else return nodeidx(p[0])
+    })
+
     var D = this.graphToAdjacencyMatrix(g, toponodes, Graph.Edgetype.Directed)
     var B = this.graphToAdjacencyMatrix(g, toponodes, Graph.Edgetype.Bidirected)
     
@@ -2751,6 +2767,7 @@ var GraphAnalyzer = {
           return a.mul(b)
         }) })        
         var treksum = _.reduce(trekProducts, function(a, b) { return a.add(b) })
+        if (!treksum) treksum = MPoly.zero
         sigmaexpand[i][j] = sigmaexpand[j][i] = treksum
         sigmaevalobj[sigma[i][j]] = treksum
         //console.log(toponodes[i].id + "  " + toponodes[j].id + " -> " +treksum)
@@ -2853,8 +2870,8 @@ var GraphAnalyzer = {
     function propagate(i){
       var p = pa[i]
       _.each( missingSpouses[i], function(j) {
-        if (j == 0) return 
         var q = pa[j]
+        if (_.isNull(q)) return 
         if (ID[j] && ID[j].fastp.length <= ID[i].fastp.length) return       
         if (_.find(ID[i].fastp, function(fastp){ 
           var tempeval = {}
@@ -2884,11 +2901,14 @@ var GraphAnalyzer = {
     }
     
     var i
-    for( i = 1 ; i < n; i++ ) 
-      if (!B[0][i]) {
-        ID[i] = {"instrument": 0, fastp: [ FASTP.makeFraction(sigma[0][i], sigma[0][pa[i]]) ]} 
-        propagate(i)
-      }
+    var r
+    for (var r = 0; r < n; r++) 
+      if (_.isNull(pa[r]))
+        for( i = r + 1 ; i < n; i++ ) 
+          if (!B[r][i] && !_.isNull(pa[i]) && !sigmaexpand[r][pa[i]].isZero()) {
+            ID[i] = {"instrument": r, fastp: [ FASTP.makeFraction(sigma[r][i], sigma[r][pa[i]]) ]} 
+            propagate(i)
+          }
 
     function bidiEquation(i, j){
       var p = pa[i]
@@ -3031,6 +3051,7 @@ var GraphAnalyzer = {
       var s = cyclePrefix[0]
       var e = cyclePrefix[cyclePrefix.length - 1]
       return _.find( missingSpouses[e], function(j) {
+        if (_.isNull(pa[j])) return false
         if (visitedInCycle[j]) {
           if (j == s && cyclePrefix.length == forceCycleLength) {
             cyclePrefix.push(j)
@@ -3057,7 +3078,8 @@ var GraphAnalyzer = {
       var solutionsChanged = false
       longerCyclesMightExists = false
       allEdgesIdentified = true
-      for( i = 1 ; i < n; i++ ) {
+      for( i = 0 ; i < n; i++ ) {
+        if (_.isNull(pa[i])) continue
         var oldPossibleSolutionCount = i in ID ? ID[i].fastp.length : 9999
         if (oldPossibleSolutionCount == 1) continue;
         visitedInCycle[i] = true
@@ -3091,7 +3113,7 @@ var GraphAnalyzer = {
       }
       
     var res = {"results": IDobject}
-    if (nontreenodes.length > 0) res.warning = "Nodes " + nontreenodes.join(", ") + " have not exactly one parent. The algorithm assumes all nodes have one parent."
+    if (hasnontreenodes) res.warnings = ["Some nodes have more than one parent. The algorithm assumes all nodes except a certain root node have exactly one parent, and ignores nodes with more parents"]
     return res
   }
 }

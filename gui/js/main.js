@@ -413,10 +413,11 @@ function treeIDResultsToHtml( tid ){
 }
 
 function displayTreeIDInfo(){
+  var warnings = []
 	if( Model.dag.getSources().length != 0 || 
 		Model.dag.getTargets().length != 0 ){
-		document.getElementById("causal_effect").innerHTML = "<p>Do not mark exposure and outcome nodes for TreeID. TreeID tests for <emph>each</emph> node whether it and its parent are identifiable as outcome and exposure nodes. </p>"
-		return
+    warnings = ["Do not mark exposure and outcome nodes for TreeID. TreeID tests for <emph>each</emph> node whether it and its parent are identifiable as outcome and exposure nodes. </p>"]
+		document.getElementById("causal_effect").innerHTML = "<p><font color='red'>"+warnings[0]+"</font></p>"
 	}
   var tid
   try {
@@ -426,7 +427,10 @@ function displayTreeIDInfo(){
 		document.getElementById("causal_effect").innerHTML = "<p>"+e+"</p>"
     return
   }
-	document.getElementById("causal_effect").innerHTML = treeIDResultsToHtml( tid )
+	var out = treeIDResultsToHtml( tid )
+  if (tid.warnings) warnings = warnings.concat(tid.warnings)
+  _.each(warnings, function(w){ out += "<p><font color='red'>"+w+"</font></p>" })
+  document.getElementById("causal_effect").innerHTML = out
 }
 
 function displayImplicationInfo( full ){
