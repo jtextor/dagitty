@@ -2874,9 +2874,11 @@ var GraphAnalyzer = {
         if (_.isNull(q)) return 
         if (ID[j] && ID[j].fastp.length <= ID[i].fastp.length) return       
         if (_.find(ID[i].fastp, function(fastp){ 
+          //test if there exists a trek between q and i (Lemma 6 in AISTATS 2022 paper) not involving edge p->i.
+          //removing edge p->i corresponds to removing all terms lambda_pi from the sum of treks.
           var tempeval = {}
           tempeval[lambda[p][i]] = MPoly("0")
-          return sigmaexpand[p][i].eval(tempeval).isZero()
+          return sigmaexpand[q][i].eval(tempeval).isZero()
         })) return
         var newfastp = _.map(ID[i].fastp, function(fastp){ 
           //insert fastp in (l*σ1 + σ2)/(l * σ3 + σ4 )   
