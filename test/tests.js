@@ -98,14 +98,23 @@ QUnit.test( "multivariate polynomials", function( assert ) {
 	assert.equal(MPoly("x^4").eval({"x": MPoly("2 x + 10 y")}), "8000 x y^3 + 2400 x^2 y^2 + 320 x^3 y + 16 x^4 + 10000 y^4")
 
 
-	assert.equal(MPoly("0").evalNumeric({"x": 7}), 0)
-	assert.equal(MPoly("123").evalNumeric({"x": 7}), 123)
-	assert.equal(MPoly("x").evalNumeric({"x": 7}), 7)
-	assert.equal(MPoly("x^2").evalNumeric({"x": 7}), 49)
-	assert.equal(MPoly("x y").evalNumeric({"x": 7, "y": 3}), 21)
-	assert.equal(MPoly("x y + z + a").evalNumeric({"x": 7, "y": 2, "z": 1000, "a": 200}), 1214)
-	assert.equal(MPoly("x^3").evalNumeric({"x": 3}), 27)
-	assert.equal(MPoly("x^4").evalNumeric({"x": 3}), 81)
+	assert.equal(MPoly("0").evalToNumber({"x": 7}), 0)
+	assert.equal(MPoly("123").evalToNumber({"x": 7}), 123)
+	assert.equal(MPoly("x").evalToNumber({"x": 7}), 7)
+	assert.equal(MPoly("x^2").evalToNumber({"x": 7}), 49)
+	assert.equal(MPoly("x y").evalToNumber({"x": 7, "y": 3}), 21)
+	assert.equal(MPoly("x y + z + a").evalToNumber({"x": 7, "y": 2, "z": 1000, "a": 200}), 1214)
+	assert.equal(MPoly("x^3").evalToNumber({"x": 3}), 27)
+	assert.equal(MPoly("x^4").evalToNumber({"x": 3}), 81)
+
+	assert.equal(MPoly("0").evalToBigInt({"x": 7n}), 0)
+	assert.equal(MPoly("123").evalToBigInt({"x": 7n}), 123)
+	assert.equal(MPoly("x").evalToBigInt({"x": 7n}), 7)
+	assert.equal(MPoly("x^2").evalToBigInt({"x": 7n}), 49)
+	assert.equal(MPoly("x y").evalToBigInt({"x": 7n, "y": 3n}), 21)
+	assert.equal(MPoly("x y + z + a").evalToBigInt({"x": 7n, "y": 2n, "z": 1000n, "a": 200n}), 1214)
+	assert.equal(MPoly("x^3").evalToBigInt({"x": 3n}), 27)
+	assert.equal(MPoly("x^4").evalToBigInt({"x": 3n}), 81)
 })
 
 
@@ -1007,6 +1016,63 @@ QUnit.test( "instrumental variables", function( assert ) {
 			g.getVertex("z") )).pluck("id").join(",")
 	})(), ""  )
 });
+
+QUnit.test( "treeID", function( assert ) {
+	//instrument
+	var r = GraphAnalyzer.treeID($p( "dag { Z -> X \n X -> Y \n X <-> Y }" )).results
+	assert.equal(r["X"][0].instrument, "Z")
+	assert.equal(r["X"][0].fastp.length, 1)
+	assert.equal(r["Y"][0].instrument, "Z")
+	assert.equal(r["Y"][0].fastp.length, 1)
+	
+	//instrument + propagate
+	var r = GraphAnalyzer.treeID($p( "dag { A -> E \n A <-> D \n E -> D \n E -> v1 }" )).results
+	assert.equal(r["E"][0].instrument, "A")
+	assert.equal(r["E"][0].fastp.length, 1)
+	assert.equal(r["v1"][0].instrument, "A")
+	assert.equal(r["v1"][0].fastp.length, 1)
+	assert.equal(r["D"][0].propagate, "E")
+	assert.equal(r["D"][0].fastp.length, 1)
+
+	//missing cycles (example from weihs/drton tsID)
+	var r = GraphAnalyzer.treeID($p( "dag { 0 -> 1 \n 0 -> 2 \n 0 -> 3 \n 0 <-> 1 \n 0 <-> 2 \n 0 <-> 3 \n 0 <-> 4 \n 3 -> 4 }" )).results
+	assert.equal(r["1"][0].propagate, "2")
+	assert.equal(r["1"][0].fastp.length, 1)
+	assert.equal(r["2"][0].propagate, "4")
+	assert.equal(r["2"][0].fastp.length, 1)
+	assert.equal(r["4"][0].propagate, "3")
+	assert.equal(r["4"][0].fastp.length, 1)
+	assert.equal("missingCycles" in r["3"][0], true)
+	assert.equal(r["3"][0].fastp.length, 1)
+
+	//missing cycles (example (4680, 403) from weihs/drton tsID)
+	var r = GraphAnalyzer.treeID($p( "dag { 3->4  \n 1->2  \n 0->1  \n 2->3  \n 3<->1 \n 3<->0 \n 1<->0 \n 0<->2 \n 0<->4 }" )).results
+	assert.equal(r["3"][0].propagate, "4")
+	assert.equal(r["3"][0].fastp.length, 1)
+	assert.equal(r["4"][0].propagate, "1")
+	assert.equal(r["4"][0].fastp.length, 1)
+	assert.equal(r["1"][0].propagate, "2")
+	assert.equal(r["1"][0].fastp.length, 1)
+	assert.equal("missingCycles" in r["2"][0], true)
+	assert.equal(r["2"][0].fastp.length, 1)
+
+	//not identifiable
+	var r = GraphAnalyzer.treeID($p( "dag { A -> E   \n A <-> D  \n A <-> E  \n A <-> v1 \n D <-> v1 \n E -> D   \n E -> v1 }" )).results
+	assert.equal( ("A" in r) || ("E" in r) || ("D" in r) || ("v1" in r), false )
+	
+	//2-id, missing cycle [[1, 2], [2, 3], [3, 4], [1, 4]]
+	var r = GraphAnalyzer.treeID($p( "dag { 0 -> 1  \n 0 <-> 1 \n 0 <-> 2 \n 0 <-> 3 \n 0 <-> 4 \n 1 -> 2  \n 1 <-> 3 \n 2 -> 3  \n 2 <-> 4 \n 3 -> 4  }" )).results
+	assert.equal(r["4"][0].propagate, "3")
+	assert.equal(r["4"][0].fastp.length, 2)
+	assert.equal(r["3"][0].propagate, "2")
+	assert.equal(r["3"][0].fastp.length, 2)
+	assert.equal(r["2"][0].propagate, "1")
+	assert.equal(r["2"][0].fastp.length, 2)
+	assert.equal("missingCycles" in r["1"][0], true)
+	assert.equal(r["1"][0].fastp.length, 2)
+
+	
+})
 
 QUnit.test( "graph validation", function( assert ) {
 	GraphParser.VALIDATE_GRAPH_STRUCTURE = false;

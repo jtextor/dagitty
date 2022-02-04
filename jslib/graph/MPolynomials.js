@@ -86,7 +86,7 @@ MPoly.prototype.toString = function(formatting){
 	formatting = formatting ? formatting : {}
 	var PLUS = "PLUS" in formatting ? formatting.PLUS : " + "
 	var SUB = "SUB" in formatting ? formatting.SUB : " - "
-	var TIMES = "TIMES" in formatting ? formatting.TIMES : "*"
+	var TIMES = "TIMES" in formatting ? formatting.TIMES : " "
 	var POWER = "POWER" in formatting ? formatting.POWER : "^"
 	if (this.length == 0) return "0"
 	return this.map(function(term, i){
@@ -100,7 +100,7 @@ MPoly.prototype.toString = function(formatting){
 		}
 		if (factor != 1 || term.length == 1)
 			temp.push(factor.toString())
-		for (var i=1; i < term.length; i+=2) {
+		for (i=1; i < term.length; i+=2) {
 			var exp = term[i+1] == 1 ? "" : POWER + term[i+1]
 			temp.push(MPolyHelper.variableToString(term[i]) + exp)
 		}
@@ -116,8 +116,8 @@ MPoly.prototype.eval = function(insert){
 	var replacements
 	if (_.isArray(insert)) replacements = insert
 	else {
-		var replacements = new Array(MPolyHelper.variableCount + 1)
-		for (p in insert) 
+		replacements = new Array(MPolyHelper.variableCount + 1)
+		for (var p in insert) 
 			replacements[MPolyHelper.variableFromString(p, true)] = insert[p]
 	}
 
@@ -147,27 +147,35 @@ MPoly.prototype.eval = function(insert){
 		else newproduct = keptpoly
 		if (newsum !== null) newsum = newsum.add(newproduct)
 		else newsum = newproduct
-//    console.log(newsum)
 	}
 	if (newsum === null) newsum = MPoly.zero
 	return newsum
 }
-MPoly.prototype.evalNumeric = function(insert, options){
+MPoly.prototype.evalToBigInt = function(insert, options){
+	var newoptions = {}
+	if (!options) options = {}
+	newoptions.number = "number" in options ? options.number : function(x){return BigInt(x)}
+	if ("add" in options) newoptions.add = options.add
+	if ("mul" in options) newoptions.mul = options.mul
+	return this.evalToNumber(insert, newoptions)
+}
+MPoly.prototype.evalToNumber = function(insert, options){
 	var replacements
 	if (_.isArray(insert)) replacements = insert
 	else {
-		var replacements = new Array(MPolyHelper.variableCount + 1)
-		for (p in insert) 
+		replacements = new Array(MPolyHelper.variableCount + 1)
+		for (var p in insert) 
 			replacements[MPolyHelper.variableFromString(p, true)] = insert[p]
 	}
 	if (!options) options = {}
+	var NUMBER = "number" in options ? options.number : function(x){return x}
 	var MUL = "mul" in options ? options.mul : function(x,y){return x*y}
 	var ADD = "add" in options ? options.add : function(x,y){return x+y}
 
-	var newsum = 0n
+	var newsum = NUMBER(0)
 	for (var i=0;i<this.length;i++) {
 		var old = this[i]
-		var newproduct = BigInt(old[0])
+		var newproduct = NUMBER(old[0])
 		for (var j=1;j<old.length;j+=2) {
 			if (old[j] in replacements) {
 				var replacement = replacements[old[j]]
@@ -176,7 +184,6 @@ MPoly.prototype.evalNumeric = function(insert, options){
 			} else throw "No value given for " + MPolyHelper.variableToString(old[j])
 		}
 		newsum = ADD(newsum, newproduct)
-//    console.log(newsum)
 	}
 	return newsum
 }
@@ -207,16 +214,16 @@ MPoly.prototype.evalNumeric = function(insert, options){
 }*/
 MPoly.mul = function(){
 	switch (arguments.length) {
-		case 0: return MPoly.one
-		case 1: return arguments[0]
-		default: return _.reduce(arguments, function(a,b){ return a.mul(b) })   
+	case 0: return MPoly.one
+	case 1: return arguments[0]
+	default: return _.reduce(arguments, function(a,b){ return a.mul(b) })   
 	}
 }
 MPoly.add = function(){
 	switch (arguments.length) {
-		case 0: return MPoly.zero
-		case 1: return arguments[0]
-		default: return _.reduce(arguments, function(a,b){ return a.add(b) })   
+	case 0: return MPoly.zero
+	case 1: return arguments[0]
+	default: return _.reduce(arguments, function(a,b){ return a.add(b) })   
 	}
 }
 		
@@ -253,7 +260,8 @@ var MPolyHelper = {
 			if (a[0] > b[0]) return 1
 			return 0
 		})
-		for (var i = 1; i < monos.length; i++) 
+		var i
+		for (i = 1; i < monos.length; i++) 
 			if (monos[i - 1][0] == monos[i][0]) {
 				monos[i - 1][1] += monos[i][1]
 				monos.splice(i,1)
@@ -261,7 +269,7 @@ var MPolyHelper = {
 			}
 		var resa = new Array(monos.length*2 + 1)
 		resa[0] = factor
-		for (var i=0;i < monos.length; i++) {
+		for (i=0;i < monos.length; i++) {
 			if ( /[+*^-]/.test(monos[i][0]) ) throw "Monomials cannot contain math symbols. Separate monomials by space or *"
 			resa[2*i + 1] = MPolyHelper.variableFromString(monos[i][0])
 			resa[2*i + 2] = monos[i][1]
@@ -334,10 +342,10 @@ var MPolyHelper = {
 			return res //all subterms are normalized
 		//normalize subterms after i
 		p = res
-		var res = MPolyHelper.createEmptyMPoly(p.length)
+		res = MPolyHelper.createEmptyMPoly(p.length)
 		var j = 0
 		for (; j < i; j++) res[j] = p[j]
-		for (; i < p.length && (p[i].length == 0 || p[i][0] == 0); i++) {}
+		for (; i < p.length && (p[i].length == 0 || p[i][0] == 0); i++) {/**/}
 		//if (i < p.length) { res[j] = p[i]; j++; i++ }
 		for (; i < p.length; i++) 
 			if (j >= 1 && MPolyHelper.compareVariableOrder(res[j - 1], p[i]) == 0) { 

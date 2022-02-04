@@ -1794,14 +1794,6 @@ var GraphAnalyzer = {
 				//console.log(toponodes[i].id + "  " + toponodes[j].id + " -> " +treksum)
 			}
 
-		function mulMasked(x, y){
-			return x*y
-		}
-		function addMasked(x, y){
-
-			return x+y
-		}//*/
-		var maskedEval = {"add": addMasked, "mul": mulMasked}
 		function simulateNumeric(variableValue){
 			var i
 			var j
@@ -1811,7 +1803,7 @@ var GraphAnalyzer = {
 			var evaled = {}
 			for (i = 0; i < n; i++ )
 				for (j = i; j < n; j++ ) {
-					evaled[sigma[i][j].toString()] = sigmaexpand[i][j].evalNumeric(inputs, maskedEval)
+					evaled[sigma[i][j].toString()] = sigmaexpand[i][j].evalToBigInt(inputs)
 				}
 			//console.log(evaled)
 			return evaled
@@ -1880,7 +1872,7 @@ var GraphAnalyzer = {
 		function isZeroSigmaPoly(p){
 			//console.log("isZeroSigmaPoly")
 			for (var i=0;i<simulated.length;i++)
-				if (p.evalNumeric(simulated[i], maskedEval) != 0)
+				if (p.evalToBigInt(simulated[i]) != 0)
 					return false
 			var q = p.eval(sigmaevalobj)
 			return q.isZero()
@@ -2015,14 +2007,14 @@ var GraphAnalyzer = {
 				var t = fastp.t()
 				if (!s) return isZeroSigmaPoly(  ADD(MUL(a,p,p), MUL(b,p,r), MUL(c,r, r) ) )
 				
-				a = a.evalNumeric(simulated[i], maskedEval)
-				b = b.evalNumeric(simulated[i], maskedEval)
-				c = c.evalNumeric(simulated[i], maskedEval)
-				p = p.evalNumeric(simulated[i], maskedEval)
-				q = q.evalNumeric(simulated[i], maskedEval)
-				r = r.evalNumeric(simulated[i], maskedEval)
-				s = s.evalNumeric(simulated[i], maskedEval)
-				t = t.evalNumeric(simulated[i], maskedEval)
+				a = a.evalToBigInt(simulated[i])
+				b = b.evalToBigInt(simulated[i])
+				c = c.evalToBigInt(simulated[i])
+				p = p.evalToBigInt(simulated[i])
+				q = q.evalToBigInt(simulated[i])
+				r = r.evalToBigInt(simulated[i])
+				s = s.evalToBigInt(simulated[i])
+				t = t.evalToBigInt(simulated[i])
 				
 				var app_aqqs_bpr_bqst_crr_ctts = (a*p*p) + (a*q*q*s) + (b*p*r) + (b*q*s*t) + (c*r*r) + (c*t*t*s)
 				var minus_2apq_bpt_bqr_2crt = - ((2n*a*p*q) + (b*p*t) + (b*q*r) +  (2n* c*r*t))
