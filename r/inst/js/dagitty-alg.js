@@ -2626,498 +2626,499 @@ var GraphAnalyzer = {
 		return false
 	},
  
-  graphToAdjacencyMatrix(g, nodeorder, edgetype) {
-    return _.map(nodeorder, function(a) { 
-      return _.map(nodeorder, function(b) { 
-        return !!g.getEdge(a, b, edgetype)
-      })
-    })
-  },
   
-  enumerateTreks : function(g, v1, v2) {
-    var treks = []
-    var visitedDown = {}
-    function visitDown(v, trek){
-      if (v === v2) {
-        treks.push(trek.slice())
-        return
-      }
-      _.each( v.outgoingEdges, function( e ){
-        var vc = e.v1 === v ? e.v2 : e.v1
-        if (visitedDown[vc.id] || e.directed != Graph.Edgetype.Directed) return
-        visitedDown[vc.id] = true
+	graphToAdjacencyMatrix : function(g, nodeorder, edgetype) {
+		return _.map(nodeorder, function(a) { 
+			return _.map(nodeorder, function(b) { 
+				return !!g.getEdge(a, b, edgetype)
+			})
+		})
+	},
+	
+	enumerateTreks : function(g, v1, v2) {
+		var treks = []
+		var visitedDown = {}
+		function visitDown(v, trek){
+			if (v === v2) {
+				treks.push(trek.slice())
+				return
+			}
+			_.each( v.outgoingEdges, function( e ){
+				var vc = e.v1 === v ? e.v2 : e.v1
+				if (visitedDown[vc.id] || e.directed != Graph.Edgetype.Directed) return
+				visitedDown[vc.id] = true
 				trek.push( e )
-        visitDown( vc, trek )
-        trek.pop()
-        visitedDown[vc.id] = false
-      })
-    }
-    var visitedUp = {}
-    function visitUp(v, trek){
-      trek.push(v)
-      visitDown(v, trek)
-      trek.pop()
-      _.each( v.incomingEdges, function( e ){
-        var vc = e.v1 === v ? e.v2 : e.v1
+				visitDown( vc, trek )
+				trek.pop()
+				visitedDown[vc.id] = false
+			})
+		}
+		var visitedUp = {}
+		function visitUp(v, trek){
+			trek.push(v)
+			visitDown(v, trek)
+			trek.pop()
+			_.each( v.incomingEdges, function( e ){
+				var vc = e.v1 === v ? e.v2 : e.v1
 				trek.push( e )
-        if (e.directed == Graph.Edgetype.Bidirected) visitDown( vc, trek )
-        else if (e.directed == Graph.Edgetype.Directed && !visitedUp[vc.id]) {
-          visitedUp[vc.id] = true
-          visitUp( vc, trek )        
-          visitedUp[vc.id] = false
-        }
-        trek.pop()
-      })
-      _.each( v.outgoingEdges, function( e ){
-        var vc = e.v1 === v ? e.v2 : e.v1
-        if (e.directed == Graph.Edgetype.Bidirected) {
+				if (e.directed == Graph.Edgetype.Bidirected) visitDown( vc, trek )
+				else if (e.directed == Graph.Edgetype.Directed && !visitedUp[vc.id]) {
+					visitedUp[vc.id] = true
+					visitUp( vc, trek )        
+					visitedUp[vc.id] = false
+				}
+				trek.pop()
+			})
+			_.each( v.outgoingEdges, function( e ){
+				var vc = e.v1 === v ? e.v2 : e.v1
+				if (e.directed == Graph.Edgetype.Bidirected) {
 	  			trek.push( e )
-          visitDown( vc, trek )
-          trek.pop();
-        }
-      })
-    }
-    visitUp(v1, [])
-    return treks
-  },
-  
-  treeID : function (g) {
-    // {"results": {"id": [  { "instrument": "id",  "propagate": "id", "missingCycle": ["id", "id", ], "fastp": [[p, q, r, t, s],..] } ] } }
-    if (g.getEdges().find( function(e){return e.directed != Graph.Edgetype.Directed && e.directed != Graph.Edgetype.Bidirected } )) 
-      return false
-    var i
-    var j
-    
-    var n = g.getNumberOfVertices()      
-    var topology = GraphAnalyzer.topologicalOrdering(g)
-    var toponodes = new Array(n)
-    _.each(topology, function(index, id) { 
-      if (index < 1) return //GraphAnalyzer.topologicalOrdering returns 0 for isolated nodes
-      toponodes[index - 1] = g.getVertex(id) 
-    })
+					visitDown( vc, trek )
+					trek.pop()
+				}
+			})
+		}
+		visitUp(v1, [])
+		return treks
+	},
+	
+	treeID : function (g) {
+		// {"results": {"id": [  { "instrument": "id",  "propagate": "id", "missingCycle": ["id", "id", ], "fastp": [[p, q, r, t, s],..] } ] } }
+		if (g.getEdges().find( function(e){return e.directed != Graph.Edgetype.Directed && e.directed != Graph.Edgetype.Bidirected } )) 
+			return false
+		var i
+		var j
+		
+		var n = g.getNumberOfVertices()      
+		var topology = GraphAnalyzer.topologicalOrdering(g)
+		var toponodes = new Array(n)
+		_.each(topology, function(index, id) { 
+			if (index < 1) return //GraphAnalyzer.topologicalOrdering returns 0 for isolated nodes
+			toponodes[index - 1] = g.getVertex(id) 
+		})
 
-    function nodeidx(v) { return topology[v.id] - 1 }
+		function nodeidx(v) { return topology[v.id] - 1 }
 
-    var oldpa = _.map(toponodes, function(v) { return v ? v.getParents() : null })
-    var oldtoponodes = toponodes
-    var pa = []
-    toponodes = []
-    _.each(oldtoponodes, function(v, i) { 
-      var p = oldpa[i]
-      if (p && ( (p.length == 1) || (p.length == 0 && v.getChildren().length > 0)) ) {
-        pa.push(p)
-        toponodes.push(v)
-      }
-    } )
+		var oldpa = _.map(toponodes, function(v) { return v ? v.getParents() : null })
+		var oldtoponodes = toponodes
+		var pa = []
+		toponodes = []
+		_.each(oldtoponodes, function(v, i) { 
+			var p = oldpa[i]
+			if (p && ( (p.length == 1) || (p.length == 0 && v.getChildren().length > 0)) ) {
+				pa.push(p)
+				toponodes.push(v)
+			}
+		} )
 
-    var hasnontreenodes = toponodes.length != n
-    if (hasnontreenodes) {
-      n = toponodes.length
-      _.each(toponodes, function(n, i){ topology[n.id] = i + 1 })
-    }
-    
-    pa = _.map(pa, function(p) { 
-      if (p.length == 0) return null
-      else return nodeidx(p[0])
-    })
+		var hasnontreenodes = toponodes.length != n
+		if (hasnontreenodes) {
+			n = toponodes.length
+			_.each(toponodes, function(n, i){ topology[n.id] = i + 1 })
+		}
+		
+		pa = _.map(pa, function(p) { 
+			if (p.length == 0) return null
+			else return nodeidx(p[0])
+		})
 
-    var D = this.graphToAdjacencyMatrix(g, toponodes, Graph.Edgetype.Directed)
-    var B = this.graphToAdjacencyMatrix(g, toponodes, Graph.Edgetype.Bidirected)
-    
-    var missingSpouses = _.map(B, function(a, i) { 
-      return _.filter(_.map(a, function(v, j) { return  v || i == j ? -1 : j }), function (x) { return x >= 0 } )
-    } )
-    var sigma = _.map(toponodes, function(xxx, f){
-      return _.map(toponodes, function(xxx, t){ 
-        return MPoly("s"+Math.min(f,t)+"_"+Math.max(f,t))
-      })
-    })
-    var lambda = _.map(toponodes, function(xxx, f){
-      return _.map(toponodes, function(xxx, t){ 
-        return  D[f][t] ? MPoly("l"+f+"_"+t) : null
-      })
-    })
-    var omega = _.map(toponodes, function(xxx, f){
-      return _.map(toponodes, function(xxx, t){ 
-        return (f == t || B[f][t]) ? MPoly("w"+Math.min(f,t)+"_"+Math.max(f,t)) : null
-      })
-    })
-    
-    var ZERO = MPoly.zero
-    var ONE = MPoly.one
-    var MINUS_ONE = MPoly.minusOne
-    var MUL = MPoly.mul
-    var ADD = MPoly.add
-    
-    var sigmaexpand = _.map(new Array(n), function(xxx, i){ return new Array(n) } )
-    var sigmaevalobj = {}
-    for (i = 0; i < n; i++ )
-      for (j = i; j < n; j++ ) {
-        var treks = GraphAnalyzer.enumerateTreks(g, toponodes[i], toponodes[j])
-        //console.log(treks)
-        var terms = _.map(treks, function(t){ return _.map(t, function(e) { 
-          if (e instanceof Graph.Vertex) 
-            return omega[nodeidx(e)][nodeidx(e)]
-          else if (e.directed == Graph.Edgetype.Bidirected)
-            return omega[nodeidx(e.v1)][nodeidx(e.v2)]
-          else 
-            return lambda[nodeidx(e.v1)][nodeidx(e.v2)]
-        })})
-        var trekProducts = _.map(terms, function(t){ return _.reduce(t, function(a, b){
-          return a.mul(b)
-        }) })        
-        var treksum = _.reduce(trekProducts, function(a, b) { return a.add(b) })
-        if (!treksum) treksum = MPoly.zero
-        sigmaexpand[i][j] = sigmaexpand[j][i] = treksum
-        sigmaevalobj[sigma[i][j]] = treksum
-        //console.log(toponodes[i].id + "  " + toponodes[j].id + " -> " +treksum)
-      }
+		var D = this.graphToAdjacencyMatrix(g, toponodes, Graph.Edgetype.Directed)
+		var B = this.graphToAdjacencyMatrix(g, toponodes, Graph.Edgetype.Bidirected)
+		
+		var missingSpouses = _.map(B, function(a, i) { 
+			return _.filter(_.map(a, function(v, j) { return  v || i == j ? -1 : j }), function (x) { return x >= 0 } )
+		} )
+		var sigma = _.map(toponodes, function(xxx, f){
+			return _.map(toponodes, function(xxx, t){ 
+				return MPoly("s"+Math.min(f,t)+"_"+Math.max(f,t))
+			})
+		})
+		var lambda = _.map(toponodes, function(xxx, f){
+			return _.map(toponodes, function(xxx, t){ 
+				return  D[f][t] ? MPoly("l"+f+"_"+t) : null
+			})
+		})
+		var omega = _.map(toponodes, function(xxx, f){
+			return _.map(toponodes, function(xxx, t){ 
+				return (f == t || B[f][t]) ? MPoly("w"+Math.min(f,t)+"_"+Math.max(f,t)) : null
+			})
+		})
+		
+		var ZERO = MPoly.zero
+		var ONE = MPoly.one
+		var MINUS_ONE = MPoly.minusOne
+		var MUL = MPoly.mul
+		var ADD = MPoly.add
+		
+		var sigmaexpand = _.map(new Array(n), function(xxx, i){ return new Array(n) } )
+		var sigmaevalobj = {}
+		for (i = 0; i < n; i++ )
+			for (j = i; j < n; j++ ) {
+				var treks = GraphAnalyzer.enumerateTreks(g, toponodes[i], toponodes[j])
+				//console.log(treks)
+				var terms = _.map(treks, function(t){ return _.map(t, function(e) { 
+					if (e instanceof Graph.Vertex) 
+						return omega[nodeidx(e)][nodeidx(e)]
+					else if (e.directed == Graph.Edgetype.Bidirected)
+						return omega[nodeidx(e.v1)][nodeidx(e.v2)]
+					else 
+						return lambda[nodeidx(e.v1)][nodeidx(e.v2)]
+				})})
+				var trekProducts = _.map(terms, function(t){ return _.reduce(t, function(a, b){
+					return a.mul(b)
+				}) })        
+				var treksum = _.reduce(trekProducts, function(a, b) { return a.add(b) })
+				if (!treksum) treksum = MPoly.zero
+				sigmaexpand[i][j] = sigmaexpand[j][i] = treksum
+				sigmaevalobj[sigma[i][j]] = treksum
+				//console.log(toponodes[i].id + "  " + toponodes[j].id + " -> " +treksum)
+			}
 
-    function mulMasked(x, y){
-      return x*y
-    }
-    function addMasked(x, y){
+		function mulMasked(x, y){
+			return x*y
+		}
+		function addMasked(x, y){
 
-      return x+y
-    }//*/
-    var maskedEval = {"add": addMasked, "mul": mulMasked}
-    function simulateNumeric(variableValue){
-      var i
-      var j
-      var inputs = new Array(MPolyHelper.variableCount + 1)
-      for (i=0;i<inputs.length;i++) inputs[i] = BigInt(variableValue(i))
-      // i + 1
-      var evaled = {}
-      for (i = 0; i < n; i++ )
-        for (j = i; j < n; j++ ) {
-          evaled[sigma[i][j].toString()] = sigmaexpand[i][j].evalNumeric(inputs, maskedEval)
-        }
-      //console.log(evaled)
-      return evaled
-    }
-    function findPrimes(n){
-      var primes = [2,3,5,7,11,13]
-      var cp = 17
-      for (;primes.length < n;) {
-        var isPrime = true
-        for (var j=0;j<primes.length;j++)
-          if (cp % primes[j] == 0) {
-            isPrime = false
-            break
-          }
-        if (isPrime) primes.push(cp)
-        cp += 2
-      }
-      return primes
-    }
-    var primes = findPrimes(3*(MPolyHelper.variableCount + 1) + 20 )
-    var simulated = [
-                    simulateNumeric(function(){ return Math.floor((1 << 52)*Math.random()) + 1 }),
-                    simulateNumeric(function(i){ return primes[3*i+20] })
-                    //simulateNumeric(function(i){ return 1 }) this would be stupid, but it works
-                    ]
+			return x+y
+		}//*/
+		var maskedEval = {"add": addMasked, "mul": mulMasked}
+		function simulateNumeric(variableValue){
+			var i
+			var j
+			var inputs = new Array(MPolyHelper.variableCount + 1)
+			for (i=0;i<inputs.length;i++) inputs[i] = BigInt(variableValue(i))
+			// i + 1
+			var evaled = {}
+			for (i = 0; i < n; i++ )
+				for (j = i; j < n; j++ ) {
+					evaled[sigma[i][j].toString()] = sigmaexpand[i][j].evalNumeric(inputs, maskedEval)
+				}
+			//console.log(evaled)
+			return evaled
+		}
+		function findPrimes(n){
+			var primes = [2,3,5,7,11,13]
+			var cp = 17
+			for (;primes.length < n;) {
+				var isPrime = true
+				for (var j=0;j<primes.length;j++)
+					if (cp % primes[j] == 0) {
+						isPrime = false
+						break
+					}
+				if (isPrime) primes.push(cp)
+				cp += 2
+			}
+			return primes
+		}
+		var primes = findPrimes(3*(MPolyHelper.variableCount + 1) + 20 )
+		var simulated = [
+										simulateNumeric(function(){ return Math.floor((1 << 52)*Math.random()) + 1 }),
+										simulateNumeric(function(i){ return primes[3*i+20] })
+										//simulateNumeric(function(i){ return 1 }) this would be stupid, but it works
+										]
 
 
-    
-    var FASTP = {
-      __proto__: Array,
-      make : function (p, q, r, t, s) {
-        // ( p + q sqrt(s) ) / ( r + t sqrt(s) )
-        var fastp = [p, q, r, t, s]
-        fastp.__proto__ = FASTP
-        return fastp
-      },
-      makeFraction : function(p, r) {
-        return this.make(p, null, r)
-      },
-      toString : function(){
-        function polyToString(p, sigmaWithIndices){
-          if (!p) return "0"
-          var p = p.toString()
-          if (!sigmaWithIndices) p = p.replace( /(s)([0-9]+)_([0-9]+)/g, function(x,y,i,j) { 
-            var a = toponodes[i].id
-            var b = toponodes[j].id
-            if (a > b) { b = toponodes[i].id; a = toponodes[j].id }
-            return "σ"+a+b
-          })
-          return "(" + p + ")"
-        }
-        if (this[1] == null && this[3] == null && this[4] == null) {
-          return polyToString(this[0]) + " /\n" + polyToString(this[2])
-        }
-        return "Let s = "+polyToString(this[4])+": \n\n" +
-               "(" + polyToString(this[0]) + " + " + polyToString(this[1]) + " * sqrt(s) )  /\n" + 
-               "(" + polyToString(this[2]) + " + " + polyToString(this[3]) + " * sqrt(s) ) "
-      },
-      p : function() { return this[0] } ,
-      q : function() { return this[1] } ,
-      r : function() { return this[2] } ,
-      t : function() { return this[3] } ,
-      s : function() { return this[4] } 
-    }
-    
-    function isZeroSigmaPoly(p){
-      //console.log("isZeroSigmaPoly")
-      for (var i=0;i<simulated.length;i++)
-        if (p.evalNumeric(simulated[i], maskedEval) != 0)
-          return false
-      var q = p.eval(sigmaevalobj)
-      return q.isZero()
-    }
-    
-    var ID = Array(n)
-    
-    function propagate(i){
-      var p = pa[i]
-      _.each( missingSpouses[i], function(j) {
-        var q = pa[j]
-        if (_.isNull(q)) return 
-        if (ID[j] && ID[j].fastp.length <= ID[i].fastp.length) return       
-        if (_.find(ID[i].fastp, function(fastp){ 
-          //test if there exists a trek between q and i (Lemma 6 in AISTATS 2022 paper) not involving edge p->i.
-          //removing edge p->i corresponds to removing all terms lambda_pi from the sum of treks.
-          var tempeval = {}
-          tempeval[lambda[p][i]] = MPoly("0")
-          return sigmaexpand[q][i].eval(tempeval).isZero()
-        })) return
-        var newfastp = _.map(ID[i].fastp, function(fastp){ 
-          //insert fastp in (l*σ1 + σ2)/(l * σ3 + σ4 )   
-          //return ( r*σ2+(p)*σ1  + s*(t*σ2+q*σ1) )/((r)*σ4+(p)*σ3+s*(t*σ4+q*σ3))
-          var si1 = sigma[p][j]
-          var si2 = sigma[i][j].negate()
-          var si3 = sigma[p][q]
-          var si4 = sigma[i][q].negate()
-          return FASTP.make(  fastp.r().mul(si2).add(fastp.p().mul(si1)), fastp.s() ? fastp.t().mul(si2).add(fastp.q().mul(si1)) : null,
-                              fastp.r().mul(si4).add(fastp.p().mul(si3)), fastp.s() ? fastp.t().mul(si4).add(fastp.q().mul(si3)) : null,
-                              fastp.s() )
-        }  )
-        ID[j] = {propagate: i, 
-                 propagatePath: "propagate" in ID[i] ? ID[i].propagatePath.concat([i]) : [i], 
-                 fastp: newfastp, 
-                 propagatedMissingCycles: "propagate" in ID[i] ? ID[i].propagatedMissingCycles : ID[i].missingCycles,
-                 oldMissingCycles: ID[j] ? ID[j].missingCycles : null
-                // oldPropagatedMissingCycles: ID[j] ? ID[j].propagatedMissingCycles : null, 
-                 }
-          propagate(j)
-      } )
-    }
-    
-    var i
-    var r
-    for (var r = 0; r < n; r++) 
-      if (_.isNull(pa[r]))
-        for( i = r + 1 ; i < n; i++ ) 
-          if (!B[r][i] && !_.isNull(pa[i]) && !sigmaexpand[r][pa[i]].isZero()) {
-            ID[i] = {"instrument": r, fastp: [ FASTP.makeFraction(sigma[r][i], sigma[r][pa[i]]) ]} 
-            propagate(i)
-          }
+		
+		var FASTP = {
+			__proto__: Array,
+			make : function (p, q, r, t, s) {
+				// ( p + q sqrt(s) ) / ( r + t sqrt(s) )
+				var fastp = [p, q, r, t, s]
+				fastp.__proto__ = FASTP
+				return fastp
+			},
+			makeFraction : function(p, r) {
+				return this.make(p, null, r)
+			},
+			toString : function(){
+				function polyToString(p, sigmaWithIndices){
+					if (!p) return "0"
+					var p = p.toString()
+					if (!sigmaWithIndices) p = p.replace( /(s)([0-9]+)_([0-9]+)/g, function(x,y,i,j) { 
+						var a = toponodes[i].id
+						var b = toponodes[j].id
+						if (a > b) { b = toponodes[i].id; a = toponodes[j].id }
+						return "σ"+a+b
+					})
+					return "(" + p + ")"
+				}
+				if (this[1] == null && this[3] == null && this[4] == null) {
+					return polyToString(this[0]) + " /\n" + polyToString(this[2])
+				}
+				return "Let s = "+polyToString(this[4])+": \n\n" +
+							"(" + polyToString(this[0]) + " + " + polyToString(this[1]) + " * sqrt(s) )  /\n" + 
+							"(" + polyToString(this[2]) + " + " + polyToString(this[3]) + " * sqrt(s) ) "
+			},
+			p : function() { return this[0] } ,
+			q : function() { return this[1] } ,
+			r : function() { return this[2] } ,
+			t : function() { return this[3] } ,
+			s : function() { return this[4] } 
+		}
+		
+		function isZeroSigmaPoly(p){
+			//console.log("isZeroSigmaPoly")
+			for (var i=0;i<simulated.length;i++)
+				if (p.evalNumeric(simulated[i], maskedEval) != 0)
+					return false
+			var q = p.eval(sigmaevalobj)
+			return q.isZero()
+		}
+		
+		var ID = Array(n)
+		
+		function propagate(i){
+			var p = pa[i]
+			_.each( missingSpouses[i], function(j) {
+				var q = pa[j]
+				if (_.isNull(q)) return 
+				if (ID[j] && ID[j].fastp.length <= ID[i].fastp.length) return       
+				if (_.find(ID[i].fastp, function(fastp){ 
+					//test if there exists a trek between q and i (Lemma 6 in AISTATS 2022 paper) not involving edge p->i.
+					//removing edge p->i corresponds to removing all terms lambda_pi from the sum of treks.
+					var tempeval = {}
+					tempeval[lambda[p][i]] = MPoly("0")
+					return sigmaexpand[q][i].eval(tempeval).isZero()
+				})) return
+				var newfastp = _.map(ID[i].fastp, function(fastp){ 
+					//insert fastp in (l*σ1 + σ2)/(l * σ3 + σ4 )   
+					//return ( r*σ2+(p)*σ1  + s*(t*σ2+q*σ1) )/((r)*σ4+(p)*σ3+s*(t*σ4+q*σ3))
+					var si1 = sigma[p][j]
+					var si2 = sigma[i][j].negate()
+					var si3 = sigma[p][q]
+					var si4 = sigma[i][q].negate()
+					return FASTP.make(  fastp.r().mul(si2).add(fastp.p().mul(si1)), fastp.s() ? fastp.t().mul(si2).add(fastp.q().mul(si1)) : null,
+															fastp.r().mul(si4).add(fastp.p().mul(si3)), fastp.s() ? fastp.t().mul(si4).add(fastp.q().mul(si3)) : null,
+															fastp.s() )
+				}  )
+				ID[j] = {propagate: i, 
+								propagatePath: "propagate" in ID[i] ? ID[i].propagatePath.concat([i]) : [i], 
+								fastp: newfastp, 
+								propagatedMissingCycles: "propagate" in ID[i] ? ID[i].propagatedMissingCycles : ID[i].missingCycles,
+								oldMissingCycles: ID[j] ? ID[j].missingCycles : null
+								// oldPropagatedMissingCycles: ID[j] ? ID[j].propagatedMissingCycles : null, 
+								}
+					propagate(j)
+			} )
+		}
+		
+		var i
+		var r
+		for (var r = 0; r < n; r++) 
+			if (_.isNull(pa[r]))
+				for( i = r + 1 ; i < n; i++ ) 
+					if (!B[r][i] && !_.isNull(pa[i]) && !sigmaexpand[r][pa[i]].isZero()) {
+						ID[i] = {"instrument": r, fastp: [ FASTP.makeFraction(sigma[r][i], sigma[r][pa[i]]) ]} 
+						propagate(i)
+					}
 
-    function bidiEquation(i, j){
-      var p = pa[i]
-      var q = pa[j]
-      return [ sigma[p][q], 
-               sigma[p][j].negate(), //lambda[p][i]
-               sigma[i][q].negate(), //lambda[q][j]
-               sigma[i][j] ]
-    }
+		function bidiEquation(i, j){
+			var p = pa[i]
+			var q = pa[j]
+			return [ sigma[p][q], 
+							sigma[p][j].negate(), //lambda[p][i]
+							sigma[i][q].negate(), //lambda[q][j]
+							sigma[i][j] ]
+		}
 
-    function missingCycleToQuadraticEquation(cycle){
-      function DET2(d,e,f,g){
-        return d.mul(e).sub(f.mul(g))
-      }
-      var A = 0
-      var B = 1
-      var C = 2
-      var D = 3
-      var k = cycle.length - 1
-    //  var vars = cycle.slice(0, k)
-      var eqs = _.map(new Array(k), function(x,i) { return bidiEquation(cycle[i], cycle[i+1]) } )
-      while (k > 2) {
-        var newk = Math.ceil(k/2)
-        var newvars = Array(newk)
-        var neweqs = Array(newk)
-        var j = 0
-        for (var i=0;i+1<k;i+=2,j++) {
-          neweqs[j] = [ 
-            DET2(eqs[i][A], eqs[i+1][C],  eqs[i+1][A], eqs[i][B]),
-            DET2(eqs[i][A], eqs[i+1][D],  eqs[i+1][B], eqs[i][B]),
-            DET2(eqs[i][C], eqs[i+1][C],  eqs[i+1][A], eqs[i][D]),
-            DET2(eqs[i][C], eqs[i+1][D],  eqs[i+1][B], eqs[i][D])
-          ]
-       //   newvars[j] = vars[i]??
-        }
-        if (k % 2 == 1) neweqs[newk - 1] = eqs[k - 1]
-        k = newk
-        //vars = newvars 
-        eqs = neweqs
-      }
-      if (k == 2) {
-        eqs[0] = [ DET2(eqs[0][A], eqs[1][C],  eqs[1][A], eqs[0][B]),
-                   DET2(eqs[0][A], eqs[1][D],  eqs[1][A], eqs[0][D]),
-                   DET2(eqs[0][C], eqs[1][C],  eqs[1][B], eqs[0][B]),
-                   DET2(eqs[0][C], eqs[1][D],  eqs[1][B], eqs[0][D])
-                 ]
-      }
-      var a = eqs[0][0]
-      var b = eqs[0][1].add(eqs[0][2])
-      var c = eqs[0][3]
-      return [a,b,c]
-    }
+		function missingCycleToQuadraticEquation(cycle){
+			function DET2(d,e,f,g){
+				return d.mul(e).sub(f.mul(g))
+			}
+			var A = 0
+			var B = 1
+			var C = 2
+			var D = 3
+			var k = cycle.length - 1
+		//  var vars = cycle.slice(0, k)
+			var eqs = _.map(new Array(k), function(x,i) { return bidiEquation(cycle[i], cycle[i+1]) } )
+			while (k > 2) {
+				var newk = Math.ceil(k/2)
+				var newvars = Array(newk)
+				var neweqs = Array(newk)
+				var j = 0
+				for (var i=0;i+1<k;i+=2,j++) {
+					neweqs[j] = [ 
+						DET2(eqs[i][A], eqs[i+1][C],  eqs[i+1][A], eqs[i][B]),
+						DET2(eqs[i][A], eqs[i+1][D],  eqs[i+1][B], eqs[i][B]),
+						DET2(eqs[i][C], eqs[i+1][C],  eqs[i+1][A], eqs[i][D]),
+						DET2(eqs[i][C], eqs[i+1][D],  eqs[i+1][B], eqs[i][D])
+					]
+			//   newvars[j] = vars[i]??
+				}
+				if (k % 2 == 1) neweqs[newk - 1] = eqs[k - 1]
+				k = newk
+				//vars = newvars 
+				eqs = neweqs
+			}
+			if (k == 2) {
+				eqs[0] = [ DET2(eqs[0][A], eqs[1][C],  eqs[1][A], eqs[0][B]),
+									DET2(eqs[0][A], eqs[1][D],  eqs[1][A], eqs[0][D]),
+									DET2(eqs[0][C], eqs[1][C],  eqs[1][B], eqs[0][B]),
+									DET2(eqs[0][C], eqs[1][D],  eqs[1][B], eqs[0][D])
+								]
+			}
+			var a = eqs[0][0]
+			var b = eqs[0][1].add(eqs[0][2])
+			var c = eqs[0][3]
+			return [a,b,c]
+		}
 
-    function solveQuadraticEquation(abc){
-      //assume a != 0
-      var a = abc[0]
-      var b = abc[1]
-      var c = abc[2]
-      var ss = b.sqr().sub( MPoly("4").mul(a).mul(c) )
-      var two_a = a.add(a)
-      var minus_b = b.negate()
-      if (isZeroSigmaPoly(ss)) return [ FASTP.makeFraction(minus_b, two_a) ]
-      return [ FASTP.make(minus_b, MINUS_ONE, two_a, ZERO, ss),
-               FASTP.make(minus_b, ONE, two_a, ZERO, ss) ]
-    }
+		function solveQuadraticEquation(abc){
+			//assume a != 0
+			var a = abc[0]
+			var b = abc[1]
+			var c = abc[2]
+			var ss = b.sqr().sub( MPoly("4").mul(a).mul(c) )
+			var two_a = a.add(a)
+			var minus_b = b.negate()
+			if (isZeroSigmaPoly(ss)) return [ FASTP.makeFraction(minus_b, two_a) ]
+			return [ FASTP.make(minus_b, MINUS_ONE, two_a, ZERO, ss),
+							FASTP.make(minus_b, ONE, two_a, ZERO, ss) ]
+		}
 
-    function fastpMightSatisfyQuadraticEquation(fastp, abc) {
-      //a ( ( p + q sqrt(s) ) / ( r + t sqrt(s) ) )^2 + b ( p + q sqrt(s) ) / ( r + t sqrt(s) ) + c = 0
-      //a ( p + q sqrt(s) )^2 + b ( p + q sqrt(s) ) ( r + t sqrt(s) ) + c ( r + t sqrt(s) )^2  = 0
-      //a ( p^2 + 2 p q sqrt(s) + q^2 s) + b ( p r + p t sqrt(s) + q r sqrt(s) + q t sqrt(s) sqrt(s) ) + c (r^2 + 2  r t sqrt(s) + t^2 s) = 0
-      //a (p^2 + q^2 s) + b ( p r + q s t ) + c r^2 + c t^2 s + ( 2 a p q + b p t + b q r + 2 c r t ) sqrt(s) = 0
-      //a (p^2 + q^2 s) + b ( p r + q s t ) + c r^2 + c t^2 s = - ( 2 a p q + b p t + b q r + 2 c r t ) sqrt(s)
-      for (var i=0;i<simulated.length;i++) {
-        var a = abc[0]
-        var b = abc[1]
-        var c = abc[2]
-        var p = fastp.p()
-        var q = fastp.q()
-        var r = fastp.r()
-        var s = fastp.s()
-        var t = fastp.t()
-        if (!s) return isZeroSigmaPoly(  ADD(MUL(a,p,p), MUL(b,p,r), MUL(c,r, r) ) )
-        
-        a = a.evalNumeric(simulated[i], maskedEval)
-        b = b.evalNumeric(simulated[i], maskedEval)
-        c = c.evalNumeric(simulated[i], maskedEval)
-        p = p.evalNumeric(simulated[i], maskedEval)
-        q = q.evalNumeric(simulated[i], maskedEval)
-        r = r.evalNumeric(simulated[i], maskedEval)
-        s = s.evalNumeric(simulated[i], maskedEval)
-        t = t.evalNumeric(simulated[i], maskedEval)
-        
-        var app_aqqs_bpr_bqst_crr_ctts = (a*p*p) + (a*q*q*s) + (b*p*r) + (b*q*s*t) + (c*r*r) + (c*t*t*s)
-        var minus_2apq_bpt_bqr_2crt = - ((2n*a*p*q) + (b*p*t) + (b*q*r) +  (2n* c*r*t))
-        
-        if (app_aqqs_bpr_bqst_crr_ctts < 0 && minus_2apq_bpt_bqr_2crt > 0) return false
-        if (app_aqqs_bpr_bqst_crr_ctts > 0 && minus_2apq_bpt_bqr_2crt < 0) return false
-        if (app_aqqs_bpr_bqst_crr_ctts != 0 && minus_2apq_bpt_bqr_2crt == 0) return false
-        if (app_aqqs_bpr_bqst_crr_ctts == 0 && minus_2apq_bpt_bqr_2crt != 0 && s != 0) return false
-        if (app_aqqs_bpr_bqst_crr_ctts**2n != (minus_2apq_bpt_bqr_2crt**2n) * s) return false
-      }
-        
-      return true
+		function fastpMightSatisfyQuadraticEquation(fastp, abc) {
+			//a ( ( p + q sqrt(s) ) / ( r + t sqrt(s) ) )^2 + b ( p + q sqrt(s) ) / ( r + t sqrt(s) ) + c = 0
+			//a ( p + q sqrt(s) )^2 + b ( p + q sqrt(s) ) ( r + t sqrt(s) ) + c ( r + t sqrt(s) )^2  = 0
+			//a ( p^2 + 2 p q sqrt(s) + q^2 s) + b ( p r + p t sqrt(s) + q r sqrt(s) + q t sqrt(s) sqrt(s) ) + c (r^2 + 2  r t sqrt(s) + t^2 s) = 0
+			//a (p^2 + q^2 s) + b ( p r + q s t ) + c r^2 + c t^2 s + ( 2 a p q + b p t + b q r + 2 c r t ) sqrt(s) = 0
+			//a (p^2 + q^2 s) + b ( p r + q s t ) + c r^2 + c t^2 s = - ( 2 a p q + b p t + b q r + 2 c r t ) sqrt(s)
+			for (var i=0;i<simulated.length;i++) {
+				var a = abc[0]
+				var b = abc[1]
+				var c = abc[2]
+				var p = fastp.p()
+				var q = fastp.q()
+				var r = fastp.r()
+				var s = fastp.s()
+				var t = fastp.t()
+				if (!s) return isZeroSigmaPoly(  ADD(MUL(a,p,p), MUL(b,p,r), MUL(c,r, r) ) )
+				
+				a = a.evalNumeric(simulated[i], maskedEval)
+				b = b.evalNumeric(simulated[i], maskedEval)
+				c = c.evalNumeric(simulated[i], maskedEval)
+				p = p.evalNumeric(simulated[i], maskedEval)
+				q = q.evalNumeric(simulated[i], maskedEval)
+				r = r.evalNumeric(simulated[i], maskedEval)
+				s = s.evalNumeric(simulated[i], maskedEval)
+				t = t.evalNumeric(simulated[i], maskedEval)
+				
+				var app_aqqs_bpr_bqst_crr_ctts = (a*p*p) + (a*q*q*s) + (b*p*r) + (b*q*s*t) + (c*r*r) + (c*t*t*s)
+				var minus_2apq_bpt_bqr_2crt = - ((2n*a*p*q) + (b*p*t) + (b*q*r) +  (2n* c*r*t))
+				
+				if (app_aqqs_bpr_bqst_crr_ctts < 0 && minus_2apq_bpt_bqr_2crt > 0) return false
+				if (app_aqqs_bpr_bqst_crr_ctts > 0 && minus_2apq_bpt_bqr_2crt < 0) return false
+				if (app_aqqs_bpr_bqst_crr_ctts != 0 && minus_2apq_bpt_bqr_2crt == 0) return false
+				if (app_aqqs_bpr_bqst_crr_ctts == 0 && minus_2apq_bpt_bqr_2crt != 0 && s != 0) return false
+				if (app_aqqs_bpr_bqst_crr_ctts**2n != (minus_2apq_bpt_bqr_2crt**2n) * s) return false
+			}
+				
+			return true
 /*    Symbolic approach does not work (too slow and loses sign)
-      app_aqqs_bpr_bqst_crr_ctts = ADD(MUL(a,p,p), MUL(a,q,q,s), MUL(b,p,r), MUL(b,q,s,t), MUL(c,r, r), MUL(c,t,t,s))
-      var TWO = MPoly("2")
-      apq2_bpt_bqr_2crt =  ADD(MUL(TWO,a,p,q), MUL(b,p,t), MUL(b,q,r),  MUL(TWO, c,r,t))*/
-    }
+			app_aqqs_bpr_bqst_crr_ctts = ADD(MUL(a,p,p), MUL(a,q,q,s), MUL(b,p,r), MUL(b,q,s,t), MUL(c,r, r), MUL(c,t,t,s))
+			var TWO = MPoly("2")
+			apq2_bpt_bqr_2crt =  ADD(MUL(TWO,a,p,q), MUL(b,p,t), MUL(b,q,r),  MUL(TWO, c,r,t))*/
+		}
 
-    function solveMissingCycle(cycle){
-      //console.log("solve: "+cycle.join( " "))
-      var i = cycle[0]
-      //cycle to quadratic equation
-      var abc = missingCycleToQuadraticEquation(cycle)
-      //solve (quadratic) equation
-      var aIsZero = isZeroSigmaPoly(abc[0])
-      if (aIsZero && isZeroSigmaPoly(abc[1])) return
-      if (aIsZero) {
-        ID[i] = {"missingCycles": [cycle.slice()], fastp: [ FASTP.makeFraction( abc[2].negate(), abc[1] ) ] }
-      } else if (!(i in ID)){
-        ID[i] = {"missingCycles": [cycle.slice()], fastp: solveQuadraticEquation(abc) }
-       // alert(fastpMightSatisfyQuadraticEquation(ID[i].fastp[0], abc))
-      } else {
-        var newfastp = _.filter( ID[i].fastp, function(fastp) { return fastpMightSatisfyQuadraticEquation(fastp, abc) } )
-        //compare with other solutions
-        if (newfastp.length == 0) throw "Inconsistent solutions"
-        if (newfastp.length == ID[i].fastp.length) return
-        ID[i].fastp = newfastp
-        if (!ID[i].missingCycles) ID[i].missingCycles = [cycle.slice()]
-        else ID[i].missingCycles = ID[i].missingCycles.concat([cycle.slice()])
-      }
-      
-      return ID[i].fastp.length == 1
-    }
+		function solveMissingCycle(cycle){
+			//console.log("solve: "+cycle.join( " "))
+			var i = cycle[0]
+			//cycle to quadratic equation
+			var abc = missingCycleToQuadraticEquation(cycle)
+			//solve (quadratic) equation
+			var aIsZero = isZeroSigmaPoly(abc[0])
+			if (aIsZero && isZeroSigmaPoly(abc[1])) return
+			if (aIsZero) {
+				ID[i] = {"missingCycles": [cycle.slice()], fastp: [ FASTP.makeFraction( abc[2].negate(), abc[1] ) ] }
+			} else if (!(i in ID)){
+				ID[i] = {"missingCycles": [cycle.slice()], fastp: solveQuadraticEquation(abc) }
+			// alert(fastpMightSatisfyQuadraticEquation(ID[i].fastp[0], abc))
+			} else {
+				var newfastp = _.filter( ID[i].fastp, function(fastp) { return fastpMightSatisfyQuadraticEquation(fastp, abc) } )
+				//compare with other solutions
+				if (newfastp.length == 0) throw "Inconsistent solutions"
+				if (newfastp.length == ID[i].fastp.length) return
+				ID[i].fastp = newfastp
+				if (!ID[i].missingCycles) ID[i].missingCycles = [cycle.slice()]
+				else ID[i].missingCycles = ID[i].missingCycles.concat([cycle.slice()])
+			}
+			
+			return ID[i].fastp.length == 1
+		}
 
-    var visitedInCycle = new Array(n)
-    var forceCycleLength
-    var longerCyclesMightExists
-    function findMissingCycle(cyclePrefix) {
-      var s = cyclePrefix[0]
-      var e = cyclePrefix[cyclePrefix.length - 1]
-      return _.find( missingSpouses[e], function(j) {
-        if (_.isNull(pa[j])) return false
-        if (visitedInCycle[j]) {
-          if (j == s && cyclePrefix.length == forceCycleLength) {
-            cyclePrefix.push(j)
-            if (solveMissingCycle(cyclePrefix)) 
-              return true
-            cyclePrefix.pop()
-          }
-          return false
-        }
-        if (cyclePrefix.length >= forceCycleLength) {
-          longerCyclesMightExists = true
-          return false
-        }
-        visitedInCycle[j] = true
-        cyclePrefix.push(j)
-        if (findMissingCycle(cyclePrefix)) return true
-        cyclePrefix.pop()
-        visitedInCycle[j] = false
-      })
-    }
+		var visitedInCycle = new Array(n)
+		var forceCycleLength
+		var longerCyclesMightExists
+		function findMissingCycle(cyclePrefix) {
+			var s = cyclePrefix[0]
+			var e = cyclePrefix[cyclePrefix.length - 1]
+			return _.find( missingSpouses[e], function(j) {
+				if (_.isNull(pa[j])) return false
+				if (visitedInCycle[j]) {
+					if (j == s && cyclePrefix.length == forceCycleLength) {
+						cyclePrefix.push(j)
+						if (solveMissingCycle(cyclePrefix)) 
+							return true
+						cyclePrefix.pop()
+					}
+					return false
+				}
+				if (cyclePrefix.length >= forceCycleLength) {
+					longerCyclesMightExists = true
+					return false
+				}
+				visitedInCycle[j] = true
+				cyclePrefix.push(j)
+				if (findMissingCycle(cyclePrefix)) return true
+				cyclePrefix.pop()
+				visitedInCycle[j] = false
+			})
+		}
 
 
-    for ( forceCycleLength = 3; forceCycleLength < n; forceCycleLength++) {
-      var solutionsChanged = false
-      longerCyclesMightExists = false
-      allEdgesIdentified = true
-      for( i = 0 ; i < n; i++ ) {
-        if (_.isNull(pa[i])) continue
-        var oldPossibleSolutionCount = i in ID ? ID[i].fastp.length : 9999
-        if (oldPossibleSolutionCount == 1) continue;
-        visitedInCycle[i] = true
-        findMissingCycle([i])
-        visitedInCycle[i] = false
-        var newPossibleSolutionCount = i in ID ? ID[i].fastp.length : 9999
-        if (newPossibleSolutionCount < oldPossibleSolutionCount) {
-          solutionsChanged = true
-          propagate(i)
-        }
-        allEdgesIdentified = allEdgesIdentified && newPossibleSolutionCount == 1
-      }
-      if (!longerCyclesMightExists || allEdgesIdentified) break
-    }
-      
-    function nodeIdxToNodeIdArray(a){
-      return _.map(a, function(v){ return toponodes[v].id } ) 
-    }
-      
-    var IDobject = {}
-    for ( i = 0; i < n; i++ )
-      if (i in ID) {
-        var identification = {fastp: ID[i].fastp}
-        if ("instrument" in ID[i]) identification.instrument = toponodes[ID[i].instrument].id
-        if ("propagate" in ID[i]) identification.propagate = toponodes[ID[i].propagate].id
-        if ("propagatePath" in ID[i]) identification.propagatePath = nodeIdxToNodeIdArray(ID[i].propagatePath)
-        _.map(["missingCycles", "propagatedMissingCycles", "oldMissingCycles"], function(mcid){
-          if (mcid in ID[i]) identification[mcid] = _.map( ID[i][mcid], nodeIdxToNodeIdArray )
-        }) 
-        IDobject[toponodes[i].id] = [ identification ]
-      }
-      
-    var res = {"results": IDobject}
-    if (hasnontreenodes) res.warnings = ["Some nodes have more than one parent. The algorithm assumes all nodes except a certain root node have exactly one parent, and ignores nodes with more parents"]
-    return res
-  }
+		for ( forceCycleLength = 3; forceCycleLength < n; forceCycleLength++) {
+			var solutionsChanged = false
+			longerCyclesMightExists = false
+			allEdgesIdentified = true
+			for( i = 0 ; i < n; i++ ) {
+				if (_.isNull(pa[i])) continue
+				var oldPossibleSolutionCount = i in ID ? ID[i].fastp.length : 9999
+				if (oldPossibleSolutionCount == 1) continue
+				visitedInCycle[i] = true
+				findMissingCycle([i])
+				visitedInCycle[i] = false
+				var newPossibleSolutionCount = i in ID ? ID[i].fastp.length : 9999
+				if (newPossibleSolutionCount < oldPossibleSolutionCount) {
+					solutionsChanged = true
+					propagate(i)
+				}
+				allEdgesIdentified = allEdgesIdentified && newPossibleSolutionCount == 1
+			}
+			if (!longerCyclesMightExists || allEdgesIdentified) break
+		}
+			
+		function nodeIdxToNodeIdArray(a){
+			return _.map(a, function(v){ return toponodes[v].id } ) 
+		}
+			
+		var IDobject = {}
+		for ( i = 0; i < n; i++ )
+			if (i in ID) {
+				var identification = {fastp: ID[i].fastp}
+				if ("instrument" in ID[i]) identification.instrument = toponodes[ID[i].instrument].id
+				if ("propagate" in ID[i]) identification.propagate = toponodes[ID[i].propagate].id
+				if ("propagatePath" in ID[i]) identification.propagatePath = nodeIdxToNodeIdArray(ID[i].propagatePath)
+				_.map(["missingCycles", "propagatedMissingCycles", "oldMissingCycles"], function(mcid){
+					if (mcid in ID[i]) identification[mcid] = _.map( ID[i][mcid], nodeIdxToNodeIdArray )
+				}) 
+				IDobject[toponodes[i].id] = [ identification ]
+			}
+			
+		var res = {"results": IDobject}
+		if (hasnontreenodes) res.warnings = ["Some nodes have more than one parent. The algorithm assumes all nodes except a certain root node have exactly one parent, and ignores nodes with more parents"]
+		return res
+	}
 }
 
 /*
@@ -5344,371 +5345,371 @@ var GraphSerializer = {
 }; // eslint-disable-line 
 
 /*
-  Multivariate polynomial representation
-  MPoly = sum of subterms                    (an array)
-  subterms = factor * product of monomials   (an array)
-  
-  All monomials are in one array, e.g. 4*x*y^2 = [4, "x", 1, "y", 2]
-  
-  normalization: mpoly is zero iff length is 0
-                 no subterm has factor 0
-                 no subterm has length 0
-                 all subterms in mpoly are sorted according to compareVariableOrder
-                 all monomials in subterm are sorted lexicographically
+	Multivariate polynomial representation
+	MPoly = sum of subterms                    (an array)
+	subterms = factor * product of monomials   (an array)
+	
+	All monomials are in one array, e.g. 4*x*y^2 = [4, "x", 1, "y", 2]
+	
+	normalization: mpoly is zero iff length is 0
+								no subterm has factor 0
+								no subterm has length 0
+								all subterms in mpoly are sorted according to compareVariableOrder
+								all monomials in subterm are sorted lexicographically
 */
 
 function MPoly(value) {
-  var self
-  if (_.isArray(value)) {
-    self = value
-  } else if (_.isNumber(value)) {
-    self = [value]
-  } else if (_.isString(value)) {
-    self = MPolyHelper.parse(value)
-  } else if (_.isUndefined(value)) {
-    self = []
-  } else throw "Invalid MPoly constructor value: " + value
-  self.__proto__ = MPoly.prototype
-  return self
+	var self
+	if (_.isArray(value)) {
+		self = value
+	} else if (_.isNumber(value)) {
+		self = [value]
+	} else if (_.isString(value)) {
+		self = MPolyHelper.parse(value)
+	} else if (_.isUndefined(value)) {
+		self = []
+	} else throw "Invalid MPoly constructor value: " + value
+	self.__proto__ = MPoly.prototype
+	return self
 }
 MPoly.prototype = Object.create(Array.prototype)
 MPoly.prototype.constructor = MPoly
 MPoly.prototype.add = function(q) {
-  MPolyHelper.assertIsMPoly(q)
-  var res = MPolyHelper.createEmptyMPoly(this.length + q.length)
-  var i = 0
-  var j = 0
-  var k = 0
-  for (; i < this.length && j < q.length; k++) {
-    var cmp = MPolyHelper.compareVariableOrder(this[i], q[j])
-    if (cmp == 0) {
-      res[k] = this[i].slice()
-      res[k][0] += q[j][0]
-      if (res[k][0] == 0) k--;
-      i++
-      j++
-    } else if (cmp < 0) {
-      res[k] = this[i]
-      i++
-    }else {
-      res[k] = q[j]
-      j++
-    }
-  }
-  for (; i < this.length; i++, k++) res[k] = this[i]
-  for (; j < q.length; j++, k++) res[k] = q[j]
-  if (k < res.length) res = res.slice(0, k)
-  return res
+	MPolyHelper.assertIsMPoly(q)
+	var res = MPolyHelper.createEmptyMPoly(this.length + q.length)
+	var i = 0
+	var j = 0
+	var k = 0
+	for (; i < this.length && j < q.length; k++) {
+		var cmp = MPolyHelper.compareVariableOrder(this[i], q[j])
+		if (cmp == 0) {
+			res[k] = this[i].slice()
+			res[k][0] += q[j][0]
+			if (res[k][0] == 0) k--
+			i++
+			j++
+		} else if (cmp < 0) {
+			res[k] = this[i]
+			i++
+		}else {
+			res[k] = q[j]
+			j++
+		}
+	}
+	for (; i < this.length; i++, k++) res[k] = this[i]
+	for (; j < q.length; j++, k++) res[k] = q[j]
+	if (k < res.length) res = res.slice(0, k)
+	return res
 }
 MPoly.prototype.negate = function() {
-  var res = MPolyHelper.createEmptyMPoly(this.length)
-  for (var i=0;i<this.length;i++) {
-    res[i] = this[i].slice()
-    res[i][0] = -res[i][0]
-  }
-  return res
+	var res = MPolyHelper.createEmptyMPoly(this.length)
+	for (var i=0;i<this.length;i++) {
+		res[i] = this[i].slice()
+		res[i][0] = -res[i][0]
+	}
+	return res
 }
 MPoly.prototype.sub = function(q) {
-  return this.add(q.negate())
+	return this.add(q.negate())
 }
 MPoly.prototype.mul = function(q) {
-  MPolyHelper.assertIsMPoly(q)
-  var res = new MPoly()
-  for (var i=0;i<this.length;i++) for (var j=0;j<q.length;j++)
-    res.push(MPolyHelper.mulSubTerms(this[i], q[j]))
-  return MPolyHelper.sortAndNormalizeMPoly(res)
+	MPolyHelper.assertIsMPoly(q)
+	var res = new MPoly()
+	for (var i=0;i<this.length;i++) for (var j=0;j<q.length;j++)
+		res.push(MPolyHelper.mulSubTerms(this[i], q[j]))
+	return MPolyHelper.sortAndNormalizeMPoly(res)
 }
 MPoly.prototype.sqr = function() {
-  return this.mul(this)
+	return this.mul(this)
 }
 MPoly.prototype.isZero = function() {
-  /*for (var i=0;i<this.length;i++)
-    if (this[i].length > 0 && this[i][0] != 0) 
-      return false*/
-  return this.length == 0
+	/*for (var i=0;i<this.length;i++)
+		if (this[i].length > 0 && this[i][0] != 0) 
+			return false*/
+	return this.length == 0
 }
 MPoly.prototype.toString = function(formatting){
-  formatting = formatting ? formatting : {}
-  var PLUS = "PLUS" in formatting ? formatting.PLUS : " + "
-  var SUB = "SUB" in formatting ? formatting.SUB : " - "
-  var TIMES = "TIMES" in formatting ? formatting.TIMES : "*"
-  var POWER = "POWER" in formatting ? formatting.POWER : "^"
-  if (this.length == 0) return "0"
-  return this.map(function(term, i){
-    if (term.length == 0) term = [0]
-    var factor = term[0]
-    var add = i > 0 ? PLUS : ""
-    var temp = []
-    if (factor < 0) {
-      factor = - factor
-      add = i > 0 ? [SUB] : [SUB.trim()]
-    }
-    if (factor != 1 || term.length == 1)
-      temp.push(factor.toString())
-    for (var i=1; i < term.length; i+=2) {
-      var exp = term[i+1] == 1 ? "" : POWER + term[i+1]
-      temp.push(MPolyHelper.variableToString(term[i]) + exp)
-    }
-    return add + temp.join(TIMES)
-  }).join("")
+	formatting = formatting ? formatting : {}
+	var PLUS = "PLUS" in formatting ? formatting.PLUS : " + "
+	var SUB = "SUB" in formatting ? formatting.SUB : " - "
+	var TIMES = "TIMES" in formatting ? formatting.TIMES : "*"
+	var POWER = "POWER" in formatting ? formatting.POWER : "^"
+	if (this.length == 0) return "0"
+	return this.map(function(term, i){
+		if (term.length == 0) term = [0]
+		var factor = term[0]
+		var add = i > 0 ? PLUS : ""
+		var temp = []
+		if (factor < 0) {
+			factor = - factor
+			add = i > 0 ? [SUB] : [SUB.trim()]
+		}
+		if (factor != 1 || term.length == 1)
+			temp.push(factor.toString())
+		for (var i=1; i < term.length; i+=2) {
+			var exp = term[i+1] == 1 ? "" : POWER + term[i+1]
+			temp.push(MPolyHelper.variableToString(term[i]) + exp)
+		}
+		return add + temp.join(TIMES)
+	}).join("")
 }
 MPoly.prototype.slice = function (from, to){
-  var res = Array.prototype.slice.call(this, from, to)
-  res.__proto__ = MPoly.prototype
-  return res
+	var res = Array.prototype.slice.call(this, from, to)
+	res.__proto__ = MPoly.prototype
+	return res
 }
 MPoly.prototype.eval = function(insert){
-  var replacements
-  if (_.isArray(insert)) replacements = insert
-  else {
-    var replacements = new Array(MPolyHelper.variableCount + 1)
-    for (p in insert) 
-      replacements[MPolyHelper.variableFromString(p, true)] = insert[p]
-  }
+	var replacements
+	if (_.isArray(insert)) replacements = insert
+	else {
+		var replacements = new Array(MPolyHelper.variableCount + 1)
+		for (p in insert) 
+			replacements[MPolyHelper.variableFromString(p, true)] = insert[p]
+	}
 
-  var newsum = null
-  for (var i=0;i<this.length;i++) {
-    var old = this[i]
-    var kept = new Array(old.length) 
-    kept[0] = old[0]
-    var keptlength = 1
-    var newproduct = null 
-    for (var j=1;j<old.length;j+=2) {
-      if (old[j] in replacements) {
-        var replacement = replacements[old[j]]
-        for (var k=0;k<old[j+1];k++) {
-          if (newproduct !== null) newproduct = newproduct.mul(replacement)
-          else newproduct = replacement
-        }
-      } else {
-        kept[keptlength] = old[j]
-        kept[keptlength+1] = old[j+1]
-        keptlength+=2
-      }
-    }
-    if (keptlength != kept.length) kept = kept.slice(0, keptlength)
-    var keptpoly = MPoly([kept])
-    if (newproduct !== null) newproduct = newproduct.mul(keptpoly)
-    else newproduct = keptpoly
-    if (newsum !== null) newsum = newsum.add(newproduct)
-    else newsum = newproduct
+	var newsum = null
+	for (var i=0;i<this.length;i++) {
+		var old = this[i]
+		var kept = new Array(old.length) 
+		kept[0] = old[0]
+		var keptlength = 1
+		var newproduct = null 
+		for (var j=1;j<old.length;j+=2) {
+			if (old[j] in replacements) {
+				var replacement = replacements[old[j]]
+				for (var k=0;k<old[j+1];k++) {
+					if (newproduct !== null) newproduct = newproduct.mul(replacement)
+					else newproduct = replacement
+				}
+			} else {
+				kept[keptlength] = old[j]
+				kept[keptlength+1] = old[j+1]
+				keptlength+=2
+			}
+		}
+		if (keptlength != kept.length) kept = kept.slice(0, keptlength)
+		var keptpoly = MPoly([kept])
+		if (newproduct !== null) newproduct = newproduct.mul(keptpoly)
+		else newproduct = keptpoly
+		if (newsum !== null) newsum = newsum.add(newproduct)
+		else newsum = newproduct
 //    console.log(newsum)
-  }
-  if (newsum === null) newsum = MPoly.zero
-  return newsum
+	}
+	if (newsum === null) newsum = MPoly.zero
+	return newsum
 }
 MPoly.prototype.evalNumeric = function(insert, options){
-  var replacements
-  if (_.isArray(insert)) replacements = insert
-  else {
-    var replacements = new Array(MPolyHelper.variableCount + 1)
-    for (p in insert) 
-      replacements[MPolyHelper.variableFromString(p, true)] = insert[p]
-  }
-  if (!options) options = {}
-  var MUL = "mul" in options ? options.mul : function(x,y){return x*y}
-  var ADD = "add" in options ? options.add : function(x,y){return x+y}
+	var replacements
+	if (_.isArray(insert)) replacements = insert
+	else {
+		var replacements = new Array(MPolyHelper.variableCount + 1)
+		for (p in insert) 
+			replacements[MPolyHelper.variableFromString(p, true)] = insert[p]
+	}
+	if (!options) options = {}
+	var MUL = "mul" in options ? options.mul : function(x,y){return x*y}
+	var ADD = "add" in options ? options.add : function(x,y){return x+y}
 
-  var newsum = 0n
-  for (var i=0;i<this.length;i++) {
-    var old = this[i]
-    var newproduct = BigInt(old[0])
-    for (var j=1;j<old.length;j+=2) {
-      if (old[j] in replacements) {
-        var replacement = replacements[old[j]]
-        for (var k=0;k<old[j+1];k++) 
-          newproduct = MUL(newproduct, replacement)
-      } else throw "No value given for " + MPolyHelper.variableToString(old[j])
-    }
-    newsum = ADD(newsum, newproduct)
+	var newsum = 0n
+	for (var i=0;i<this.length;i++) {
+		var old = this[i]
+		var newproduct = BigInt(old[0])
+		for (var j=1;j<old.length;j+=2) {
+			if (old[j] in replacements) {
+				var replacement = replacements[old[j]]
+				for (var k=0;k<old[j+1];k++) 
+					newproduct = MUL(newproduct, replacement)
+			} else throw "No value given for " + MPolyHelper.variableToString(old[j])
+		}
+		newsum = ADD(newsum, newproduct)
 //    console.log(newsum)
-  }
-  return newsum
+	}
+	return newsum
 }
 /*MPoly.prototype.evalCustom = function(insert, options){
-  var zero = "zero" in options ? options.zero : MPoly.zero
-  var one = "one" in options ? options.one : MPoly.one
-  var mul = "mul" in options ? options.mul : MPoly.mul
-  var add = "add" in options ? options.add : MPoly.add
-  var newsum = zero
-  for (var i=0;i<this.length;i++) {
-    var old = this[i]
-    var kept = [old[0]]
-    var newproduct = 1
-    for (var j=1;j<old.length;j+=2) {
-      if (old[j] in replacements) {
-        var replacement = replacements[old[j]]
-        for (var k=0;k<old[j+1];k++) 
-          newproduct.push(replacement)
-      } else {
-        kept.push(old[j])
-        kept.push(old[j+1])
-      }
-    }
-    newproduct.push(MPoly([kept]))
-    newsum.push(mul.apply(null, newproduct))
-  }
-  return add.apply(null, newsum)
+	var zero = "zero" in options ? options.zero : MPoly.zero
+	var one = "one" in options ? options.one : MPoly.one
+	var mul = "mul" in options ? options.mul : MPoly.mul
+	var add = "add" in options ? options.add : MPoly.add
+	var newsum = zero
+	for (var i=0;i<this.length;i++) {
+		var old = this[i]
+		var kept = [old[0]]
+		var newproduct = 1
+		for (var j=1;j<old.length;j+=2) {
+			if (old[j] in replacements) {
+				var replacement = replacements[old[j]]
+				for (var k=0;k<old[j+1];k++) 
+					newproduct.push(replacement)
+			} else {
+				kept.push(old[j])
+				kept.push(old[j+1])
+			}
+		}
+		newproduct.push(MPoly([kept]))
+		newsum.push(mul.apply(null, newproduct))
+	}
+	return add.apply(null, newsum)
 }*/
 MPoly.mul = function(){
-  switch (arguments.length) {
-    case 0: return MPoly.one
-    case 1: return arguments[0]
-    default: return _.reduce(arguments, function(a,b){ return a.mul(b) })   
-  }
+	switch (arguments.length) {
+		case 0: return MPoly.one
+		case 1: return arguments[0]
+		default: return _.reduce(arguments, function(a,b){ return a.mul(b) })   
+	}
 }
 MPoly.add = function(){
-  switch (arguments.length) {
-    case 0: return MPoly.zero
-    case 1: return arguments[0]
-    default: return _.reduce(arguments, function(a,b){ return a.add(b) })   
-  }
+	switch (arguments.length) {
+		case 0: return MPoly.zero
+		case 1: return arguments[0]
+		default: return _.reduce(arguments, function(a,b){ return a.add(b) })   
+	}
 }
-     
+		
 //internal functions
 var MPolyHelper = {
-  createEmptyMPoly: function(size) {
-    var res = new Array(size)
-    res.__proto__ = MPoly.prototype
-    return res
-  },
-  parseSubTerm: function(st, negated, s){ //s: original input, only used for error messages
-    st = st.trim()
-    if (st.length == 0) throw "Empty sum term in " + s
-    //exponential factor notation requires space or * afterwards
-    var takeFactor = /^([0-9.-]+([eE][0-9]+($|\s*[*]|\s+)|\s*[*]?))(.*)$/.exec(st.trim())
-    var factor = 1
-    if (takeFactor) {
-      factor = takeFactor[1].replace(/[*]/, "").trim()
-      if (factor == "-") factor = -1
-      factor = factor * 1
-      st = takeFactor[4].trim()
-    }
-    if (negated) factor = -factor
-    if (takeFactor && st.length == 0) return [factor]
-    var monos = st.replace( /\s*\^\s*/g, "^").split( /\s*[*]\s*|\s+/g)
-    monos = monos.map(function(m){
-      m = m.trim()
-      if (m.length == 0) throw "Empty monomial in " + s
-      var power = m.indexOf("^")
-      if (power >= 0) return [m.slice(0, power), m.slice(power+1)*1]
-      else return [m, 1]
-    }).sort(function(a,b){
-      if (a[0] < b[0]) return -1
-      if (a[0] > b[0]) return 1
-      return 0
-    })
-    for (var i = 1; i < monos.length; i++) 
-      if (monos[i - 1][0] == monos[i][0]) {
-        monos[i - 1][1] += monos[i][1]
-        monos.splice(i,1)
-        i--
-      }
-    var resa = new Array(monos.length*2 + 1)
-    resa[0] = factor
-    for (var i=0;i < monos.length; i++) {
-      if ( /[+*^-]/.test(monos[i][0]) ) throw "Monomials cannot contain math symbols. Separate monomials by space or *"
-      resa[2*i + 1] = MPolyHelper.variableFromString(monos[i][0])
-      resa[2*i + 2] = monos[i][1]
-    }
-    return resa
-  },
-  parse: function(s){
-    if (s.indexOf("(") >= 0 || s.indexOf(")") >= 0) throw "Parentheses are not supported"
-    var sum = s.trim().split(/\s*[+]\s*|\s*([-])\s*/g)
-    if (!sum[0] && sum[1]) sum[0] = "0"
-    var subterms = MPolyHelper.createEmptyMPoly(Math.ceil(sum.length/2))
-    for (var i=0;i<subterms.length;i++) 
-      subterms[i] = this.parseSubTerm(sum[2*i], sum[2*i-1], s)
-    return MPolyHelper.sortAndNormalizeMPoly(subterms)
-  },
-  assertIsMPoly: function(v){
-    if (!(v instanceof MPoly)) throw "Expected multivariate polynomial, got: " + v
-  },
-  compareVariableOrder: function(p, q) {
-   // MPolyHelper.assertIsMPolySubterm(q)
-    var i
-    var l = Math.min(p.length, q.length)
-    for (i=1;i<l;i++) if (p[i] != q[i]) {
-      if (p[i] < q[i]) return -1
-      else return 1
-    }
-    if (p.length < q.length) return -1
-    else if (p.length > q.length) return 1
-    else return 0
-  },
-  mulSubTerms: function(p, q){
-   // console.log(p)
-   // console.log(q)
-    //console.log(p.length + q.length - 1)
-    var res = new Array(p.length + q.length - 1)
-    res[0] = p[0] * q[0]
-    var i = 1
-    var j = 1
-    var k = 1
-    for (; i < p.length && j < q.length; k+=2) {
-      if (p[i] == q[j]) {
-        res[k] = p[i]
-        res[k + 1] = p[i+1] + q[j+1]
-        i+=2
-        j+=2
-      } else if (p[i] < q[j]) {
-        res[k] = p[i]
-        res[k+1] = p[i+1]
-        i+=2
-      }else {
-        res[k] = q[j]
-        res[k+1] = q[j+1]
-        j+=2
-      }
-    }
-    for (; i < p.length; i++, k++) res[k] = p[i]
-    for (; j < q.length; j++, k++) res[k] = q[j]
-    if (k < res.length) res = res.slice(0, k)
-    return res
-  },
-  sortAndNormalizeMPoly: function(p){
-    var res = p.sort(MPolyHelper.compareVariableOrder)
-    if (res.length == 0) return res
-    //search the first subterm that is not normalized
-    var i = 0
-    if (!(res[0].length == 0 || res[0][0] == 0))
-      for (i=1;i<res.length;i++)
-        if (res[i].length == 0 || res[i][0] == 0 || MPolyHelper.compareVariableOrder(res[i-1], res[i]) == 0) break
-     if (i == res.length) 
-       return res //all subterms are normalized
-     //normalize subterms after i
-     p = res
-     var res = MPolyHelper.createEmptyMPoly(p.length)
-     var j = 0
-     for (; j < i; j++) res[j] = p[j]
-     for (; i < p.length && (p[i].length == 0 || p[i][0] == 0); i++) {}
-     //if (i < p.length) { res[j] = p[i]; j++; i++ }
-     for (; i < p.length; i++) 
-       if (j >= 1 && MPolyHelper.compareVariableOrder(res[j - 1], p[i]) == 0) { 
-         res[j - 1][0] += p[i][0]
-         if (res[j - 1][0] == 0) j--
-       } else if (p[i].length > 0 && p[i][0] != 0) {
-         res[j] = p[i]
-         j++
-       }
-     return res.slice(0, j)
-  },
-  variableCount: 0,
-  variableToStringMap: ["empty"],
-  stringToVariableMap: {},
-  variableToString: function(vidx){
-    if (vidx in MPolyHelper.variableToStringMap) return MPolyHelper.variableToStringMap[vidx]
-    throw "Unknown variable ID: " + vidx
-  },
-  variableFromString: function(v, mustExists){
-    if (v in MPolyHelper.stringToVariableMap) return MPolyHelper.stringToVariableMap[v]
-    if (mustExists) throw "Unknown variable: " + v
-    MPolyHelper.variableCount++
-    MPolyHelper.stringToVariableMap[v] = MPolyHelper.variableCount
-    MPolyHelper.variableToStringMap[MPolyHelper.variableCount] = v
-    return MPolyHelper.variableCount
-  }
+	createEmptyMPoly: function(size) {
+		var res = new Array(size)
+		res.__proto__ = MPoly.prototype
+		return res
+	},
+	parseSubTerm: function(st, negated, s){ //s: original input, only used for error messages
+		st = st.trim()
+		if (st.length == 0) throw "Empty sum term in " + s
+		//exponential factor notation requires space or * afterwards
+		var takeFactor = /^([0-9.-]+([eE][0-9]+($|\s*[*]|\s+)|\s*[*]?))(.*)$/.exec(st.trim())
+		var factor = 1
+		if (takeFactor) {
+			factor = takeFactor[1].replace(/[*]/, "").trim()
+			if (factor == "-") factor = -1
+			factor = factor * 1
+			st = takeFactor[4].trim()
+		}
+		if (negated) factor = -factor
+		if (takeFactor && st.length == 0) return [factor]
+		var monos = st.replace( /\s*\^\s*/g, "^").split( /\s*[*]\s*|\s+/g)
+		monos = monos.map(function(m){
+			m = m.trim()
+			if (m.length == 0) throw "Empty monomial in " + s
+			var power = m.indexOf("^")
+			if (power >= 0) return [m.slice(0, power), m.slice(power+1)*1]
+			else return [m, 1]
+		}).sort(function(a,b){
+			if (a[0] < b[0]) return -1
+			if (a[0] > b[0]) return 1
+			return 0
+		})
+		for (var i = 1; i < monos.length; i++) 
+			if (monos[i - 1][0] == monos[i][0]) {
+				monos[i - 1][1] += monos[i][1]
+				monos.splice(i,1)
+				i--
+			}
+		var resa = new Array(monos.length*2 + 1)
+		resa[0] = factor
+		for (var i=0;i < monos.length; i++) {
+			if ( /[+*^-]/.test(monos[i][0]) ) throw "Monomials cannot contain math symbols. Separate monomials by space or *"
+			resa[2*i + 1] = MPolyHelper.variableFromString(monos[i][0])
+			resa[2*i + 2] = monos[i][1]
+		}
+		return resa
+	},
+	parse: function(s){
+		if (s.indexOf("(") >= 0 || s.indexOf(")") >= 0) throw "Parentheses are not supported"
+		var sum = s.trim().split(/\s*[+]\s*|\s*([-])\s*/g)
+		if (!sum[0] && sum[1]) sum[0] = "0"
+		var subterms = MPolyHelper.createEmptyMPoly(Math.ceil(sum.length/2))
+		for (var i=0;i<subterms.length;i++) 
+			subterms[i] = this.parseSubTerm(sum[2*i], sum[2*i-1], s)
+		return MPolyHelper.sortAndNormalizeMPoly(subterms)
+	},
+	assertIsMPoly: function(v){
+		if (!(v instanceof MPoly)) throw "Expected multivariate polynomial, got: " + v
+	},
+	compareVariableOrder: function(p, q) {
+	// MPolyHelper.assertIsMPolySubterm(q)
+		var i
+		var l = Math.min(p.length, q.length)
+		for (i=1;i<l;i++) if (p[i] != q[i]) {
+			if (p[i] < q[i]) return -1
+			else return 1
+		}
+		if (p.length < q.length) return -1
+		else if (p.length > q.length) return 1
+		else return 0
+	},
+	mulSubTerms: function(p, q){
+	// console.log(p)
+	// console.log(q)
+		//console.log(p.length + q.length - 1)
+		var res = new Array(p.length + q.length - 1)
+		res[0] = p[0] * q[0]
+		var i = 1
+		var j = 1
+		var k = 1
+		for (; i < p.length && j < q.length; k+=2) {
+			if (p[i] == q[j]) {
+				res[k] = p[i]
+				res[k + 1] = p[i+1] + q[j+1]
+				i+=2
+				j+=2
+			} else if (p[i] < q[j]) {
+				res[k] = p[i]
+				res[k+1] = p[i+1]
+				i+=2
+			}else {
+				res[k] = q[j]
+				res[k+1] = q[j+1]
+				j+=2
+			}
+		}
+		for (; i < p.length; i++, k++) res[k] = p[i]
+		for (; j < q.length; j++, k++) res[k] = q[j]
+		if (k < res.length) res = res.slice(0, k)
+		return res
+	},
+	sortAndNormalizeMPoly: function(p){
+		var res = p.sort(MPolyHelper.compareVariableOrder)
+		if (res.length == 0) return res
+		//search the first subterm that is not normalized
+		var i = 0
+		if (!(res[0].length == 0 || res[0][0] == 0))
+			for (i=1;i<res.length;i++)
+				if (res[i].length == 0 || res[i][0] == 0 || MPolyHelper.compareVariableOrder(res[i-1], res[i]) == 0) break
+		if (i == res.length) 
+			return res //all subterms are normalized
+		//normalize subterms after i
+		p = res
+		var res = MPolyHelper.createEmptyMPoly(p.length)
+		var j = 0
+		for (; j < i; j++) res[j] = p[j]
+		for (; i < p.length && (p[i].length == 0 || p[i][0] == 0); i++) {}
+		//if (i < p.length) { res[j] = p[i]; j++; i++ }
+		for (; i < p.length; i++) 
+			if (j >= 1 && MPolyHelper.compareVariableOrder(res[j - 1], p[i]) == 0) { 
+				res[j - 1][0] += p[i][0]
+				if (res[j - 1][0] == 0) j--
+			} else if (p[i].length > 0 && p[i][0] != 0) {
+				res[j] = p[i]
+				j++
+			}
+		return res.slice(0, j)
+	},
+	variableCount: 0,
+	variableToStringMap: ["empty"],
+	stringToVariableMap: {},
+	variableToString: function(vidx){
+		if (vidx in MPolyHelper.variableToStringMap) return MPolyHelper.variableToStringMap[vidx]
+		throw "Unknown variable ID: " + vidx
+	},
+	variableFromString: function(v, mustExists){
+		if (v in MPolyHelper.stringToVariableMap) return MPolyHelper.stringToVariableMap[v]
+		if (mustExists) throw "Unknown variable: " + v
+		MPolyHelper.variableCount++
+		MPolyHelper.stringToVariableMap[v] = MPolyHelper.variableCount
+		MPolyHelper.variableToStringMap[MPolyHelper.variableCount] = v
+		return MPolyHelper.variableCount
+	}
 }
 
 MPoly.zero = MPoly("0")
@@ -5716,7 +5717,8 @@ MPoly.one = MPoly("1")
 MPoly.minusOne = MPoly("-1")
 
 
-;/*
+;
+/*
  * Generated by PEG.js 0.10.0.
  *
  * http://pegjs.org/
