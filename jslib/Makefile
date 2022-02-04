@@ -6,6 +6,7 @@ GRAPH_FILES=$(RJS)/Class.js $(RJS)/Hash.js $(RJS)/Graph.js \
 	$(RJS)/GraphParser.js $(RJS)/GraphTransformer.js \
 	$(RJS)/GraphGenerator.js \
 	$(RJS)/ObservedGraph.js $(RJS)/GraphSerializer.js \
+	$(RJS)/MPolynomials.js \
 	parser/GraphDotParser.js
 
 all : install dagitty-alg.js dagitty-node.js

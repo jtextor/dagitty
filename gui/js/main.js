@@ -219,6 +219,8 @@ function causalEffectEstimates(){
 			displayAdjustmentInfo("direct"); break
 		case "instrument" :
 			displayInstrumentInfo(); break
+		case "treeid" :
+			displayTreeIDInfo(); break
 	}
 }
 
@@ -333,6 +335,104 @@ function displayInstrumentInfo(){
 	document.getElementById("causal_effect").innerHTML = "<p>Instruments and conditional instruments:</p>"
 		+ ivsToHtml( ivs )
 }
+
+function getVertexParent(v){
+	var pa = Model.dag.getVertex(v).getParents()
+	if (pa.length != 1) return "(invalid parents)";
+	return pa[0].id
+}
+function missingCyclesToString(missingCycles) {
+	if ( missingCycles.length == 0 ) return
+	if ( missingCycles.length == 1 )
+		return "missing cycle " + missingCycles[0].join(", ")
+	return "missing cycles " + _.map(missingCycles, function(c){return c.join(", ")}).join(" and ")
+}
+function showTreeFASTP(id) {
+	var q = getVertexParent(id)
+	var res = window.lastTreeIDResults.results[id][0]
+	var msg =  "The effect λ"+q+id+" of "+q + " on "+id+" is given by: \n"
+	if (res.propagate) {
+		var j = id
+		var i = res.propagate
+		var p = getVertexParent(i)
+		msg += "( λ"+p+i+" σ"+p+j + " - σ"+i+j+ " ) / ( λ"+p+i+" σ"+p+q + " - σ" + i + q+")\n"
+		msg += "\n which is equivalent to \n"
+	}
+	msg += res.fastp.join("\n\nOR\n")
+	function alen(a){ return a ? a.length : 0 }
+	if (alen(res.missingCycles) + alen(res.oldPropagatedMissingCycles) + alen(res.oldMissingCycles) + alen(res.propagatedMissingCycles) > 0) {
+		msg += "\n\n\nThe calculation used cycles: \n"
+		var mc = []
+		_.map(["missingCycles", "propagatedMissingCycles", "oldMissingCycles"], function(mcid){ 
+			if (res[mcid]) mc.push(missingCyclesToString(res[mcid])) 
+		})
+		msg += mc.join(", ")
+	}
+	if (res.propagatePath){
+		msg += "\n\n\n"
+		msg += "The solution propagated from:"+res.propagatePath.join("<->")
+		if (res.missingCycles) {
+			msg += "\n(One cycle was found that yielded 2 possible solutions which propagated here. Another cycle was found which elimated one of the solutions, yielding one unique solution.) "
+		}
+	}
+	alert(msg)
+}
+function treeIDResultsToHtml( tid ){
+	window.lastTreeIDResults = tid
+	function resultsToHtmlForKID(kID){
+		var r = "";
+		_.each(tid.results, function edgeIdToHtml(v, k){
+			if (v[0].fastp.length != kID) return
+			console.log(v[0])
+			if (v[0].fastp) {
+				r += "<li>Effect of "+getVertexParent(k)+" on " + k + ":<br><a href='javascript:showTreeFASTP( \""+k+"\")'>"
+				if (v[0].instrument) {
+					r += "instrumental variable " + v[0].instrument
+				}
+				if (v[0].propagate && (!v[0].missingCycles || !v[0].propagatedMissingCycles) ) {
+					r += "propagate from " + v[0].propagate
+				}
+				if (v[0].missingCycles) {
+					r += missingCyclesToString(v[0].missingCycles)
+					if (v[0].propagate && v[0].propagatedMissingCycles ) {
+						r += "<br>and " + missingCyclesToString(v[0].propagatedMissingCycles) + " propagated from " + v[0].propagate
+					}
+				}
+				r += "</a></li>"
+			}
+		})
+		return r
+	}
+	
+	var temp = resultsToHtmlForKID(1)
+	var r = ""
+	if (temp) r += "<p>Identifiable edges:</p><ul>" + temp + "</ul>"
+	var temp = resultsToHtmlForKID(2)
+	if (temp) r += "<p><font color='red'>≤ 2-Identifiable</font> edges:</p><ul>" + temp + "</ul>"
+	return r
+}
+
+function displayTreeIDInfo(){
+	var warnings = []
+	if( Model.dag.getSources().length != 0 || 
+		Model.dag.getTargets().length != 0 ){
+		warnings = ["Do not mark exposure and outcome nodes for TreeID. TreeID tests for <emph>each</emph> node whether it and its parent are identifiable as outcome and exposure nodes. </p>"]
+		document.getElementById("causal_effect").innerHTML = "<p><font color='red'>"+warnings[0]+"</font></p>"
+	}
+	var tid
+	try {
+		tid = GraphAnalyzer.treeID( Model.dag )
+	} catch (e) {
+		alert(e)
+		document.getElementById("causal_effect").innerHTML = "<p>"+e+"</p>"
+		return
+	}
+	var out = treeIDResultsToHtml( tid )
+	if (tid.warnings) warnings = warnings.concat(tid.warnings)
+	_.each(warnings, function(w){ out += "<p><font color='red'>"+w+"</font></p>" })
+	document.getElementById("causal_effect").innerHTML = out
+}
+
 
 function displayImplicationInfo( full ){
 	var imp;

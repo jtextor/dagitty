@@ -3,6 +3,121 @@ GraphParser.VALIDATE_GRAPH_STRUCTURE = true;
 var $p = function(s){ return GraphParser.parseGuess(s) }
 var $es = function(g){ return GraphSerializer.toDotEdgeStatements(g) }
 
+
+QUnit.test( "multivariate polynomials", function( assert ) {
+	assert.equal(MPoly("0"), "0")
+	assert.equal(MPoly("1"), "1")
+	assert.equal(MPoly("2"), "2")
+	assert.equal(MPoly("-1"), "-1")
+	assert.equal(MPoly("-2"), "-2")
+	assert.equal(MPoly("1.234E8"), "123400000")
+	assert.equal(MPoly("-1.234e8"), "-123400000")
+	assert.equal(MPoly("a"), "a")
+	assert.equal(MPoly("b"), "b")
+	assert.equal(MPoly("abc123"), "abc123")
+	assert.equal(MPoly("x"), "x")
+	assert.equal(MPoly("x^2"), "x^2")
+	assert.equal(MPoly("x^2 y^3"), "x^2 y^3")
+	assert.equal(MPoly("y^3 x^2"), "x^2 y^3")
+	assert.equal(MPoly("x x"), "x^2")
+	assert.equal(MPoly("x x * x * x"), "x^4")
+	assert.equal(MPoly("y x^2"), "x^2 y")
+	assert.equal(MPoly("y x^2 z"), "x^2 y z")
+	assert.equal(MPoly("3x"), "3 x")
+	assert.equal(MPoly(" 3 x"), "3 x")
+	assert.equal(MPoly(" 3e2 x"), "300 x")
+	assert.equal(MPoly(" 3e2 * x"), "300 x")
+	assert.equal(MPoly(" 3e2 x y"), "300 x y")
+	assert.equal(MPoly(" 3e2 x^5 y^6"), "300 x^5 y^6")
+	assert.equal(MPoly("-x^2"), "-x^2")
+	assert.equal(MPoly("- x^2"), "-x^2")
+	assert.equal(MPoly("x + y"), "x + y")
+	assert.equal(MPoly("x + 2y"), "x + 2 y")
+	assert.equal(MPoly("x+2y"), "x + 2 y")
+	assert.equal(MPoly("a^2 b^2 + 0x"), "a^2 b^2")
+	assert.equal(MPoly("a^2 b^2 + 123x"), "a^2 b^2 + 123 x")
+	assert.equal(MPoly("-2y"), "-2 y")
+	assert.equal(MPoly("x-2y"), "x - 2 y")
+	assert.equal(MPoly("x^4-2y^5"), "x^4 - 2 y^5")
+	assert.equal(MPoly("x^4-2y^5-z^7"), "x^4 - 2 y^5 - z^7")
+	assert.equal(MPoly("xy + abc123"), "abc123 + xy")
+	assert.equal(MPoly("xy*abc*def"), "abc def xy")
+
+	assert.equal(MPoly("x").negate(), "-x")
+	assert.equal(MPoly("x+y").negate(), "-x - y")
+	assert.equal(MPoly("x + 4 y").negate(), "-x - 4 y")
+ 
+	assert.equal(MPoly("x").add(MPoly("y")), "x + y")
+	assert.equal(MPoly("x + y").add(MPoly("y + z")), "x + 2 y + z")
+	assert.equal(MPoly("x + y").add(MPoly("-y + z")), "x + z")
+	assert.equal(MPoly("x - y - z").add(MPoly("y - z")), "x - 2 z")
+	assert.equal(MPoly("z").add(MPoly("a + x")), "a + x + z")
+
+	assert.equal(MPoly.add(), "0")
+	assert.equal(MPoly.add(MPoly("x")), "x")
+	assert.equal(MPoly.add(MPoly("x"), MPoly("y")), "x + y")
+	assert.equal(MPoly.add(MPoly("x"), MPoly("y"), MPoly("x")), "2 x + y")
+
+	assert.equal(MPoly("100 y^3").mul(MPoly("217")), "21700 y^3")
+	assert.equal(MPoly("100 y^3").mul(MPoly("2 x^100 z^7 zz^8")), "200 x^100 y^3 z^7 zz^8")
+	assert.equal(MPoly("100 y^3 zzzz^9").mul(MPoly("2 x^100 y z^7 zz^8")), "200 x^100 y^4 z^7 zz^8 zzzz^9") 
+	assert.equal(MPoly("x + y").mul(MPoly("z")), "x z + y z")
+	assert.equal(MPoly("x + y").mul(MPoly("x y")), "x y^2 + x^2 y")
+	assert.equal(MPoly("x + y").mul(MPoly("x + y")), "2 x y + x^2 + y^2")
+	assert.equal(MPoly("x + y").mul(MPoly("0 x")), "0")
+	assert.equal(MPoly("- x").mul(MPoly("- x")), "x^2")
+
+	assert.equal(MPoly("0").isZero(), true)
+	assert.equal(MPoly("1").isZero(), false)
+	assert.equal(MPoly("x + y + z").isZero(), false)
+	assert.equal(MPoly("0 x + 0 y + 0*z").isZero(), true)
+
+	assert.equal(MPoly("x+y").sub(MPoly("x")), "y")
+	assert.equal(MPoly("x+y").sub(MPoly("y")), "x")
+	assert.equal(MPoly("x+y").sub(MPoly("x+y")), "0")
+	assert.equal(MPoly("x").sub(MPoly("x")).isZero(), true)
+	assert.equal(MPoly("x").sub(MPoly("x + y")).isZero(), false)
+
+
+	assert.equal(MPoly("0").eval({"x": MPoly("7")}), "0")
+	assert.equal(MPoly("x").eval({"x": MPoly("7")}), "7")
+	assert.equal(MPoly("x").eval({"x": MPoly("y")}), "y")
+	assert.equal(MPoly("x").eval({"x": MPoly("x + y")}), "x + y")
+	assert.equal(MPoly("x^2").eval({"x": MPoly("x + y")}), "2 x y + x^2 + y^2")
+	assert.equal(MPoly("x y").eval({"x": MPoly("y")}), "y^2")
+	assert.equal(MPoly("x y").eval({"x": MPoly("x + y")}), "x y + y^2")
+	assert.equal(MPoly("x^2 y").eval({"x": MPoly("x + y")}), "2 x y^2 + x^2 y + y^3")
+	assert.equal(MPoly("x y + z + a").eval({"x": MPoly("y")}), "a + y^2 + z")
+	assert.equal(MPoly("x y + z + a").eval({"x": MPoly("x + y")}), "a + x y + y^2 + z")
+	assert.equal(MPoly("x^2 y + z + a").eval({"x": MPoly("x + y")}), "a + 2 x y^2 + x^2 y + y^3 + z")
+	assert.equal(MPoly("x^2 y + z + a").eval({"x": MPoly("2 x + 10 y")}), "a + 40 x y^2 + 4 x^2 y + 100 y^3 + z")
+	assert.equal(MPoly("x^2 y + z + a").eval({"x": MPoly("x + y"), "z": MPoly("3 a^2"), "a": MPoly("b^7")}), "3 a^2 + b^7 + 2 x y^2 + x^2 y + y^3")
+	assert.equal(MPoly("x^3").eval({"x": MPoly("x + y")}), "3 x y^2 + 3 x^2 y + x^3 + y^3")
+	assert.equal(MPoly("x^3").eval({"x": MPoly("2 x + 10 y")}), "600 x y^2 + 120 x^2 y + 8 x^3 + 1000 y^3")
+	assert.equal(MPoly("x^4").eval({"x": MPoly("x + y")}), "4 x y^3 + 6 x^2 y^2 + 4 x^3 y + x^4 + y^4")
+	assert.equal(MPoly("x^4").eval({"x": MPoly("2 x + 10 y")}), "8000 x y^3 + 2400 x^2 y^2 + 320 x^3 y + 16 x^4 + 10000 y^4")
+
+
+	assert.equal(MPoly("0").evalToNumber({"x": 7}), 0)
+	assert.equal(MPoly("123").evalToNumber({"x": 7}), 123)
+	assert.equal(MPoly("x").evalToNumber({"x": 7}), 7)
+	assert.equal(MPoly("x^2").evalToNumber({"x": 7}), 49)
+	assert.equal(MPoly("x y").evalToNumber({"x": 7, "y": 3}), 21)
+	assert.equal(MPoly("x y + z + a").evalToNumber({"x": 7, "y": 2, "z": 1000, "a": 200}), 1214)
+	assert.equal(MPoly("x^3").evalToNumber({"x": 3}), 27)
+	assert.equal(MPoly("x^4").evalToNumber({"x": 3}), 81)
+
+	assert.equal(MPoly("0").evalToBigInt({"x": 7n}), 0)
+	assert.equal(MPoly("123").evalToBigInt({"x": 7n}), 123)
+	assert.equal(MPoly("x").evalToBigInt({"x": 7n}), 7)
+	assert.equal(MPoly("x^2").evalToBigInt({"x": 7n}), 49)
+	assert.equal(MPoly("x y").evalToBigInt({"x": 7n, "y": 3n}), 21)
+	assert.equal(MPoly("x y + z + a").evalToBigInt({"x": 7n, "y": 2n, "z": 1000n, "a": 200n}), 1214)
+	assert.equal(MPoly("x^3").evalToBigInt({"x": 3n}), 27)
+	assert.equal(MPoly("x^4").evalToBigInt({"x": 3n}), 81)
+})
+
+
 QUnit.test( "graph manipulation", function( assert ) {
 
 	var g = $p( "dag G { x <-> x }" )
@@ -901,6 +1016,63 @@ QUnit.test( "instrumental variables", function( assert ) {
 			g.getVertex("z") )).pluck("id").join(",")
 	})(), ""  )
 });
+
+QUnit.test( "treeID", function( assert ) {
+	//instrument
+	var r = GraphAnalyzer.treeID($p( "dag { Z -> X \n X -> Y \n X <-> Y }" )).results
+	assert.equal(r["X"][0].instrument, "Z")
+	assert.equal(r["X"][0].fastp.length, 1)
+	assert.equal(r["Y"][0].instrument, "Z")
+	assert.equal(r["Y"][0].fastp.length, 1)
+	
+	//instrument + propagate
+	var r = GraphAnalyzer.treeID($p( "dag { A -> E \n A <-> D \n E -> D \n E -> v1 }" )).results
+	assert.equal(r["E"][0].instrument, "A")
+	assert.equal(r["E"][0].fastp.length, 1)
+	assert.equal(r["v1"][0].instrument, "A")
+	assert.equal(r["v1"][0].fastp.length, 1)
+	assert.equal(r["D"][0].propagate, "E")
+	assert.equal(r["D"][0].fastp.length, 1)
+
+	//missing cycles (example from weihs/drton tsID)
+	var r = GraphAnalyzer.treeID($p( "dag { 0 -> 1 \n 0 -> 2 \n 0 -> 3 \n 0 <-> 1 \n 0 <-> 2 \n 0 <-> 3 \n 0 <-> 4 \n 3 -> 4 }" )).results
+	assert.equal(r["1"][0].propagate, "2")
+	assert.equal(r["1"][0].fastp.length, 1)
+	assert.equal(r["2"][0].propagate, "4")
+	assert.equal(r["2"][0].fastp.length, 1)
+	assert.equal(r["4"][0].propagate, "3")
+	assert.equal(r["4"][0].fastp.length, 1)
+	assert.equal("missingCycles" in r["3"][0], true)
+	assert.equal(r["3"][0].fastp.length, 1)
+
+	//missing cycles (example (4680, 403) from weihs/drton tsID)
+	var r = GraphAnalyzer.treeID($p( "dag { 3->4  \n 1->2  \n 0->1  \n 2->3  \n 3<->1 \n 3<->0 \n 1<->0 \n 0<->2 \n 0<->4 }" )).results
+	assert.equal(r["3"][0].propagate, "4")
+	assert.equal(r["3"][0].fastp.length, 1)
+	assert.equal(r["4"][0].propagate, "1")
+	assert.equal(r["4"][0].fastp.length, 1)
+	assert.equal(r["1"][0].propagate, "2")
+	assert.equal(r["1"][0].fastp.length, 1)
+	assert.equal("missingCycles" in r["2"][0], true)
+	assert.equal(r["2"][0].fastp.length, 1)
+
+	//not identifiable
+	var r = GraphAnalyzer.treeID($p( "dag { A -> E   \n A <-> D  \n A <-> E  \n A <-> v1 \n D <-> v1 \n E -> D   \n E -> v1 }" )).results
+	assert.equal( ("A" in r) || ("E" in r) || ("D" in r) || ("v1" in r), false )
+	
+	//2-id, missing cycle [[1, 2], [2, 3], [3, 4], [1, 4]]
+	var r = GraphAnalyzer.treeID($p( "dag { 0 -> 1  \n 0 <-> 1 \n 0 <-> 2 \n 0 <-> 3 \n 0 <-> 4 \n 1 -> 2  \n 1 <-> 3 \n 2 -> 3  \n 2 <-> 4 \n 3 -> 4  }" )).results
+	assert.equal(r["4"][0].propagate, "3")
+	assert.equal(r["4"][0].fastp.length, 2)
+	assert.equal(r["3"][0].propagate, "2")
+	assert.equal(r["3"][0].fastp.length, 2)
+	assert.equal(r["2"][0].propagate, "1")
+	assert.equal(r["2"][0].fastp.length, 2)
+	assert.equal("missingCycles" in r["1"][0], true)
+	assert.equal(r["1"][0].fastp.length, 2)
+
+	
+})
 
 QUnit.test( "graph validation", function( assert ) {
 	GraphParser.VALIDATE_GRAPH_STRUCTURE = false;
