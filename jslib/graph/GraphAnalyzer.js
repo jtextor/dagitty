@@ -1642,6 +1642,492 @@ var GraphAnalyzer = {
 		}
 
 		return false
+	},
+ 
+  
+	graphToAdjacencyMatrix : function(g, nodeorder, edgetype) {
+		return _.map(nodeorder, function(a) { 
+			return _.map(nodeorder, function(b) { 
+				return !!g.getEdge(a, b, edgetype)
+			})
+		})
+	},
+	
+	enumerateTreks : function(g, v1, v2) {
+		var treks = []
+		var visitedDown = {}
+		function visitDown(v, trek){
+			if (v === v2) {
+				treks.push(trek.slice())
+				return
+			}
+			_.each( v.outgoingEdges, function( e ){
+				var vc = e.v1 === v ? e.v2 : e.v1
+				if (visitedDown[vc.id] || e.directed != Graph.Edgetype.Directed) return
+				visitedDown[vc.id] = true
+				trek.push( e )
+				visitDown( vc, trek )
+				trek.pop()
+				visitedDown[vc.id] = false
+			})
+		}
+		var visitedUp = {}
+		function visitUp(v, trek){
+			trek.push(v)
+			visitDown(v, trek)
+			trek.pop()
+			_.each( v.incomingEdges, function( e ){
+				var vc = e.v1 === v ? e.v2 : e.v1
+				trek.push( e )
+				if (e.directed == Graph.Edgetype.Bidirected) visitDown( vc, trek )
+				else if (e.directed == Graph.Edgetype.Directed && !visitedUp[vc.id]) {
+					visitedUp[vc.id] = true
+					visitUp( vc, trek )        
+					visitedUp[vc.id] = false
+				}
+				trek.pop()
+			})
+			_.each( v.outgoingEdges, function( e ){
+				var vc = e.v1 === v ? e.v2 : e.v1
+				if (e.directed == Graph.Edgetype.Bidirected) {
+	  			trek.push( e )
+					visitDown( vc, trek )
+					trek.pop()
+				}
+			})
+		}
+		visitUp(v1, [])
+		return treks
+	},
+	
+	treeID : function (g) {
+		// {"results": {"id": [  { "instrument": "id",  "propagate": "id", "missingCycle": ["id", "id", ], "fastp": [[p, q, r, t, s],..] } ] } }
+		if (g.getEdges().find( function(e){return e.directed != Graph.Edgetype.Directed && e.directed != Graph.Edgetype.Bidirected } )) 
+			return false
+		var i
+		var j
+		
+		var n = g.getNumberOfVertices()      
+		var topology = GraphAnalyzer.topologicalOrdering(g)
+		var toponodes = new Array(n)
+		_.each(topology, function(index, id) { 
+			if (index < 1) return //GraphAnalyzer.topologicalOrdering returns 0 for isolated nodes
+			toponodes[index - 1] = g.getVertex(id) 
+		})
+
+		function nodeidx(v) { return topology[v.id] - 1 }
+
+		var oldpa = _.map(toponodes, function(v) { return v ? v.getParents() : null })
+		var oldtoponodes = toponodes
+		var pa = []
+		toponodes = []
+		_.each(oldtoponodes, function(v, i) { 
+			var p = oldpa[i]
+			if (p && ( (p.length == 1) || (p.length == 0 && v.getChildren().length > 0)) ) {
+				pa.push(p)
+				toponodes.push(v)
+			}
+		} )
+
+		var hasnontreenodes = toponodes.length != n
+		if (hasnontreenodes) {
+			n = toponodes.length
+			_.each(toponodes, function(n, i){ topology[n.id] = i + 1 })
+		}
+		
+		pa = _.map(pa, function(p) { 
+			if (p.length == 0) return null
+			else return nodeidx(p[0])
+		})
+
+		var D = this.graphToAdjacencyMatrix(g, toponodes, Graph.Edgetype.Directed)
+		var B = this.graphToAdjacencyMatrix(g, toponodes, Graph.Edgetype.Bidirected)
+		
+		var missingSpouses = _.map(B, function(a, i) { 
+			return _.filter(_.map(a, function(v, j) { return  v || i == j ? -1 : j }), function (x) { return x >= 0 } )
+		} )
+		var sigma = _.map(toponodes, function(xxx, f){
+			return _.map(toponodes, function(xxx, t){ 
+				return MPoly("s"+Math.min(f,t)+"_"+Math.max(f,t))
+			})
+		})
+		var lambda = _.map(toponodes, function(xxx, f){
+			return _.map(toponodes, function(xxx, t){ 
+				return  D[f][t] ? MPoly("l"+f+"_"+t) : null
+			})
+		})
+		var omega = _.map(toponodes, function(xxx, f){
+			return _.map(toponodes, function(xxx, t){ 
+				return (f == t || B[f][t]) ? MPoly("w"+Math.min(f,t)+"_"+Math.max(f,t)) : null
+			})
+		})
+		
+		var ZERO = MPoly.zero
+		var ONE = MPoly.one
+		var MINUS_ONE = MPoly.minusOne
+		var MUL = MPoly.mul
+		var ADD = MPoly.add
+		
+		var sigmaexpand = _.map(new Array(n), function(xxx, i){ return new Array(n) } )
+		var sigmaevalobj = {}
+		for (i = 0; i < n; i++ )
+			for (j = i; j < n; j++ ) {
+				var treks = GraphAnalyzer.enumerateTreks(g, toponodes[i], toponodes[j])
+				//console.log(treks)
+				var terms = _.map(treks, function(t){ return _.map(t, function(e) { 
+					if (e instanceof Graph.Vertex) 
+						return omega[nodeidx(e)][nodeidx(e)]
+					else if (e.directed == Graph.Edgetype.Bidirected)
+						return omega[nodeidx(e.v1)][nodeidx(e.v2)]
+					else 
+						return lambda[nodeidx(e.v1)][nodeidx(e.v2)]
+				})})
+				var trekProducts = _.map(terms, function(t){ return _.reduce(t, function(a, b){
+					return a.mul(b)
+				}) })        
+				var treksum = _.reduce(trekProducts, function(a, b) { return a.add(b) })
+				if (!treksum) treksum = MPoly.zero
+				sigmaexpand[i][j] = sigmaexpand[j][i] = treksum
+				sigmaevalobj[sigma[i][j]] = treksum
+				//console.log(toponodes[i].id + "  " + toponodes[j].id + " -> " +treksum)
+			}
+
+		function simulateNumeric(variableValue){
+			var i
+			var j
+			var inputs = new Array(MPolyHelper.variableCount + 1)
+			for (i=0;i<inputs.length;i++) inputs[i] = BigInt(variableValue(i))
+			// i + 1
+			var evaled = {}
+			for (i = 0; i < n; i++ )
+				for (j = i; j < n; j++ ) {
+					evaled[sigma[i][j].toString()] = sigmaexpand[i][j].evalToBigInt(inputs)
+				}
+			//console.log(evaled)
+			return evaled
+		}
+		function findPrimes(n){
+			var primes = [2,3,5,7,11,13]
+			var cp = 17
+			for (;primes.length < n;) {
+				var isPrime = true
+				for (var j=0;j<primes.length;j++)
+					if (cp % primes[j] == 0) {
+						isPrime = false
+						break
+					}
+				if (isPrime) primes.push(cp)
+				cp += 2
+			}
+			return primes
+		}
+		var primes = findPrimes(3*(MPolyHelper.variableCount + 1) + 20 )
+		var simulated = [
+										simulateNumeric(function(){ return Math.floor((1 << 52)*Math.random()) + 1 }),
+										simulateNumeric(function(i){ return primes[3*i+20] })
+										//simulateNumeric(function(i){ return 1 }) this would be stupid, but it works
+										]
+
+
+		
+		var FASTP = {
+			__proto__: Array,
+			make : function (p, q, r, t, s) {
+				// ( p + q sqrt(s) ) / ( r + t sqrt(s) )
+				var fastp = [p, q, r, t, s]
+				fastp.__proto__ = FASTP
+				return fastp
+			},
+			makeFraction : function(p, r) {
+				return this.make(p, null, r)
+			},
+			toString : function(){
+				function polyToString(p, sigmaWithIndices){
+					if (!p) return "0"
+					var p = p.toString()
+					if (!sigmaWithIndices) p = p.replace( /(s)([0-9]+)_([0-9]+)/g, function(x,y,i,j) { 
+						var a = toponodes[i].id
+						var b = toponodes[j].id
+						if (a > b) { b = toponodes[i].id; a = toponodes[j].id }
+						return "σ"+a+b
+					})
+					return "(" + p + ")"
+				}
+				if (this[1] == null && this[3] == null && this[4] == null) {
+					return polyToString(this[0]) + " /\n" + polyToString(this[2])
+				}
+				return "Let s = "+polyToString(this[4])+": \n\n" +
+							"(" + polyToString(this[0]) + " + " + polyToString(this[1]) + " * sqrt(s) )  /\n" + 
+							"(" + polyToString(this[2]) + " + " + polyToString(this[3]) + " * sqrt(s) ) "
+			},
+			p : function() { return this[0] } ,
+			q : function() { return this[1] } ,
+			r : function() { return this[2] } ,
+			t : function() { return this[3] } ,
+			s : function() { return this[4] } 
+		}
+		
+		function isZeroSigmaPoly(p){
+			//console.log("isZeroSigmaPoly")
+			for (var i=0;i<simulated.length;i++)
+				if (p.evalToBigInt(simulated[i]) != 0)
+					return false
+			var q = p.eval(sigmaevalobj)
+			return q.isZero()
+		}
+		
+		var ID = Array(n)
+		
+		function propagate(i){
+			var p = pa[i]
+			_.each( missingSpouses[i], function(j) {
+				var q = pa[j]
+				if (_.isNull(q)) return 
+				if (ID[j] && ID[j].fastp.length <= ID[i].fastp.length) return       
+				if (_.find(ID[i].fastp, function(fastp){ 
+					//test if there exists a trek between q and i (Lemma 6 in AISTATS 2022 paper) not involving edge p->i.
+					//removing edge p->i corresponds to removing all terms lambda_pi from the sum of treks.
+					var tempeval = {}
+					tempeval[lambda[p][i]] = MPoly("0")
+					return sigmaexpand[q][i].eval(tempeval).isZero()
+				})) return
+				var newfastp = _.map(ID[i].fastp, function(fastp){ 
+					//insert fastp in (l*σ1 + σ2)/(l * σ3 + σ4 )   
+					//return ( r*σ2+(p)*σ1  + s*(t*σ2+q*σ1) )/((r)*σ4+(p)*σ3+s*(t*σ4+q*σ3))
+					var si1 = sigma[p][j]
+					var si2 = sigma[i][j].negate()
+					var si3 = sigma[p][q]
+					var si4 = sigma[i][q].negate()
+					return FASTP.make(  fastp.r().mul(si2).add(fastp.p().mul(si1)), fastp.s() ? fastp.t().mul(si2).add(fastp.q().mul(si1)) : null,
+															fastp.r().mul(si4).add(fastp.p().mul(si3)), fastp.s() ? fastp.t().mul(si4).add(fastp.q().mul(si3)) : null,
+															fastp.s() )
+				}  )
+				ID[j] = {propagate: i, 
+								propagatePath: "propagate" in ID[i] ? ID[i].propagatePath.concat([i]) : [i], 
+								fastp: newfastp, 
+								propagatedMissingCycles: "propagate" in ID[i] ? ID[i].propagatedMissingCycles : ID[i].missingCycles,
+								oldMissingCycles: ID[j] ? ID[j].missingCycles : null
+								// oldPropagatedMissingCycles: ID[j] ? ID[j].propagatedMissingCycles : null, 
+								}
+					propagate(j)
+			} )
+		}
+		
+		var i
+		var r
+		for (var r = 0; r < n; r++) 
+			if (_.isNull(pa[r]))
+				for( i = r + 1 ; i < n; i++ ) 
+					if (!B[r][i] && !_.isNull(pa[i]) && !sigmaexpand[r][pa[i]].isZero()) {
+						ID[i] = {"instrument": r, fastp: [ FASTP.makeFraction(sigma[r][i], sigma[r][pa[i]]) ]} 
+						propagate(i)
+					}
+
+		function bidiEquation(i, j){
+			var p = pa[i]
+			var q = pa[j]
+			return [ sigma[p][q], 
+							sigma[p][j].negate(), //lambda[p][i]
+							sigma[i][q].negate(), //lambda[q][j]
+							sigma[i][j] ]
+		}
+
+		function missingCycleToQuadraticEquation(cycle){
+			function DET2(d,e,f,g){
+				return d.mul(e).sub(f.mul(g))
+			}
+			var A = 0
+			var B = 1
+			var C = 2
+			var D = 3
+			var k = cycle.length - 1
+		//  var vars = cycle.slice(0, k)
+			var eqs = _.map(new Array(k), function(x,i) { return bidiEquation(cycle[i], cycle[i+1]) } )
+			while (k > 2) {
+				var newk = Math.ceil(k/2)
+				var newvars = Array(newk)
+				var neweqs = Array(newk)
+				var j = 0
+				for (var i=0;i+1<k;i+=2,j++) {
+					neweqs[j] = [ 
+						DET2(eqs[i][A], eqs[i+1][C],  eqs[i+1][A], eqs[i][B]),
+						DET2(eqs[i][A], eqs[i+1][D],  eqs[i+1][B], eqs[i][B]),
+						DET2(eqs[i][C], eqs[i+1][C],  eqs[i+1][A], eqs[i][D]),
+						DET2(eqs[i][C], eqs[i+1][D],  eqs[i+1][B], eqs[i][D])
+					]
+			//   newvars[j] = vars[i]??
+				}
+				if (k % 2 == 1) neweqs[newk - 1] = eqs[k - 1]
+				k = newk
+				//vars = newvars 
+				eqs = neweqs
+			}
+			if (k == 2) {
+				eqs[0] = [ DET2(eqs[0][A], eqs[1][C],  eqs[1][A], eqs[0][B]),
+									DET2(eqs[0][A], eqs[1][D],  eqs[1][A], eqs[0][D]),
+									DET2(eqs[0][C], eqs[1][C],  eqs[1][B], eqs[0][B]),
+									DET2(eqs[0][C], eqs[1][D],  eqs[1][B], eqs[0][D])
+								]
+			}
+			var a = eqs[0][0]
+			var b = eqs[0][1].add(eqs[0][2])
+			var c = eqs[0][3]
+			return [a,b,c]
+		}
+
+		function solveQuadraticEquation(abc){
+			//assume a != 0
+			var a = abc[0]
+			var b = abc[1]
+			var c = abc[2]
+			var ss = b.sqr().sub( MPoly("4").mul(a).mul(c) )
+			var two_a = a.add(a)
+			var minus_b = b.negate()
+			if (isZeroSigmaPoly(ss)) return [ FASTP.makeFraction(minus_b, two_a) ]
+			return [ FASTP.make(minus_b, MINUS_ONE, two_a, ZERO, ss),
+							FASTP.make(minus_b, ONE, two_a, ZERO, ss) ]
+		}
+
+		function fastpMightSatisfyQuadraticEquation(fastp, abc) {
+			//a ( ( p + q sqrt(s) ) / ( r + t sqrt(s) ) )^2 + b ( p + q sqrt(s) ) / ( r + t sqrt(s) ) + c = 0
+			//a ( p + q sqrt(s) )^2 + b ( p + q sqrt(s) ) ( r + t sqrt(s) ) + c ( r + t sqrt(s) )^2  = 0
+			//a ( p^2 + 2 p q sqrt(s) + q^2 s) + b ( p r + p t sqrt(s) + q r sqrt(s) + q t sqrt(s) sqrt(s) ) + c (r^2 + 2  r t sqrt(s) + t^2 s) = 0
+			//a (p^2 + q^2 s) + b ( p r + q s t ) + c r^2 + c t^2 s + ( 2 a p q + b p t + b q r + 2 c r t ) sqrt(s) = 0
+			//a (p^2 + q^2 s) + b ( p r + q s t ) + c r^2 + c t^2 s = - ( 2 a p q + b p t + b q r + 2 c r t ) sqrt(s)
+			for (var i=0;i<simulated.length;i++) {
+				var a = abc[0]
+				var b = abc[1]
+				var c = abc[2]
+				var p = fastp.p()
+				var q = fastp.q()
+				var r = fastp.r()
+				var s = fastp.s()
+				var t = fastp.t()
+				if (!s) return isZeroSigmaPoly(  ADD(MUL(a,p,p), MUL(b,p,r), MUL(c,r, r) ) )
+				
+				a = a.evalToBigInt(simulated[i])
+				b = b.evalToBigInt(simulated[i])
+				c = c.evalToBigInt(simulated[i])
+				p = p.evalToBigInt(simulated[i])
+				q = q.evalToBigInt(simulated[i])
+				r = r.evalToBigInt(simulated[i])
+				s = s.evalToBigInt(simulated[i])
+				t = t.evalToBigInt(simulated[i])
+				
+				var app_aqqs_bpr_bqst_crr_ctts = (a*p*p) + (a*q*q*s) + (b*p*r) + (b*q*s*t) + (c*r*r) + (c*t*t*s)
+				var minus_2apq_bpt_bqr_2crt = - ((2n*a*p*q) + (b*p*t) + (b*q*r) +  (2n* c*r*t))
+				
+				if (app_aqqs_bpr_bqst_crr_ctts < 0 && minus_2apq_bpt_bqr_2crt > 0) return false
+				if (app_aqqs_bpr_bqst_crr_ctts > 0 && minus_2apq_bpt_bqr_2crt < 0) return false
+				if (app_aqqs_bpr_bqst_crr_ctts != 0 && minus_2apq_bpt_bqr_2crt == 0) return false
+				if (app_aqqs_bpr_bqst_crr_ctts == 0 && minus_2apq_bpt_bqr_2crt != 0 && s != 0) return false
+				if (app_aqqs_bpr_bqst_crr_ctts**2n != (minus_2apq_bpt_bqr_2crt**2n) * s) return false
+			}
+				
+			return true
+/*    Symbolic approach does not work (too slow and loses sign)
+			app_aqqs_bpr_bqst_crr_ctts = ADD(MUL(a,p,p), MUL(a,q,q,s), MUL(b,p,r), MUL(b,q,s,t), MUL(c,r, r), MUL(c,t,t,s))
+			var TWO = MPoly("2")
+			apq2_bpt_bqr_2crt =  ADD(MUL(TWO,a,p,q), MUL(b,p,t), MUL(b,q,r),  MUL(TWO, c,r,t))*/
+		}
+
+		function solveMissingCycle(cycle){
+			//console.log("solve: "+cycle.join( " "))
+			var i = cycle[0]
+			//cycle to quadratic equation
+			var abc = missingCycleToQuadraticEquation(cycle)
+			//solve (quadratic) equation
+			var aIsZero = isZeroSigmaPoly(abc[0])
+			if (aIsZero && isZeroSigmaPoly(abc[1])) return
+			if (aIsZero) {
+				ID[i] = {"missingCycles": [cycle.slice()], fastp: [ FASTP.makeFraction( abc[2].negate(), abc[1] ) ] }
+			} else if (!(i in ID)){
+				ID[i] = {"missingCycles": [cycle.slice()], fastp: solveQuadraticEquation(abc) }
+			// alert(fastpMightSatisfyQuadraticEquation(ID[i].fastp[0], abc))
+			} else {
+				var newfastp = _.filter( ID[i].fastp, function(fastp) { return fastpMightSatisfyQuadraticEquation(fastp, abc) } )
+				//compare with other solutions
+				if (newfastp.length == 0) throw "Inconsistent solutions"
+				if (newfastp.length == ID[i].fastp.length) return
+				ID[i].fastp = newfastp
+				if (!ID[i].missingCycles) ID[i].missingCycles = [cycle.slice()]
+				else ID[i].missingCycles = ID[i].missingCycles.concat([cycle.slice()])
+			}
+			
+			return ID[i].fastp.length == 1
+		}
+
+		var visitedInCycle = new Array(n)
+		var forceCycleLength
+		var longerCyclesMightExists
+		function findMissingCycle(cyclePrefix) {
+			var s = cyclePrefix[0]
+			var e = cyclePrefix[cyclePrefix.length - 1]
+			return _.find( missingSpouses[e], function(j) {
+				if (_.isNull(pa[j])) return false
+				if (visitedInCycle[j]) {
+					if (j == s && cyclePrefix.length == forceCycleLength) {
+						cyclePrefix.push(j)
+						if (solveMissingCycle(cyclePrefix)) 
+							return true
+						cyclePrefix.pop()
+					}
+					return false
+				}
+				if (cyclePrefix.length >= forceCycleLength) {
+					longerCyclesMightExists = true
+					return false
+				}
+				visitedInCycle[j] = true
+				cyclePrefix.push(j)
+				if (findMissingCycle(cyclePrefix)) return true
+				cyclePrefix.pop()
+				visitedInCycle[j] = false
+			})
+		}
+
+
+		for ( forceCycleLength = 3; forceCycleLength < n; forceCycleLength++) {
+			var solutionsChanged = false
+			longerCyclesMightExists = false
+			allEdgesIdentified = true
+			for( i = 0 ; i < n; i++ ) {
+				if (_.isNull(pa[i])) continue
+				var oldPossibleSolutionCount = i in ID ? ID[i].fastp.length : 9999
+				if (oldPossibleSolutionCount == 1) continue
+				visitedInCycle[i] = true
+				findMissingCycle([i])
+				visitedInCycle[i] = false
+				var newPossibleSolutionCount = i in ID ? ID[i].fastp.length : 9999
+				if (newPossibleSolutionCount < oldPossibleSolutionCount) {
+					solutionsChanged = true
+					propagate(i)
+				}
+				allEdgesIdentified = allEdgesIdentified && newPossibleSolutionCount == 1
+			}
+			if (!longerCyclesMightExists || allEdgesIdentified) break
+		}
+			
+		function nodeIdxToNodeIdArray(a){
+			return _.map(a, function(v){ return toponodes[v].id } ) 
+		}
+			
+		var IDobject = {}
+		for ( i = 0; i < n; i++ )
+			if (i in ID) {
+				var identification = {fastp: ID[i].fastp}
+				if ("instrument" in ID[i]) identification.instrument = toponodes[ID[i].instrument].id
+				if ("propagate" in ID[i]) identification.propagate = toponodes[ID[i].propagate].id
+				if ("propagatePath" in ID[i]) identification.propagatePath = nodeIdxToNodeIdArray(ID[i].propagatePath)
+				_.map(["missingCycles", "propagatedMissingCycles", "oldMissingCycles"], function(mcid){
+					if (mcid in ID[i]) identification[mcid] = _.map( ID[i][mcid], nodeIdxToNodeIdArray )
+				}) 
+				IDobject[toponodes[i].id] = [ identification ]
+			}
+			
+		var res = {"results": IDobject}
+		if (hasnontreenodes) res.warnings = ["Some nodes have more than one parent. The algorithm assumes all nodes except a certain root node have exactly one parent, and ignores nodes with more parents"]
+		return res
 	}
 }
 
