@@ -2126,7 +2126,7 @@ var GraphAnalyzer = {
 			}
 			
 		var res = {"results": IDobject}
-		if (hasnontreenodes) res.warnings = ["Some nodes have more than one parent. The algorithm assumes all nodes except a certain root node have exactly one parent, and ignores nodes with more parents"]
+		if (hasnontreenodes) res.warnings = ["Some nodes have more than one parent. TreeID assumes all nodes except one (the root) have exactly one parent, and ignores nodes with more parents."]
 		return res
 	}
 }

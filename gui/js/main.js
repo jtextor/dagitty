@@ -395,7 +395,7 @@ function treeIDResultsToHtml( tid ){
 		var r = "";
 		_.each(tid.results, function edgeIdToHtml(v, k){
 			if (v[0].fastp.length != kID) return
-			console.log(v[0])
+			//console.log(v[0])
 			if (v[0].fastp) {
 				r += "<li>Effect of "+getVertexParent(k)+" on " + k + ":<br><a href='javascript:showTreeFASTP( \""+k+"\")'>"
 				if (v[0].instrument) {
@@ -428,7 +428,9 @@ function displayTreeIDInfo(){
 	var warnings = []
 	if( Model.dag.getSources().length != 0 || 
 		Model.dag.getTargets().length != 0 ){
-		warnings = ["Do not mark exposure and outcome nodes for TreeID. TreeID tests for <emph>each</emph> node whether it and its parent are identifiable as outcome and exposure nodes. </p>"]
+		warnings = ["<p>Exposure and outcome nodes are ignored for TreeID."+
+			"Instead, TreeID tests identifiability of every direct effect (path coefficient) "+
+			"simultaneously.</p>"]
 		document.getElementById("causal_effect").innerHTML = "<p><font color='red'>"+warnings[0]+"</font></p>"
 	}
 	var tid
