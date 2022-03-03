@@ -1,5 +1,5 @@
 /* DAGitty - a browser-based software for causal modelling and analysis
-   Copyright (C) 2010, 2017 Johannes Textor
+   Copyright (C) 2010, 2017, 2022 Johannes Textor
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License
@@ -15,7 +15,20 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA. */
 
-var examples = [ 
+
+// if the module has no dependencies, the above pattern can be simplified to
+(function (root, factory) {
+	if (typeof module === 'object' && module.exports) {
+        // Node. Does not work with strict CommonJS, but
+        // only CommonJS-like environments that support module.exports,
+        // like Node.
+        module.exports = factory();
+    } else {
+        // Browser globals (root is window)
+        root.examples = factory();
+  }
+}(typeof self !== 'undefined' ? self : this, function () {
+	return [ 
 {
 	d : "dag { \n"+
 	"bb=\"-3,-0.5,2,1.2\"" +
@@ -369,3 +382,5 @@ Thist -> TCI
 	l: "Didelez et al, 2010"
 	}
 ]; 
+
+}));

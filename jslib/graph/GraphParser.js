@@ -21,10 +21,17 @@
 var GraphParser = {
 	VALIDATE_GRAPH_STRUCTURE : false,
 	
-	parseDot : function( code ){
+	parseDot : function( code, g ){
 		"use strict"
+		code = code.trim()
+		var isdot = code.trim().match(  /^(digraph|graph|dag|pdag|mag|pag)(\s+\w+)?\s*\{([\s\S]*)\}$/mi )
+		if( !isdot || (isdot.length <= 1) ){
+			code = "dag{ " + code + "}"
+		}
 		var ast = GraphDotParser.parse( code )
-		var g = new Graph()
+		if( typeof g === "undefined" ){
+			g = new Graph()
+		}
 		this.parseDotStatementArray( ast.statements, g )
 		g.setType( ast.type )
 		if( ast.name ){ g.setName( ast.name ) }	
@@ -364,7 +371,7 @@ var GraphParser = {
 				var hasarrow = firstarg.match( /(->|<->|<-)/mi )
 				// allow users to omit explicit "dag{ ... }" if at least one arrow is also specified
 				if( hasarrow  && hasarrow.length >= 1  ){
-					return this.parseDot( "dag{"+firstarg+"}" )
+					return this.parseDot( firstarg )
 				} else {
 					return this.parseAdjacencyList( adjacencyListOrMatrix, vertexLabelsAndWeights )
 				}

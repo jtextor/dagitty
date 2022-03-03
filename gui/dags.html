@@ -368,10 +368,12 @@ E -&gt; D
 
 
    <div id="rlegend">
-		<h3 onclick="displayToggle('causal_effect')">
+		<h3 onclick="displayToggle('causal_effect_block')">
 			<img src="images/arrow-down.png" alt="" id="a_causal_effect" />
 			Causal effect identification
 		</h3>
+
+	<div id="causal_effect_block">
 		<p>
 			<select id="causal_effect_kind" onchange="causalEffectEstimates()">
 				<option value="adj_total">Adjustment (total effect)</option>
@@ -380,10 +382,10 @@ E -&gt; D
 				<!--<option value="treeid">TreeId</option>-->
 			</select>
 		</p>
+	    <div id="causal_effect" style="display:block">
 
-    <div id="causal_effect" style="display:block">
-
-    </div>
+	    </div>
+	</div>
 
     <h3 onclick="displayToggle('testable_implications')"><img src="images/arrow-down.png" alt="" id="a_testable_implications" />  Testable implications</h3>
 

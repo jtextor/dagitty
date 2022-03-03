@@ -5,14 +5,16 @@
  * be moved to either GraphAnalyzer, GraphTransform or GraphSerializer in the future.
  */
 
-/* globals _, Class, Hash, GraphSerializer */
+/* globals _, Class, GraphParser, Hash, GraphSerializer */
 
 var Graph = Class.extend({ 
 	// additional getter and setter methods for these properties are mixed in below,
 	// see code after definition of this class 
 	managed_vertex_property_names : ["source","target","adjustedNode",
 		"latentNode","selectedNode"],
-	init : function(){
+
+	/** @param s : allows Graph to be constructed directly from Dot statements */
+	init : function( s ){
 		this.vertices = new Hash()
 		this.edges = []
 		this.type = "digraph"
@@ -22,6 +24,9 @@ var Graph = Class.extend({
 		_.each(this.managed_vertex_property_names,function(p){
 			this.managed_vertex_properties[p] = new Hash()
 		},this)
+		if( typeof s === "string" ){
+			GraphParser.parseDot( s, this )
+		}
 	},
 
 	getBoundingBox : function(){

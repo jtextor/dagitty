@@ -1,5 +1,5 @@
 /* DAGitty - a browser-based software for causal modelling and analysis
-*   Copyright (C) 2010,2011,2017 Johannes Textor
+*   Copyright (C) 2010-2022 Johannes Textor
 * 
 *   This program is free software; you can redistribute it and/or
 *   modify it under the terms of the GNU General Public License
@@ -213,11 +213,11 @@ function setsToHTML( sets ){
 }
 
 function causalEffectEstimates(){
-	if( Model.dag.getSelectedNodes().length > 0 ){
+	/*if( Model.dag.getSelectedNodes().length > 0 ){
 		displayCausalMsg("I cannot determine causal effects for DAGs with selection nodes."); return 
-	}
+	}*/
 	if( GraphAnalyzer.containsCycle( Model.dag ) ){
-		displayCausalMsg("I cannot determine causal effects for cyclic models."); return 
+		displayCausalMsg("Can't determine causal effects for cyclic models."); return 
 	}
 	switch( document.getElementById("causal_effect_kind").value ){
 		case "adj_total" :
@@ -263,11 +263,57 @@ function displayCausalMsg( wh ){
 }
 
 function displayAdjustmentInfo( kind ){	
-	var adjusted_nodes = Model.dag.getAdjustedNodes();
-	var html_adjustment = "";
+	let g = Model.dag
+
+	let adjusted_nodes = g.getAdjustedNodes();
+	let html_adjustment = "";
 	if( kind != "total" ){
 		kind = "direct";
 	}
+
+	let exposures = _.pluck(g.getSources(),'id').sort()
+	let outcomes = _.pluck(g.getTargets(),'id').sort()
+	let adjusted = _.pluck(g.getAdjustedNodes(),'id').sort()
+	let selected = _.pluck(g.getSelectedNodes(),'id').sort()
+
+
+	let exposures_list = _.pluck(g.getSources(),'id').sort()
+	let outcomes_list = _.pluck(g.getTargets(),'id').sort()
+
+	let exposures_el = document.createElement( "p" )
+	exposures_el.innerText = "Exposure"+(exposures.length > 1?"s: ":": ")+exposures_list.join(",")
+
+	let outcomes_el = document.createElement( "p" )
+	outcomes_el.innerText = "Outcome"+(outcomes.length > 1?"s: ":": ")+outcomes_list.join(",")
+
+	let tgt_el = document.getElementById("causal_effect")
+
+	tgt_el.replaceChildren( exposures_el, outcomes_el )
+
+	if( exposures.length == 0 || outcomes.length == 0 ){
+		return
+	}
+
+	if( adjusted.length > 0 ){
+		let adjusted_el = document.createElement( "p" )
+		adjusted_el.innerText = "Adjusted: "+adjusted.join(",")
+		tgt_el.appendChild( adjusted_el )
+	}
+
+	if( selected.length > 0 ){
+		let selected_el = document.createElement( "p" )
+		selected_el.innerText = "Selected: "+selected.join(",")
+		tgt_el.appendChild( selected_el )
+	}
+
+
+	return
+
+
+	if( false ){
+	let adjusted_nodes_html = _.pluck(adjusted_nodes,'id').sort().join(", ")
+	
+
 	if( adjusted_nodes.length > 0 ){
 		html_adjustment = " containing "+_.pluck(adjusted_nodes,'id').sort().join(", ");
 	}
@@ -310,6 +356,8 @@ function displayAdjustmentInfo( kind ){
 	if( kind == "direct" ){
 		showMsas( "direct",
 				GraphAnalyzer.listMsasDirectEffect( Model.dag ), html_adjustment );
+	}
+
 	}
 }
 

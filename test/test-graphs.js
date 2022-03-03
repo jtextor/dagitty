@@ -1,4 +1,28 @@
-var TestGraphs = {
+
+/** START UMD boilerplate */
+(function (root, factory) {
+    if (typeof module === 'object' && module.exports) {
+        // Node. Does not work with strict CommonJS, but
+        // only CommonJS-like environments that support module.exports,
+        // like Node.
+        const {GraphParser,Graph} = require('../jslib/dagitty-node.js')
+		const examples = require('../gui/js/example-dags.js')
+        module.exports = factory({GraphParser:GraphParser, Graph:Graph, examples:examples})
+    } else {
+        // Browser globals (root is window)
+        root.TestGraphs = factory({GraphParser:root.GraphParser, Graph:root.Graph, examples:root.examples});
+    }
+}(typeof self !== 'undefined' ? self : this, function (dagitty) {
+    // Use b in some fashion.
+	let GraphParser = dagitty.GraphParser
+	let Graph = dagitty.Graph
+	let examples = dagitty.examples
+
+    // Just return a value to define the module export.
+    // This example returns an object, but the module
+    // can return a function as the exported value.
+    return {
+/** END UMD boilerplate */
 
 findExample : function( s ){
   for( var i = 0 ; i < examples.length ; i++ ){
@@ -178,10 +202,10 @@ small3 : function(){
 
 small2 : function(){
     var g = new Graph();
-    _.each(["s","t","a","b","c","g"],function(vid){
+    ["s","t","a","b","c","g"].forEach(function(vid){
        g.addVertex( new Graph.Vertex({id:vid}) );
     });
-    _.each([
+    [
       ["a","b"],
       ["a","s"],
       ["b","t"],
@@ -189,7 +213,7 @@ small2 : function(){
       ["c","t"],
       ["c","b"],
       ["g","c"],
-      ["g","s"] ],function( e ){
+      ["g","s"] ].forEach(function( e ){
         g.addEdge( e[0], e[1] );
       });
     g.addAdjustedNode("b");
@@ -214,21 +238,21 @@ small1 : function(){
 
 intermediate_adjustment_graph : function(){
    var g = new Graph();
-   g.setType("dag")
-   _.each(["X","Y","Z","I"],function(v){
+   g.setType("dag");
+   ["X","Y","Z","I"].forEach(function(v){
       g.addVertex( new Graph.Vertex( {id:v} ) );
    });
 
    g.addSource( g.getVertex("X") );
    g.addTarget( g.getVertex("Y") );
 
-   _.each([ 
+   [ 
       ["X","Y"],
       ["X","I"],
       ["I","Y"],
       ["Z","X"],
       ["Z","I"]
-   ],function(e) {
+   ].forEach( function(e) {
       g.addEdge( e[0], e[1] ); 
    } );
 
@@ -1591,3 +1615,7 @@ spirtes : GraphParser.parseGuess("pag G {"+
 "}")
 };
 
+
+/** START UMD boilerplate */
+}));
+/** END UMD boilerplate */

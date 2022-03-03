@@ -127,14 +127,16 @@ _.extend( Hash.prototype, {
  * be moved to either GraphAnalyzer, GraphTransform or GraphSerializer in the future.
  */
 
-/* globals _, Class, Hash, GraphSerializer */
+/* globals _, Class, GraphParser, Hash, GraphSerializer */
 
 var Graph = Class.extend({ 
 	// additional getter and setter methods for these properties are mixed in below,
 	// see code after definition of this class 
 	managed_vertex_property_names : ["source","target","adjustedNode",
 		"latentNode","selectedNode"],
-	init : function(){
+
+	/** @param s : allows Graph to be constructed directly from Dot statements */
+	init : function( s ){
 		this.vertices = new Hash()
 		this.edges = []
 		this.type = "digraph"
@@ -144,6 +146,9 @@ var Graph = Class.extend({
 		_.each(this.managed_vertex_property_names,function(p){
 			this.managed_vertex_properties[p] = new Hash()
 		},this)
+		if( typeof s === "string" ){
+			GraphParser.parseDot( s, this )
+		}
 	},
 
 	getBoundingBox : function(){
@@ -1144,10 +1149,10 @@ var GraphAnalyzer = {
 				if( v1_pre == v2_pre ){
 					if( v1_pre == "up_" )
 						trek_monomials[i].push( 
-								pars(g.getEdge(v2_id,v1_id,Graph.Edgetype.Directed),"b"))
-						else
-							trek_monomials[i].push( 
-								pars(g.getEdge(v1_id,v2_id,Graph.Edgetype.Directed),"b"))
+							pars(g.getEdge(v2_id,v1_id,Graph.Edgetype.Directed),"b"))
+					else
+						trek_monomials[i].push( 
+							pars(g.getEdge(v1_id,v2_id,Graph.Edgetype.Directed),"b"))
 				} else {
 					if( v1_id == v2_id ){
 						if( !standardized ){
@@ -1361,9 +1366,13 @@ var GraphAnalyzer = {
 		return i
 	},
 
-	isAdjustmentSet : function( g, Z ){
+	/**
+      * Determines whether Z is a valid adjustment set in g, with possible selection bias
+      * due to conditioning on nodes S.
+      */ 
+	isAdjustmentSet : function( g, Z, S ){
 		var gtype = g.getType()
-		Z = _.map( Z, g.getVertex, g )
+		var Zg = _.map( Z, g.getVertex, g )
 		if( gtype != "dag" && gtype != "pdag" && gtype != "mag" && gtype != "pag" ){
 			throw( "Cannot compute adjustment sets for graph of type "+gtype )
 		}
@@ -1371,12 +1380,18 @@ var GraphAnalyzer = {
 			return false
 		}
 
-		if( _.intersection( this.dpcp(g), Z ).length > 0 ){
+		if( _.intersection( this.dpcp(g), Zg ).length > 0 ){
 			return false
 		}
 		var gbd = GraphTransformer.backDoorGraph(g)
-		Z = _.map( Z, gbd.getVertex, gbd )
-		return !this.dConnected( gbd, gbd.getSources(), gbd.getTargets(), Z )
+		var Zgbd = _.map( Zg, gbd.getVertex, gbd )
+		var r = !this.dConnected( gbd, gbd.getSources(), gbd.getTargets(), Zgbd )
+		if( S && S.length > 0 ){
+			var Sg = _.map( S, g.getVertex, g )
+			r = r && !this.dConnected( g, Zg, Sg, [] )
+			r = r && !this.dConnected( g, g.getTargets(), Sg, g.getSources().concat( Zg ) ) 
+		}
+		return r
 	},
 	
 	listMsasTotalEffect : function( g, must, must_not, max_nr ){
@@ -1395,7 +1410,7 @@ var GraphAnalyzer = {
 		
 		var gam = GraphTransformer.moralGraph( 
 			GraphTransformer.ancestorGraph( 
-			GraphTransformer.backDoorGraph(g) ) )
+				GraphTransformer.backDoorGraph(g) ) )
 				
 		if( must )
 			adjusted_nodes = adjusted_nodes.concat( must )
@@ -1509,7 +1524,7 @@ var GraphAnalyzer = {
 		var vv = g2.vertices.values()
 		// this ignores adjusted vertices for now 
 		g2.removeAllAdjustedNodes()
-		var n = 0
+		var n = 0, i
 		for( i = 0 ; i < vv.length ; i ++ ){
 			for( var j = i+1 ; j < vv.length ; j ++ ){
 				if( !g2.isLatentNode( vv[i] ) && !g2.isLatentNode( vv[j] ) 
@@ -1541,7 +1556,7 @@ var GraphAnalyzer = {
 		var cpdag = GraphTransformer.dependencyGraph2CPDAG( g ), p1, p2
 		if( g.edges.all( function( e ){
 			if( typeof cpdag.getEdge( e.v1.id, e.v2.id, 
-					Graph.Edgetype.Undirected ) == "undefined" ){ 
+				Graph.Edgetype.Undirected ) == "undefined" ){ 
 				p1 = cpdag.getVertex(e.v1.id).getParents().pluck("id")
 				p2 = cpdag.getVertex(e.v2.id).getParents().pluck("id")
 				if( !p1.include(e.v2.id) && !p2.include(e.v1.id) 
@@ -1658,9 +1673,9 @@ var GraphAnalyzer = {
 	
 	intermediates : function( g ){
 		return _.chain( g.descendantsOf( g.getSources() ))
-		.intersection( g.ancestorsOf( g.getTargets() ) )
-		.difference( g.getSources() )
-		.difference( g.getTargets() ).value()
+			.intersection( g.ancestorsOf( g.getTargets() ) )
+			.difference( g.getSources() )
+			.difference( g.getTargets() ).value()
 	},
 	
 	/** 
@@ -1840,27 +1855,46 @@ var GraphAnalyzer = {
 	/** d-Separation test via Shachter's "Bayes-Ball" BFS.
 	 * (actually, implements m-separation which is however not guaranteed to be meaningful
 	 * in all mixed graphs).
+	 * If X is empty, always returns "false".
 	 * If Y is nonempty, returns true iff X and Z are d-separated given Z.
 	 * If Y is empty ([]), return the set of vertices that are d-connected 
 	 * to X given Z.
 	 */
 	dConnected : function( g, X, Y, Z, AnZ ){
 		var go = g
+
 		if( g.getType() == "pag" ){
 			g = GraphTransformer.pagToPdag( g )
-			X = g.getVertex(X)
-			Y = g.getVertex(Y)
-			Z = g.getVertex(Z)
-			if( typeof AnZ !== 'undefined' ){ AnZ = g.getVertex( AnZ ) }
 		}
+
+		if( X.length == 0 ){
+			if( Y.length == 0 ){
+				return []
+			} else {
+				false
+			}
+		}
+
+		X = _.map( X, g.getVertex, g )
+		Y = _.map( Y, g.getVertex, g )
+
+		if( typeof Z == "undefined" ){
+			Z = []
+		} else {
+			Z = _.map( Z, g.getVertex, g )
+		}
+		if( typeof AnZ == "undefined" ){	
+			AnZ = g.ancestorsOf( Z )
+		} else { 
+			AnZ = _.map( AnZ, g.getVertex, g ) 
+		}
+
 		var forward_queue = []
 		var backward_queue = []
 		var forward_visited ={}
 		var backward_visited = {}
 		var i, Y_ids = {}, Z_ids = {}, AnZ_ids = {}, v, vv
-		if( typeof AnZ == "undefined" ){	
-			AnZ = g.ancestorsOf( Z )
-		}
+
 		for( i = 0 ; i < X.length ; i ++ ){
 			backward_queue.push( X[i] )
 		}
@@ -1931,7 +1965,7 @@ var GraphAnalyzer = {
 	},
 	
 	ancestralInstrument : function( g, x, y, z, 
-			g_bd, de_y ){
+		g_bd, de_y ){
 		if( arguments.length < 5 ){
 			g_bd = GraphTransformer.backDoorGraph( g, [x], [y] )
 		}
@@ -2110,11 +2144,11 @@ var GraphAnalyzer = {
 				}
 			}
 		}
-		var vv = g.vertices.values() 
-		for( var j = 0 ; j < vv.length ; j ++ ){
+		var vv = g.vertices.values(), j 
+		for( j = 0 ; j < vv.length ; j ++ ){
 			topological_index[vv[j].id] = 0
 		}
-		for( var j = 0 ; j < vv.length ; j ++ ){
+		for( j = 0 ; j < vv.length ; j ++ ){
 			visit( vv[j] )
 		}
 		return topological_index
@@ -2131,16 +2165,16 @@ var GraphAnalyzer = {
 				g.clearTraversalInfo()
 				_.each( adj, function(v){ Graph.Vertex.markAsVisited(v) })
 			} ), function(v){
-				reaches_source[v.id] = true
-			})
+			reaches_source[v.id] = true
+		})
 		_.each( g.ancestorsOf( g.getTargets(),
 			function(){
 				var adj = g.getAdjustedNodes()
 				g.clearTraversalInfo()
 				_.each( adj, function(v){ Graph.Vertex.markAsVisited(v) })
 			} ), function(v){
-				reaches_target[v.id] = true
-			})
+			reaches_target[v.id] = true
+		})
 		var vv = g.vertices.values()
 		var bn_s = topological_index[s0.id]
 		var bn_t = topological_index[t0.id]
@@ -2552,7 +2586,7 @@ var GraphAnalyzer = {
 	containsSemiCycle: function (g){
 		return GraphAnalyzer.containsCycle( GraphTransformer.contractComponents(g, 
 			GraphAnalyzer.connectedComponents(g), [Graph.Edgetype.Directed])
-			)
+		)
 	},
 
 	/* Check whether the directed edge e is stronlgy protected */
@@ -2670,7 +2704,7 @@ var GraphAnalyzer = {
 			_.each( v.outgoingEdges, function( e ){
 				var vc = e.v1 === v ? e.v2 : e.v1
 				if (e.directed == Graph.Edgetype.Bidirected) {
-	  			trek.push( e )
+					trek.push( e )
 					visitDown( vc, trek )
 					trek.pop()
 				}
@@ -2803,10 +2837,10 @@ var GraphAnalyzer = {
 		}
 		var primes = findPrimes(3*(MPolyHelper.variableCount + 1) + 20 )
 		var simulated = [
-										simulateNumeric(function(){ return Math.floor((1 << 52)*Math.random()) + 1 }),
-										simulateNumeric(function(i){ return primes[3*i+20] })
-										//simulateNumeric(function(i){ return 1 }) this would be stupid, but it works
-										]
+			simulateNumeric(function(){ return Math.floor((1 << 52)*Math.random()) + 1 }),
+			simulateNumeric(function(i){ return primes[3*i+20] })
+			//simulateNumeric(function(i){ return 1 }) this would be stupid, but it works
+		]
 
 
 		
@@ -2879,17 +2913,17 @@ var GraphAnalyzer = {
 					var si3 = sigma[p][q]
 					var si4 = sigma[i][q].negate()
 					return FASTP.make(  fastp.r().mul(si2).add(fastp.p().mul(si1)), fastp.s() ? fastp.t().mul(si2).add(fastp.q().mul(si1)) : null,
-															fastp.r().mul(si4).add(fastp.p().mul(si3)), fastp.s() ? fastp.t().mul(si4).add(fastp.q().mul(si3)) : null,
-															fastp.s() )
+						fastp.r().mul(si4).add(fastp.p().mul(si3)), fastp.s() ? fastp.t().mul(si4).add(fastp.q().mul(si3)) : null,
+						fastp.s() )
 				}  )
 				ID[j] = {propagate: i, 
-								propagatePath: "propagate" in ID[i] ? ID[i].propagatePath.concat([i]) : [i], 
-								fastp: newfastp, 
-								propagatedMissingCycles: "propagate" in ID[i] ? ID[i].propagatedMissingCycles : ID[i].missingCycles,
-								oldMissingCycles: ID[j] ? ID[j].missingCycles : null
-								// oldPropagatedMissingCycles: ID[j] ? ID[j].propagatedMissingCycles : null, 
-								}
-					propagate(j)
+					propagatePath: "propagate" in ID[i] ? ID[i].propagatePath.concat([i]) : [i], 
+					fastp: newfastp, 
+					propagatedMissingCycles: "propagate" in ID[i] ? ID[i].propagatedMissingCycles : ID[i].missingCycles,
+					oldMissingCycles: ID[j] ? ID[j].missingCycles : null
+					// oldPropagatedMissingCycles: ID[j] ? ID[j].propagatedMissingCycles : null, 
+				}
+				propagate(j)
 			} )
 		}
 		
@@ -2907,9 +2941,9 @@ var GraphAnalyzer = {
 			var p = pa[i]
 			var q = pa[j]
 			return [ sigma[p][q], 
-							sigma[p][j].negate(), //lambda[p][i]
-							sigma[i][q].negate(), //lambda[q][j]
-							sigma[i][j] ]
+				sigma[p][j].negate(), //lambda[p][i]
+				sigma[i][q].negate(), //lambda[q][j]
+				sigma[i][j] ]
 		}
 
 		function missingCycleToQuadraticEquation(cycle){
@@ -2921,7 +2955,7 @@ var GraphAnalyzer = {
 			var C = 2
 			var D = 3
 			var k = cycle.length - 1
-		//  var vars = cycle.slice(0, k)
+			//  var vars = cycle.slice(0, k)
 			var eqs = _.map(new Array(k), function(x,i) { return bidiEquation(cycle[i], cycle[i+1]) } )
 			while (k > 2) {
 				var newk = Math.ceil(k/2)
@@ -2935,7 +2969,7 @@ var GraphAnalyzer = {
 						DET2(eqs[i][C], eqs[i+1][C],  eqs[i+1][A], eqs[i][D]),
 						DET2(eqs[i][C], eqs[i+1][D],  eqs[i+1][B], eqs[i][D])
 					]
-			//   newvars[j] = vars[i]??
+					//   newvars[j] = vars[i]??
 				}
 				if (k % 2 == 1) neweqs[newk - 1] = eqs[k - 1]
 				k = newk
@@ -2944,10 +2978,10 @@ var GraphAnalyzer = {
 			}
 			if (k == 2) {
 				eqs[0] = [ DET2(eqs[0][A], eqs[1][C],  eqs[1][A], eqs[0][B]),
-									DET2(eqs[0][A], eqs[1][D],  eqs[1][A], eqs[0][D]),
-									DET2(eqs[0][C], eqs[1][C],  eqs[1][B], eqs[0][B]),
-									DET2(eqs[0][C], eqs[1][D],  eqs[1][B], eqs[0][D])
-								]
+					DET2(eqs[0][A], eqs[1][D],  eqs[1][A], eqs[0][D]),
+					DET2(eqs[0][C], eqs[1][C],  eqs[1][B], eqs[0][B]),
+					DET2(eqs[0][C], eqs[1][D],  eqs[1][B], eqs[0][D])
+				]
 			}
 			var a = eqs[0][0]
 			var b = eqs[0][1].add(eqs[0][2])
@@ -2965,7 +2999,7 @@ var GraphAnalyzer = {
 			var minus_b = b.negate()
 			if (isZeroSigmaPoly(ss)) return [ FASTP.makeFraction(minus_b, two_a) ]
 			return [ FASTP.make(minus_b, MINUS_ONE, two_a, ZERO, ss),
-							FASTP.make(minus_b, ONE, two_a, ZERO, ss) ]
+				FASTP.make(minus_b, ONE, two_a, ZERO, ss) ]
 		}
 
 		function fastpMightSatisfyQuadraticEquation(fastp, abc) {
@@ -2995,17 +3029,17 @@ var GraphAnalyzer = {
 				t = t.evalToBigInt(simulated[i])
 				
 				var app_aqqs_bpr_bqst_crr_ctts = (a*p*p) + (a*q*q*s) + (b*p*r) + (b*q*s*t) + (c*r*r) + (c*t*t*s)
-				var minus_2apq_bpt_bqr_2crt = - ((2n*a*p*q) + (b*p*t) + (b*q*r) +  (2n* c*r*t))
+				var minus_2apq_bpt_bqr_2crt = - (((2n)*a*p*q) + (b*p*t) + (b*q*r) +  ((2n)* c*r*t))
 				
 				if (app_aqqs_bpr_bqst_crr_ctts < 0 && minus_2apq_bpt_bqr_2crt > 0) return false
 				if (app_aqqs_bpr_bqst_crr_ctts > 0 && minus_2apq_bpt_bqr_2crt < 0) return false
 				if (app_aqqs_bpr_bqst_crr_ctts != 0 && minus_2apq_bpt_bqr_2crt == 0) return false
 				if (app_aqqs_bpr_bqst_crr_ctts == 0 && minus_2apq_bpt_bqr_2crt != 0 && s != 0) return false
-				if (app_aqqs_bpr_bqst_crr_ctts**2n != (minus_2apq_bpt_bqr_2crt**2n) * s) return false
+				if (app_aqqs_bpr_bqst_crr_ctts ** 2n != (minus_2apq_bpt_bqr_2crt**2n) * s) return false
 			}
 				
 			return true
-/*    Symbolic approach does not work (too slow and loses sign)
+			/*    Symbolic approach does not work (too slow and loses sign)
 			app_aqqs_bpr_bqst_crr_ctts = ADD(MUL(a,p,p), MUL(a,q,q,s), MUL(b,p,r), MUL(b,q,s,t), MUL(c,r, r), MUL(c,t,t,s))
 			var TWO = MPoly("2")
 			apq2_bpt_bqr_2crt =  ADD(MUL(TWO,a,p,q), MUL(b,p,t), MUL(b,q,r),  MUL(TWO, c,r,t))*/
@@ -3296,10 +3330,17 @@ GraphLayouter.Spring.prototype = {
 var GraphParser = {
 	VALIDATE_GRAPH_STRUCTURE : false,
 	
-	parseDot : function( code ){
+	parseDot : function( code, g ){
 		"use strict"
+		code = code.trim()
+		var isdot = code.trim().match(  /^(digraph|graph|dag|pdag|mag|pag)(\s+\w+)?\s*\{([\s\S]*)\}$/mi )
+		if( !isdot || (isdot.length <= 1) ){
+			code = "dag{ " + code + "}"
+		}
 		var ast = GraphDotParser.parse( code )
-		var g = new Graph()
+		if( typeof g === "undefined" ){
+			g = new Graph()
+		}
 		this.parseDotStatementArray( ast.statements, g )
 		g.setType( ast.type )
 		if( ast.name ){ g.setName( ast.name ) }	
@@ -3639,7 +3680,7 @@ var GraphParser = {
 				var hasarrow = firstarg.match( /(->|<->|<-)/mi )
 				// allow users to omit explicit "dag{ ... }" if at least one arrow is also specified
 				if( hasarrow  && hasarrow.length >= 1  ){
-					return this.parseDot( "dag{"+firstarg+"}" )
+					return this.parseDot( firstarg )
 				} else {
 					return this.parseAdjacencyList( adjacencyListOrMatrix, vertexLabelsAndWeights )
 				}
