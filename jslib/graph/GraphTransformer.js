@@ -259,6 +259,9 @@ var GraphTransformer = {
  	  */
 	activeSelectionBiasGraph : function( g, x, y, S ){
 		var r = new Graph()
+		x = g.getVertex(x)
+		y = g.getVertex(y)
+		S = _.map( S, g.getVertex, g ) 
 		_.each( g.getVertices(), function(v){ r.addVertex(v.id) } )
 		g = g.clone()
 		_.each( S, function(s){ g.removeSelectedNode( s ) } )
