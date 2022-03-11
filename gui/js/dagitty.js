@@ -1373,56 +1373,94 @@ var GraphAnalyzer = {
 
 	/**
       * Determines whether Z is a valid adjustment set in g, with possible selection bias
-      * due to conditioning on nodes S.
+      * due to conditioning on nodes S. The nodes S and/or Z can be omitted, in which case they are
+      * taken as pre-defined from the DAG syntax (using the "adjusted" or "selected" keywords)
       */ 
 	isAdjustmentSet : function( g, Z, S ){
 		var gtype = g.getType()
-		var Zg = _.map( Z, g.getVertex, g )
 		if( gtype != "dag" && gtype != "pdag" && gtype != "mag" && gtype != "pag" ){
 			throw( "Cannot compute adjustment sets for graph of type "+gtype )
 		}
 		if( g.getSources().length == 0 || g.getTargets().length == 0 ){
 			return false
 		}
-
+		if( Z == null ){
+			Z = g.getAdjustedNodes()
+		}
+		if( S == null ){
+			S = g.getSelectedNodes()
+		}
+		var Zg = _.map( Z, g.getVertex, g )
 		if( _.intersection( this.dpcp(g), Zg ).length > 0 ){
 			return false
 		}
 		var gbd = GraphTransformer.backDoorGraph(g)
+		var Sgbd = _.map( S, gbd.getVertex, gbd )
 		var Zgbd = _.map( Zg, gbd.getVertex, gbd )
-		var r = !this.dConnected( gbd, gbd.getSources(), gbd.getTargets(), Zgbd )
-		if( S && S.length > 0 ){
-			var Sg = _.map( S, g.getVertex, g )
-			r = r && !this.dConnected( g, Zg, Sg, [] )
-			r = r && !this.dConnected( g, g.getTargets(), Sg, g.getSources().concat( Zg ) ) 
+		var r = !this.dConnected( gbd, gbd.getSources(), gbd.getTargets(), Zgbd.concat( Sgbd ) )
+		if( S.length > 0 ){
+			r = r && !this.dConnected( gbd, gbd.getTargets(), Sgbd )
 		}
 		return r
 	},
 	
-	listMsasTotalEffect : function( g, must, must_not, max_nr ){
+	/**
+ 	  *  Lists all minimal sufficient adjustment sets containing nodes in M (mandatory nodes) but not
+ 	  *  F (forbidden nodes). Selection nodes can also be defined within the DAG.
+ 	  */
+	listMsasTotalEffect : function( g, M, F, max_nr ){
 		var gtype = g.getType()
 		if( gtype != "dag" && gtype != "pdag" && gtype != "mag" && gtype != "pag" ){
 			throw( "Cannot compute total affect adjustment sets for graph of type "+gtype )
 		}
+
+		if( !g || g.getSources().length < 1 || g.getTargets().length < 1 ){ return [] }
+
+		var gg = g
 		if( gtype == "pdag" ){
-			g = GraphTransformer.cgToRcg( g )
-		}	
-		if( !g ){ return [] }
+			gg = GraphTransformer.cgToRcg( g )
+		}
+		if( M ){
+			_.each( M, function(v){ gg.addAdjustedNode( v ) } )
+		}
+		if( F ){
+			_.each( F, function(v){ gg.addLatentNode( v ) } )
+		}
 	
-		if(GraphAnalyzer.violatesAdjustmentCriterion(g)){ return [] }
-		var adjusted_nodes = g.getAdjustedNodes()
-		var latent_nodes = g.getLatentNodes().concat( this.dpcp(g) )
+
+		if( GraphAnalyzer.violatesAdjustmentCriterion(gg)){ return [] }
 		
-		var gam = GraphTransformer.moralGraph( 
-			GraphTransformer.ancestorGraph( 
-				GraphTransformer.backDoorGraph(g) ) )
-				
-		if( must )
-			adjusted_nodes = adjusted_nodes.concat( must )
-		if( must_not )
-			latent_nodes = latent_nodes.concat( must_not )
-		
-		return this.listMinimalSeparators( gam, adjusted_nodes, latent_nodes, max_nr )
+		var gbd = GraphTransformer.backDoorGraph(gg)
+		var S = gg.getSelectedNodes()
+		if( S.length > 0 ){
+			if( this.dConnected( gbd, gbd.getTargets(), _.map(S, Graph.getVertex, gbd ) ) ){
+				return []
+			} else {
+				_.each( S, function(s){ gbd.removeSelectedNode( s ); gbd.addAdjustedNode( s ) } )			
+			}
+		}
+
+		var gam = GraphTransformer.moralGraph( GraphTransformer.ancestorGraph( gbd ) )
+
+		var adjusted_nodes = _.map( gg.getAdjustedNodes(), Graph.getVertex, gam )
+		var latent_nodes = _.map( gg.getLatentNodes().concat( this.dpcp(gg) ), Graph.getVertex, gam )
+
+		// at this point, "latent_nodes" may contain 
+		// undefined values because not all adjusted or latent nodes may have beeen
+		// retained in the moral graph. Therefore, we use "compact" to remove such
+		// values. 
+		var r = this.listMinimalSeparators( gam, 
+			adjusted_nodes, 
+			_.compact(latent_nodes), max_nr )
+
+		// Give back vertex objects from original graph, rather than the constructed 
+		// ancestor moral graph.
+		S = _.map( S, Graph.getVertex, g )
+		for( i = 0 ; i < r.length ; i ++ ){
+			r[i] = _.map( r[i], Graph.getVertex, g )
+			r[i] = _.difference( r[i], S )
+		}
+		return r
 	},
 
 	canonicalAdjustmentSet : function( g ){
@@ -3954,6 +3992,9 @@ var GraphTransformer = {
  	  */
 	activeSelectionBiasGraph : function( g, x, y, S ){
 		var r = new Graph()
+		x = g.getVertex(x)
+		y = g.getVertex(y)
+		S = _.map( S, g.getVertex, g ) 
 		_.each( g.getVertices(), function(v){ r.addVertex(v.id) } )
 		g = g.clone()
 		_.each( S, function(s){ g.removeSelectedNode( s ) } )

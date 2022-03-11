@@ -20,6 +20,15 @@ QUnit.module("dagitty")
 
 QUnit.test( "adjustment in DAGs", function( assert ) {
 
+	assert.equal(
+		sep_2_str(GraphAnalyzer.listMsasTotalEffect($p("{x[e]} <- a -> m <- b -> {y[o]}"))),
+		"{}")
+
+	assert.equal(
+		sep_2_str(GraphAnalyzer.listMsasTotalEffect($p("{x[e]} <- a -> m <- b -> {y[o]}"),['m'])),
+		"{a, m}\n{b, m}")
+
+
 	assert.equal((function(){
 		var g = $p("pdag{ x -> {a -- b -- c -- a } b -> y x[e] y[o] }")
 		return _.pluck(GraphAnalyzer.properPossibleCausalPaths(g),"id").sort().join(" ")
