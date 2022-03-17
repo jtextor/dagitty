@@ -260,20 +260,20 @@ E -&gt; D
    <div id="viewmode" style="display:block">
 
       <form autocomplete="off">
-      <p><input type="radio" checked="checked" id="dagview_dag" name="dagview"
-         onclick="GUI.set_view_mode('normal')" /> 
-         	<label for="dagview_dag">normal</label></p>
+      <p><input type="radio" checked="checked" id="dagview_normal" name="dagview"
+         onclick="GUI.set_view_mode(this.value)" value="normal" /> 
+         	<label for="dagview_normal">normal</label></p>
       <p><input type="radio" name="dagview" id="dagview_causalodds"
-         onclick="GUI.set_view_mode('causalodds')"/>
+         onclick="GUI.set_view_mode(this.value)" value="causalodds"/>
          	<label for="dagview_causalodds">causal odds ratio</label></p>
       <p><input type="radio" name="dagview" id="dagview_moral"
-         onclick="GUI.set_view_mode('moral')"/>
+         onclick="GUI.set_view_mode(this.value)" value="moral"/>
          	<label for="dagview_moral">moral graph</label></p>
       <p><input type="radio" name="dagview" id="dagview_dependency"
-         onclick="GUI.set_view_mode('dependency')"/>
+         onclick="GUI.set_view_mode(this.value)" value="dependency"/>
          	<label for="dagview_dependency">correlation graph</label></p>
       <p><input type="radio" name="dagview" id="dagview_equivalence"
-         onclick="GUI.set_view_mode('equivalence')"/>
+         onclick="GUI.set_view_mode(this.value)" value="equivalence"/>
          	<label for="dagview_equivalence">equivalence class</label></p>
       </form>
 
@@ -377,6 +377,7 @@ E -&gt; D
 		<p>
 			<select id="causal_effect_kind" onchange="causalEffectEstimates()">
 				<option value="adj_total">Adjustment (total effect)</option>
+				<option value="adj_causalodds">Adjustment (causal odds ratio)</option>
 				<option value="adj_direct">Adjustment (direct effect)</option>
 				<option value="instrument">Instrumental variable</option>
 				<!--<option value="treeid">TreeId</option>-->

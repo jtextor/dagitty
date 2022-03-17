@@ -175,6 +175,16 @@ form{
 	margin: 2em;
 }
 
+p.warning {
+	color: #a00;
+	font-weight: bold;
+}
+p.assurance {
+	color: #0a0;
+	font-weight: bold;
+}
+
+
 @media screen and (max-width: 40em) {
 	main{
 		height: 90%;

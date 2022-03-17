@@ -67,8 +67,9 @@ var GUI = {
 		DAGittyControl && DAGittyControl.redraw();
 	},
 	set_view_mode : function( vm ){
-		view_mode = vm;
-		DAGittyControl && DAGittyControl.setViewMode( view_mode );
+		let vmel = document.getElementById( "dagview_"+vm )
+		vmel.checked ||= true
+		DAGittyControl && DAGittyControl.setViewMode( vm );
 	},
 	refresh_variable_status : function(){
 		var vid = document.getElementById("variable_id").value
@@ -109,13 +110,10 @@ var GUI = {
 };
 
 
-/* some convenience functions */
-
-function log(a) {
-	if( console && console.log  ){
-		console.log(a);
-	}
-}
+/**
+ * Some convenience functions.
+ * 
+ **/
 
 function displayArrow( id, on ){
 	if( document.getElementById("a_"+id) ){
@@ -162,6 +160,7 @@ function menuOpen( id ){
 		}
 	}
 }
+
 function menuToggle( id ){
 	for( var i = 0 ; i < GUI.menus.length ; i ++ ){
 		if( GUI.menus[i] != id ){
@@ -185,8 +184,6 @@ function how( t ){
 	msg( t );
 	displayHide('menu_howto')
 }
-
-/* now to the real stuff */
 
 function setsToHTML( sets ){
 	if( sets.length > 0 ){
@@ -212,6 +209,29 @@ function setsToHTML( sets ){
 	}
 }
 
+function msgP( t ){
+	let r = document.createElement("p")
+	r.innerText = t
+	return r
+}
+
+function msgWarnP( t ){
+	let r = msgP( t )
+	r.className = "warning"
+	return r
+}
+
+function msgOKP( t ){
+	let r = msgP( t )
+	r.className = "assurance"
+	return r
+}
+
+
+/** 
+ * Functions that compute things.
+ */
+
 function causalEffectEstimates(){
 	/*if( Model.dag.getSelectedNodes().length > 0 ){
 		displayCausalMsg("I cannot determine causal effects for DAGs with selection nodes."); return 
@@ -221,12 +241,19 @@ function causalEffectEstimates(){
 	}
 	switch( document.getElementById("causal_effect_kind").value ){
 		case "adj_total" :
+			GUI.set_view_mode('normal')
 			displayAdjustmentInfo("total"); break
 		case "adj_direct" :
+			GUI.set_view_mode('normal')
 			displayAdjustmentInfo("direct"); break
+		case "adj_causalodds" :
+			GUI.set_view_mode('causalodds')
+			displayAdjustmentInfo("causalodds"); break
 		case "instrument" :
+			GUI.set_view_mode('normal')
 			displayInstrumentInfo(); break
 		case "treeid" :
+			GUI.set_view_mode('normal')
 			displayTreeIDInfo(); break
 	}
 }
@@ -235,26 +262,31 @@ function causalEffectEstimates(){
 	"total" or "direct". */
 	
 function msasToHtml( msas ){
+	let r = null;
 	if( msas.length > 0 ){
-		var msas_html = [];
-		for( var i = 0 ; i < msas.length ; i ++ ){
+		let msas_html = [];
+		for( let i = 0 ; i < msas.length ; i ++ ){
 			msas_html[i] = "";
-			var ids = _.pluck(msas[i],'id').sort();
-			for( var j = 0 ; j < ids.length ; j ++ ){
+			let ids = _.pluck(msas[i],'id').sort();
+			for( let j = 0 ; j < ids.length ; j ++ ){
 				if( j > 0 ){
 					msas_html[i] += ", ";
 				}
 				if( Model.dag.isAdjustedNode( ids[j] ) ){
-					msas_html[i] += "<strong>"+ids[j]+"</strong>";
+					msas_html[i] += ids[j];
 				} else {
 					msas_html[i] += ids[j];
 				}
 			}
-		} 
-		return "<ul><li>"+msas_html.sort().join("</li><li>")+"</li></ul>";
-	} else {
-		return "";
+		}
+		r = document.createElement("ul")
+		for( let e of msas_html.sort() ){
+			let ee = document.createElement("li")
+			ee.innerText = e
+			r.appendChild( ee )
+		}
 	}
+	return r
 }
 
 function displayCausalMsg( wh ){	
@@ -266,32 +298,66 @@ function displayAdjustmentInfo( kind ){
 	let g = Model.dag
 
 	let adjusted_nodes = g.getAdjustedNodes();
-	let html_adjustment = "";
-	if( kind != "total" ){
-		kind = "direct";
-	}
+	let note_adjustment = "";
 
 	let exposures = _.pluck(g.getSources(),'id').sort()
 	let outcomes = _.pluck(g.getTargets(),'id').sort()
 	let adjusted = _.pluck(g.getAdjustedNodes(),'id').sort()
 	let selected = _.pluck(g.getSelectedNodes(),'id').sort()
 
-
 	let exposures_list = _.pluck(g.getSources(),'id').sort()
 	let outcomes_list = _.pluck(g.getTargets(),'id').sort()
 
-	let exposures_el = document.createElement( "p" )
-	exposures_el.innerText = "Exposure"+(exposures.length > 1?"s: ":": ")+exposures_list.join(",")
-
-	let outcomes_el = document.createElement( "p" )
-	outcomes_el.innerText = "Outcome"+(outcomes.length > 1?"s: ":": ")+outcomes_list.join(",")
-
 	let tgt_el = document.getElementById("causal_effect")
+	tgt_el.replaceChildren()
 
-	tgt_el.replaceChildren( exposures_el, outcomes_el )
+	if( exposures_list.length > 0 ){
+		tgt_el.appendChild( msgP( "Exposure"+(exposures.length > 1?"s: ":": ")+exposures_list.join(",") ) )
+	} else {
+		tgt_el.appendChild( msgWarnP( "No exposure defined." ) )
+	}
 
+	if( outcomes_list.length > 0 ){
+		tgt_el.appendChild( msgP( "Outcome"+(outcomes.length > 1?"s: ":": ")+outcomes_list.join(",") ) ) 
+	} else {
+		tgt_el.appendChild( msgWarnP( "No outcome defined." ) )
+	}
+
+	/* All adjustment types need at least one exposure and outcome. */
 	if( exposures.length == 0 || outcomes.length == 0 ){
 		return
+	}
+
+	/* For non-total effects, we need exactly one exposure and/or outcome. */
+	if( kind == "causal odds ratio" ){
+		if( exposures.length > 1 ){
+			tgt_el.appendChild( msgWarnP( "Multiple exposures defined." ) )		
+		}
+		if( outcomes.length > 1 ){
+			tgt_el.appendChild( msgWarnP( "Multiple outcomes defined." ) )		
+		}
+		return
+	}
+
+	if( selected.length > 0 ){
+		let selected_el = document.createElement( "p" )
+		selected_el.innerText = "Selected: "+selected.join(",")
+		tgt_el.appendChild( selected_el )
+		if( kind == "direct" ){
+			tgt_el.appendChild( msgWarnP("Selection nodes not supported for direct effects." ) )
+			return
+		}
+	} 
+	
+	if( kind == "causalodds" ){
+		if( selected.length == 0 ){
+			tgt_el.appendChild( msgWarnP("Selection node not defined." ) )
+			return
+		}
+		if( selected.length > 1 ){
+			tgt_el.appendChild( msgWarnP("There must be a unique selection node." ) )
+			return
+		}
 	}
 
 	if( adjusted.length > 0 ){
@@ -300,64 +366,69 @@ function displayAdjustmentInfo( kind ){
 		tgt_el.appendChild( adjusted_el )
 	}
 
-	if( selected.length > 0 ){
-		let selected_el = document.createElement( "p" )
-		selected_el.innerText = "Selected: "+selected.join(",")
-		tgt_el.appendChild( selected_el )
+	let f = "isAdjustmentSet"
+	if( kind == "direct" ){
+		f = "isAdjustmentSetDirectEffect"
+	}
+	if( kind == "causalodds" ){
+		f = "isAdjustmentSetCausalOddsRatio"
 	}
 
+	if( GraphAnalyzer[f]( g ) ){
+		if( adjusted.length == 0 ){
+			tgt_el.appendChild( msgOKP( "No open biasing paths." ) )
+		} else {
+			tgt_el.appendChild( msgOKP( "Correctly adjusted." ) )
+		}
+	} else {
+		if( adjusted.length == 0 ){
+			tgt_el.appendChild( msgWarnP( "Biasing paths are open." ) )
+		} else {
+			tgt_el.appendChild( msgWarnP( "Incorrectly adjusted." ) )
+		}
+	}
 
-	return
+	/** From here on, list adjustment sets.
+	  * This currently only works for total and direct effects. Also, we cannot list
+	  * adjustment sets yet if there is a selection node.
+	  */
 
+	if( !["total","direct"].includes( kind ) || selected.length > 0 ){ return } 
 
-	if( false ){
-	let adjusted_nodes_html = _.pluck(adjusted_nodes,'id').sort().join(", ")
-	
+	let adjustment_list_el = document.createElement( "p" )
+
+	tgt_el.appendChild( adjustment_list_el )
 
 	if( adjusted_nodes.length > 0 ){
-		html_adjustment = " containing "+_.pluck(adjusted_nodes,'id').sort().join(", ");
-	}
-	if( Model.dag.getSources().length==0 || Model.dag.getTargets().length==0 ){
-		document.getElementById("causal_effect").innerHTML = "<p>Exposure and/or outcome not defined.</p>"
-		return
+		note_adjustment = " containing "+_.pluck(adjusted_nodes,'id').sort().join(", ");
 	}
 	
-	var showMsas = function( t, msas, html_a ){
+	let showMsas = function( t, msas, note_a, el ){
 		if( msas.length == 1 && msas[0].length == 0 ){
-			document.getElementById("causal_effect").innerHTML = 
-				"<p>No adjustment is necessary to estimate the "+t+" effect of "+
+			el.innerText = "No adjustment is necessary to estimate the "+t+" of "+
 					_.pluck(Model.dag.getSources(),'id').join(",") +
-					" on " + _.pluck(Model.dag.getTargets(),'id').join(",") + ".</p>"
+					" on " + _.pluck(Model.dag.getTargets(),'id').join(",") + ".";
 			return
 		}
-		var msas_html = msasToHtml( msas );
+		let msas_html = msasToHtml( msas );
 		if( msas_html ){
-			document.getElementById("causal_effect").innerHTML = 
-			"<p>Minimal sufficient adjustment sets "+html_a+" for estimating the "+t+" effect of "
-			+ _.pluck(Model.dag.getSources(),'id').join(",") 
-			+ " on " + _.pluck(Model.dag.getTargets(),'id').join(",") + ": " + msas_html;
+			el.innerText = "Minimal sufficient adjustment sets "+note_a+" for estimating the "+t+" of "
+				+ _.pluck(Model.dag.getSources(),'id').join(",") 
+				+ " on " + _.pluck(Model.dag.getTargets(),'id').join(",") + ": "
+			el.after( msas_html )
 		} else {
-			document.getElementById("causal_effect").innerHTML 
-			= "<p>The "+t+" effect cannot be estimated by covariate adjustment.</p>";
+			el.innerText = "No adjustment sets found.";
 		}
 	};
-	
-	if( kind == "total" ){
-		if( GraphAnalyzer.violatesAdjustmentCriterion( Model.dag ) ){
-			document.getElementById("causal_effect").innerHTML 
-			= "<p>The total effect cannot be estimated due to adjustment for an intermediate or a descendant of an intermediate.</p>";
-		} else {
 
-			showMsas( "total",
-				GraphAnalyzer.listMsasTotalEffect( Model.dag ), html_adjustment );
-		}
+	if( kind == "total" ){
+		showMsas( "total effect",
+			GraphAnalyzer.listMsasTotalEffect( g ), note_adjustment, adjustment_list_el );
 	}
 	
 	if( kind == "direct" ){
-		showMsas( "direct",
-				GraphAnalyzer.listMsasDirectEffect( Model.dag ), html_adjustment );
-	}
-
+		showMsas( "direct effect",
+			GraphAnalyzer.listMsasDirectEffect( g ), note_adjustment, adjustment_list_el );
 	}
 }
 
@@ -523,21 +594,11 @@ function displayImplicationInfo( full ){
 		}
 		imp_html += "</ul>";
 		document.getElementById("testable_implications").innerHTML = imp_html +
-			(more_link?'<p><a href="javascript:void(0)" onclick="displayImplicationInfo( true )">Show all ...</a></p>':'')+
-			('<p><button onclick="exportImplicationTests()">Export R code</button></p>');
+			(more_link?'<p><a href="javascript:void(0)" onclick="displayImplicationInfo( true )">Show all ...</a></p>':'')
 	} else {
-		document.getElementById("testable_implications").innerHTML = 
-		"<p>Either the model does not imply any conditional independencies "
-		+" or the implied ones are untestable due to unobserved variables.</p>";
+		document.getElementById("testable_implications").replaceChildren( msgP( "Either the model does not imply any conditional independencies "
+			+" or the implied ones are untestable due to unobserved variables.") )
 	}
-}
-
-function exportImplicationTests(){
-	DAGittyControl.getView().openHTMLDialog( 
-		"<textarea style=\"width:80%\" rows=\"10\">"+
-		 GraphSerializer.toImplicationTestRCode( Model.dag, 1000 ) +
-		"</textarea>", "OK"
-	)
 }
 
 function exportTikzCode(){
@@ -557,14 +618,14 @@ function displayGeneralInfo(){
 	if( cycle ){
 		displayShow("info_cycle");
 		displayHide("info_summary");
-		document.getElementById("info_cycle").innerHTML = "<p><b>Model contains cycle: "+cycle+"</b></p>";
+		document.getElementById("info_cycle").innerHTML = "<p class=\"warning\">Model contains cycle: "+cycle+"</p>";
 	} else {
 		if ( _.some(Model.dag.getEdges(), function(e) { return e.directed == Graph.Edgetype.Undirected; } ) )
 			cycle = GraphAnalyzer.containsSemiCycle(Model.dag);
 		if (cycle) {
 			displayShow("info_cycle");
 			displayHide("info_summary");
-			document.getElementById("info_cycle").innerHTML = "<p><b>Model contains semi-cycle: "+cycle+"</b></p>";
+			document.getElementById("info_cycle").innerHTML = "<p class=\"warning\">Model contains semi-cycle: "+cycle+"</b></p>";
 		} else {
 			displayHide("info_cycle");
 			displayShow("info_summary");

@@ -108,16 +108,16 @@ QUnit.test( "adjustment in DAGs", function( assert ) {
 		return GraphAnalyzer.violatesAdjustmentCriterion( g )
 	})(), true )
 
-	assert.equal((function(){
+	assert.true((function(){
 		var g = TestGraphs.findExample( "Acid" );
 		g.addAdjustedNode("x16");
 		return GraphAnalyzer.violatesAdjustmentCriterion( g )
-	})(), true )
+	})())
 
-	assert.equal((function(){
+	assert.false((function(){
 		var g = TestGraphs.findExample( "Acid" );
 		return GraphAnalyzer.violatesAdjustmentCriterion( g )
-	})(), false )
+	})() )
 	
 	assert.equal( sep_2_str(GraphAnalyzer.listMsasTotalEffect(
 		$p("dag { X1 [exposure]\n "+
@@ -129,6 +129,15 @@ QUnit.test( "adjustment in DAGs", function( assert ) {
 	g = $p( "dag G { a <-> b } " )
 	assert.equal( GraphTransformer.trekGraph( g ).edges.length, 4, "trek graph with <->" )
 
+	g = $p( "Z -> {{a[e]} -> { b -> {c[o]} }}" )
+	assert.true( GraphAnalyzer.isAdjustmentSet( g, ["Z"] ) )
+	assert.false( GraphAnalyzer.isAdjustmentSetDirectEffect( g, ["Z"] ) )
+	assert.true( GraphAnalyzer.isAdjustmentSetDirectEffect( g, ["Z","b"] ) )
+
+
+	g = $p( "Z -> {{a[e]} -> { b -> {c[o]} }} c -> {s [selected]}" )
+	assert.false( GraphAnalyzer.isAdjustmentSet( g, ["Z"] ) )
+	assert.true( GraphAnalyzer.isAdjustmentSetCausalOddsRatio( g, ["Z"] ) )
 
 });
 

@@ -177,8 +177,8 @@ var GraphTransformer = {
 	 * construction. Only such edges are deleted that are the first edge of a 
 	 * proper causal path.
 	 *
-	 *		Parameters X and Y are source and target vertex sets, respectively,
-	 *		and are optional.
+	 * Parameters X and Y are source and target vertex sets, respectively,
+	 * and are optional. If not given, they are taken from the graph.
 	 *		
 	 *
 	 **/
@@ -192,9 +192,13 @@ var GraphTransformer = {
 		}
 		if( typeof X == "undefined" ){
 			X = g.getSources()
+		} else {
+			X = _.map( X, Graph.getVertex, g )
 		}
 		if( typeof Y == "undefined" ){
 			Y = g.getTargets()
+		} else {
+			Y = _.map( Y, Graph.getVertex, g )
 		}
 		if( X.length == 0 || Y.length == 0 ){
 			return gback

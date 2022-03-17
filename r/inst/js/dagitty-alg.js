@@ -1385,7 +1385,7 @@ var GraphAnalyzer = {
 		if( S == null ){
 			S = g.getSelectedNodes()
 		}
-		var Zg = _.map( Z, g.getVertex, g )
+		var Zg = _.map( Z, Graph.getVertex, g )
 		if( _.intersection( this.dpcp(g), Zg ).length > 0 ){
 			return false
 		}
@@ -1398,7 +1398,51 @@ var GraphAnalyzer = {
 		}
 		return r
 	},
-	
+
+	isAdjustmentSetDirectEffect : function( g, Z ){
+		var gtype = g.getType()
+		if( gtype != "dag" ){
+			throw( "Cannot compute adjustment sets for direct effects for graph of type "+gtype )
+		}
+		if( g.getSelectedNodes().length > 0 ){
+			throw( "Cannot compute adjustment sets for direct effects when there are selection nodes!" )
+		}
+		if( Z == null ){
+			Z = g.getAdjustedNodes()
+		} else {
+		}
+		var gbd = GraphTransformer.indirectGraph(g)
+		return !this.dConnected( gbd, gbd.getSources(), gbd.getTargets(), _.map( Z, Graph.getVertex, gbd ) )
+	},
+
+	isAdjustmentSetCausalOddsRatio : function( g, Z, S ){
+		var gtype = g.getType()
+		if( gtype != "dag" ){
+			throw( "Cannot compute adjustment sets for direct effects for graph of type "+gtype )
+		}
+		if( g.getSources().length != 1 || g.getTargets().length != 1 ){
+			return null
+		}
+		if( Z == null ){
+			Z = g.getAdjustedNodes()
+		} else {
+			Z = _.map( Z, Graph.getVertex, g )
+		}
+		if( S == null ){
+			S = g.getSelectedNodes()
+		} else {
+			S = _.map( S, Graph.getVertex, g )
+		}
+		if( S.length != 1 ){
+			return null
+		}
+		var r = !this.dConnected( g, g.getSources(), S, g.getTargets().concat( Z ) )
+		if( r ){
+			r = r && this.isAdjustmentSet( g, Z, [] )
+		}
+		return r
+	},
+
 	/**
  	  *  Lists all minimal sufficient adjustment sets containing nodes in M (mandatory nodes) but not
  	  *  F (forbidden nodes). Selection nodes can also be defined within the DAG.
@@ -3905,8 +3949,8 @@ var GraphTransformer = {
 	 * construction. Only such edges are deleted that are the first edge of a 
 	 * proper causal path.
 	 *
-	 *		Parameters X and Y are source and target vertex sets, respectively,
-	 *		and are optional.
+	 * Parameters X and Y are source and target vertex sets, respectively,
+	 * and are optional. If not given, they are taken from the graph.
 	 *		
 	 *
 	 **/
@@ -3920,9 +3964,13 @@ var GraphTransformer = {
 		}
 		if( typeof X == "undefined" ){
 			X = g.getSources()
+		} else {
+			X = _.map( X, Graph.getVertex, g )
 		}
 		if( typeof Y == "undefined" ){
 			Y = g.getTargets()
+		} else {
+			Y = _.map( Y, Graph.getVertex, g )
 		}
 		if( X.length == 0 || Y.length == 0 ){
 			return gback
