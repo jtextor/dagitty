@@ -30,30 +30,27 @@
 }(typeof self !== 'undefined' ? self : this, function () {
 	return [ 
 {
-	d : "dag { \n"+
-	"bb=\"-3,-0.5,2,1.2\"" +
-	"D [outcome,pos=\"1,1\"] " +
-	"E [exposure,pos=\"-2,1\"] " +
-	"Z [pos=\"-0.5,0.5\"] " +
-	"D <-> Z [pos=\"1,-1\"] " +
-	"E -> D " +
-	"E <-> Z [pos=\"-2,-1\"] }",
+	d : `bb="-3,-0.5,2,1.2"
+	D [outcome,pos="1,1"]
+	E [exposure,pos="-2,1"]
+	Z [pos="-0.5,0.5"]
+	D <-> Z [pos="1,-1"]
+	E -> D
+	E <-> Z [pos="-2,-1"]`,
 
 	l: "The M-bias graph"
 },
 
 {
-    e: "E D\n"+
-    "A E Z\n"+
-    "B D Z\n"+
-    "Z E D\n",
-
-    v: "E E @-2.2,1.597\n"+
-"D O @1.4,1.621\n"+
-"A 1 @-2.2,-1.520\n"+
-"B 1 @1.4,-1.460\n"+
-"Z 1 @-0.3,-0.082",
-
+	d: `A [pos="-2.200,-1.520"]
+	B [pos="1.400,-1.460"]
+	D [outcome,pos="1.400,1.621"]
+	E [exposure,pos="-2.200,1.597"]
+	Z [pos="-0.300,-0.082"]
+	A -> { E Z }
+	B -> { D Z }
+	E -> D
+	Z -> { D E }`,
     l: "Extended confounding triangle"
 },
 

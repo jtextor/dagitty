@@ -71,6 +71,9 @@ var GUI = {
 		vmel.checked ||= true
 		DAGittyControl && DAGittyControl.setViewMode( vm );
 	},
+	set_bias_mode : function( bm ){
+		DAGittyControl && DAGittyControl.setBiasMode( bm );		
+	},
 	refresh_variable_status : function(){
 		var vid = document.getElementById("variable_id").value
 		document.getElementById("variable_label").innerText = vid
@@ -232,28 +235,28 @@ function msgOKP( t ){
  * Functions that compute things.
  */
 
-function causalEffectEstimates(){
+function causalEffectEstimates( effect_type ){
 	/*if( Model.dag.getSelectedNodes().length > 0 ){
 		displayCausalMsg("I cannot determine causal effects for DAGs with selection nodes."); return 
 	}*/
 	if( GraphAnalyzer.containsCycle( Model.dag ) ){
 		displayCausalMsg("Can't determine causal effects for cyclic models."); return 
 	}
-	switch( document.getElementById("causal_effect_kind").value ){
+	switch( effect_type ){
 		case "adj_total" :
-			GUI.set_view_mode('normal')
+			GUI.set_bias_mode('normal')
 			displayAdjustmentInfo("total"); break
 		case "adj_direct" :
-			GUI.set_view_mode('normal')
+			GUI.set_bias_mode('direct')
 			displayAdjustmentInfo("direct"); break
 		case "adj_causalodds" :
-			GUI.set_view_mode('causalodds')
+			GUI.set_bias_mode('causalodds')
 			displayAdjustmentInfo("causalodds"); break
 		case "instrument" :
-			GUI.set_view_mode('normal')
+			GUI.set_bias_mode('normal')
 			displayInstrumentInfo(); break
 		case "treeid" :
-			GUI.set_view_mode('normal')
+			GUI.set_bias_mode('normal')
 			displayTreeIDInfo(); break
 	}
 }

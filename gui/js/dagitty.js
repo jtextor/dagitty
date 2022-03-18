@@ -3940,10 +3940,10 @@ var GraphTransformer = {
 	 */
 	ancestorGraph : function( g, V ){ 
 		if( arguments.length < 2 ){
-			V = g.getSources().
-			concat(g.getTargets()).
-			concat(g.getAdjustedNodes()).
-			concat(g.getSelectedNodes())
+			V = _.union( g.getSources(),
+						g.getTargets(),
+						g.getAdjustedNodes(),
+						g.getSelectedNodes() )
 		}
 		var g_an = this.inducedSubgraph( g, g.anteriorsOf( V ) )
 		return g_an
@@ -4042,7 +4042,7 @@ var GraphTransformer = {
 		var r = new Graph()
 		x = g.getVertex(x)
 		y = g.getVertex(y)
-		S = _.map( S, g.getVertex, g ) 
+		S = g.getVertex(S)
 		_.each( g.getVertices(), function(v){ r.addVertex(v.id) } )
 		g = g.clone()
 		_.each( S, function(s){ g.removeSelectedNode( s ) } )
@@ -4058,42 +4058,54 @@ var GraphTransformer = {
 		_.each( this.causalFlowGraph( g ).getEdges(), function(e) {
 			r.addEdge( e.v1.id, e.v2.id, e.directed )
 		} )
-		return r	
+		return r
 	},
 	
 	/**
 	 *		This function returns the subgraph of this graph that is induced
 	 *		by all open simple non-causal routes from s to t. 
 	 */
-	activeBiasGraph : function( g, X, Y ){
+	activeBiasGraph : function( g, opts ){
 		var g_chain, g_canon, L, S, in_type = g.getType(),
 			reaches_source = {}, reaches_adjusted_node = {}, retain = {}
 		var preserve_previous_visited_information = function(){}
-		
-		if( arguments.length > 1 ){
-			g = g.clone()
-			_.each(X,function(v){g.addSource(v.id)})
-			_.each(Y,function(v){g.addTarget(v.id)})
-		}
-		
-		if( g.getSources().length == 0 || g.getTargets().length == 0 ){
-			return new Graph()
-		}
+		var Z, Zchain, gtype = g.getType()
 		
 		g_canon = GraphTransformer.canonicalDag(g)
 		g = g_canon.g
+
+		opts = _.defaults( opts || {}, 
+			{direct: false} )
+		if( opts.X ){
+			_.each(opts.X,function(v){g.addSource(g.getVertex(v))})
+		}
+		if( opts.Y ){
+			_.each(opts.Y,function(v){g.addTarget(g.getVertex(v))})
+		}
+
+		if( g.getSources().length == 0 || g.getTargets().length == 0 ){
+			g = new Graph()
+			g.setType( g.getType() )
+			return g
+		}
+
 		g_chain = GraphTransformer.ancestorGraph(g)
-		
+
+		Z = _.union( g.getAdjustedNodes(), g.getSelectedNodes() )
+		Zchain = _.union( g_chain.getAdjustedNodes(), g_chain.getSelectedNodes() )
+
+		// This labels all nodes that can "directly" reach one of the source nodes
+		// without going through any other node that can also directly reach the source
+		// node.
 		_.each( g.ancestorsOf( g.getSources(),
 			function(){
-				var adj = g.getAdjustedNodes()
 				g.clearTraversalInfo()
-				_.each( adj, function(v){ Graph.Vertex.markAsVisited(v) } )
+				_.each( Z, function(v){ Graph.Vertex.markAsVisited(v) } )
 			} ), function(v){
 			reaches_source[v.id] = true
 		})
 			
-		_.each( g.ancestorsOf( g.getAdjustedNodes() ), function(v){
+		_.each( g.ancestorsOf( Z ), function(v){
 			reaches_adjusted_node[v.id] = true
 		})
 		
@@ -4111,22 +4123,35 @@ var GraphTransformer = {
 			target_ancestors_except_ancestors_of_violators)
 		g.clearTraversalInfo()
 		
-		// Delete directed edges emitting from source that are only on causal routes
-		_.each( g.getSources(), function(s){
-			_.each( s.outgoingEdges, function(e){
-				if( g.isSource(e.v2 ) || _.contains(intermediates_after_source, e.v2 ) ){
-					g_chain.deleteEdge( e.v1, e.v2, Graph.Edgetype.Directed )
-				}
+		// Form the proper back-door graph with respect to the desired type of effect.
+		if( opts.direct ){
+			_.each( g.getSources(), function(s){
+				_.each( s.outgoingEdges, function(e){
+					if( g.isSource(e.v2) || g.isTarget(e.v2) ){ 
+						g_chain.deleteEdge( e.v1, e.v2, Graph.Edgetype.Directed )
+					}
+				})
 			})
-		})
+		} else {
+			_.each( g.getSources(), function(s){
+				_.each( s.outgoingEdges, function(e){
+					if( g.isSource(e.v2 ) || _.contains(intermediates_after_source, e.v2 ) ){
+						g_chain.deleteEdge( e.v1, e.v2, Graph.Edgetype.Directed )
+					}
+				})
+			})
+		}
 
-		// Delete edges emitting from adjusted nodes
-		_.each( g_chain.getAdjustedNodes(), function( v ){
+		// Form the "partial moral" chain graph:
+		// First, delete edges emitting from adjusted nodes
+		_.each( Z, function( v ){
 			_.each( v.getChildren(), function( v2 ){ 
 				g_chain.deleteEdge( v, v2, Graph.Edgetype.Directed )
 			} )
 		} )
-		
+	
+		// Second, all edges between ancestors of adjusted/selected nodes 
+		// are turned into undirected edges.
 		// clone because we shoulnd't modify an array while traversing it
 		_.each( g_chain.edges.slice(), function(e){
 			if( reaches_adjusted_node[e.v1.id] && reaches_adjusted_node[e.v2.id] ){
@@ -4134,7 +4159,7 @@ var GraphTransformer = {
 				g_chain.addEdge( e.v1, e.v2, Graph.Edgetype.Undirected )
 			}
 		} )
-		
+
 		var topological_index = GraphAnalyzer.topologicalOrdering( g_chain )
 		
 		var bottleneck_number = GraphAnalyzer.bottleneckNumbers( g,
@@ -4174,7 +4199,7 @@ var GraphTransformer = {
 						"__END"+bottleneck_number[bridge.id],
 						bridge.id, Graph.Edgetype.Undirected )
 				})
-								
+	
 				var bicomps = GraphAnalyzer.biconnectedComponents( current_component )
 								
 				var current_block_tree = GraphAnalyzer.blockTree( current_component, bicomps )
@@ -4277,6 +4302,9 @@ var GraphTransformer = {
 		})
 		
 		// Delete all vertices that have not been marked for retention
+		if( opts.direct ){
+			_.each( intermediates_after_source, function(v){ retain[v.id] = true } )
+		}
 		_.each(vv, function(v){
 			if( typeof retain[v.id] === "undefined" ){
 				g_chain.deleteVertex(v)
@@ -4292,7 +4320,7 @@ var GraphTransformer = {
 		})
 		_.each( edges_to_replace, function( e ){
 			g_chain.deleteEdge( e.v1, e.v2, Graph.Edgetype.Undirected )
-			if( g_canon.g.getEdge( e.v1.id, e.v2.id, Graph.Edgetype.Directed ) ){
+			if( g.getEdge( e.v1.id, e.v2.id, Graph.Edgetype.Directed ) ){
 				g_chain.addEdge( e.v1.id, e.v2.id, Graph.Edgetype.Directed )
 			} else {
 				g_chain.addEdge( e.v2.id, e.v1.id, Graph.Edgetype.Directed )
@@ -4310,6 +4338,18 @@ var GraphTransformer = {
 			var v = g_chain.getVertex(vid)
 			if( v ) S.push( v )
 		})
+
+		// For direct effects, add causal paths between mediators
+		if( opts.direct ){
+			var gind = this.inducedSubgraph( g, _.intersection( g.descendantsOf( g.getSources() ),
+					g.ancestorsOf( g.getTargets() ) ) )
+			_.each( gind.edges, function(e){
+				if( e.directed == Graph.Edgetype.Directed && !(
+						(gind.isSource(e.v1)||gind.isTarget(e.v1)) && (gind.isSource(e.v2)||gind.isTarget(e.v2))) ){
+					g_chain.addEdge( e.v1.id, e.v2.id, Graph.Edgetype.Directed )
+				} 
+			})
+		}
 		g = GraphTransformer.decanonicalize( g_chain, L, S )
 		g.setType( in_type )
 		return g
@@ -7481,6 +7521,7 @@ var DAGittyGraphView = Class.extend({
 			_.bind( function(v){ this.callEventListener( "vertex_marked", [v] ) }, this ) )
 
 		this.view_mode = "normal"
+		this.bias_mode = "normal"
 		this.drawGraph()
 	},
 
@@ -7687,13 +7728,28 @@ var DAGittyGraphView = Class.extend({
 			this.drawGraph()
 		}
 	},
+	getBiasMode : function(){
+		return this.bias_mode
+	},
+	setBiasMode : function( m ){
+		if( this.bias_mode === m ){
+			return
+		}
+		this.bias_mode = m
+		this.drawGraph()
+	},
+
 	getViewMode : function(){
 		return this.view_mode
 	},
 	setViewMode : function( m ){
+		if( this.view_mode === m ){
+			return
+		}
 		this.view_mode = m
 		this.drawGraph()
 	},
+
 	connectVertices : function( v1, v2, bidi ){
 		if( this.dialogOpen() ){ return }
 		if( v1 == v2 ) return
@@ -7929,7 +7985,7 @@ var DAGittyGraphView = Class.extend({
 		return this.vertex_shapes.get( vid )
 	},
 	drawGraph : function(){
-		var g,i,c
+		var g,i,c,bias_opts = {direct:false}
 		var g_causal = new Graph()
 		var g_bias = new Graph()
 		var g_selection_bias = new Graph()
@@ -7956,16 +8012,25 @@ var DAGittyGraphView = Class.extend({
 		case "causalodds":
 			g = this.getGraph()
 			g_causal = GraphTransformer.causalFlowGraph(g)
-			if( g.getSources().length == 1 && g.getTargets().length == 1 && g.getSelectedNodes().length > 0 ){
-				g_bias = GraphTransformer.activeSelectionBiasGraph( g, g.getSources()[0], g.getTargets()[0], g.getSelectedNodes() )
-			}
 			break
 		default:
 			g = this.getGraph()
 			g_trr = GraphTransformer.transitiveReduction( g )
 			if( g.getSources().length > 0 && g.getTargets().length > 0 ){
 				g_causal = GraphTransformer.causalFlowGraph(g)
-				g_bias = GraphTransformer.activeBiasGraph(g)
+				g_bias = GraphTransformer.activeBiasGraph(g,bias_opts)
+				switch( this.getBiasMode() ){
+					case "causalodds":
+						if( g.getSources().length == 1 && g.getTargets().length == 1 && g.getSelectedNodes().length == 1 ){
+							g_bias = GraphTransformer.activeSelectionBiasGraph( g, g.getSources()[0], g.getTargets()[0], g.getSelectedNodes() )
+						}
+						break
+					case "direct":
+						g_bias = GraphTransformer.activeBiasGraph(g,{direct:true})
+						break
+					default:
+						g_bias = GraphTransformer.activeBiasGraph(g)
+				}
 			}
 		}
 
@@ -8144,6 +8209,12 @@ var DAGittyController = Class.extend({
 	setViewMode : function( viewmode ){
 		if( this.view ){
 			this.view.setViewMode( viewmode )
+			this.view.drawGraph()
+		}
+	},
+	setBiasMode : function( biasmode ){
+		if( this.view ){
+			this.view.setBiasMode( biasmode )
 			this.view.drawGraph()
 		}
 	},

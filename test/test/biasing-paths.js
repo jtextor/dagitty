@@ -1,5 +1,5 @@
 const {
-	GraphParser,GraphTransformer,GraphSerializer
+	Graph,GraphParser,GraphTransformer,GraphSerializer
 } = require("../../jslib/dagitty-node.js")
 const TestGraphs = require("../test-graphs.js")
 const _ = require("underscore")
@@ -23,7 +23,7 @@ QUnit.test( "biasing paths in DAGs (allowing <->)", function( assert ) {
 assert.equal((function(){
 	var g = $p( "digraph G { x <-> y } " )
 	return $es(
-		GraphTransformer.activeBiasGraph(g,g.getVertex(["x"]),g.getVertex(["y"])))
+		GraphTransformer.activeBiasGraph(g,{X:g.getVertex(["x"]),Y:g.getVertex(["y"])}))
 })(), "x <-> y" )
 
 assert.equal((function(){
@@ -65,6 +65,12 @@ assert.equal((function(){
 		"X -> M -> Y } " )
 	return $es(GraphTransformer.activeBiasGraph(g))
 })(), "" )
+
+
+assert.equal( GraphTransformer.activeBiasGraph( new Graph("x->m->y z->{x y}"), { X:["x"] , Y:["y"] } ).edges.length, 2 )
+
+assert.equal( GraphTransformer.activeBiasGraph( new Graph("x->m->y"), {direct : true, X:["x"], Y:["y"] } ).edges.length, 2 )
+
 
 });
 

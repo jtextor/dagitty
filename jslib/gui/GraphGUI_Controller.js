@@ -80,6 +80,12 @@ var DAGittyController = Class.extend({
 			this.view.drawGraph()
 		}
 	},
+	setBiasMode : function( biasmode ){
+		if( this.view ){
+			this.view.setBiasMode( biasmode )
+			this.view.drawGraph()
+		}
+	},
 	setStyle : function( sheetname ){
 		if( this.view ){
 			this.view.setStyle( sheetname )

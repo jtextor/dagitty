@@ -63,6 +63,7 @@ var DAGittyGraphView = Class.extend({
 			_.bind( function(v){ this.callEventListener( "vertex_marked", [v] ) }, this ) )
 
 		this.view_mode = "normal"
+		this.bias_mode = "normal"
 		this.drawGraph()
 	},
 
@@ -269,13 +270,28 @@ var DAGittyGraphView = Class.extend({
 			this.drawGraph()
 		}
 	},
+	getBiasMode : function(){
+		return this.bias_mode
+	},
+	setBiasMode : function( m ){
+		if( this.bias_mode === m ){
+			return
+		}
+		this.bias_mode = m
+		this.drawGraph()
+	},
+
 	getViewMode : function(){
 		return this.view_mode
 	},
 	setViewMode : function( m ){
+		if( this.view_mode === m ){
+			return
+		}
 		this.view_mode = m
 		this.drawGraph()
 	},
+
 	connectVertices : function( v1, v2, bidi ){
 		if( this.dialogOpen() ){ return }
 		if( v1 == v2 ) return
@@ -511,7 +527,7 @@ var DAGittyGraphView = Class.extend({
 		return this.vertex_shapes.get( vid )
 	},
 	drawGraph : function(){
-		var g,i,c
+		var g,i,c,bias_opts = {direct:false}
 		var g_causal = new Graph()
 		var g_bias = new Graph()
 		var g_selection_bias = new Graph()
@@ -538,16 +554,25 @@ var DAGittyGraphView = Class.extend({
 		case "causalodds":
 			g = this.getGraph()
 			g_causal = GraphTransformer.causalFlowGraph(g)
-			if( g.getSources().length == 1 && g.getTargets().length == 1 && g.getSelectedNodes().length > 0 ){
-				g_bias = GraphTransformer.activeSelectionBiasGraph( g, g.getSources()[0], g.getTargets()[0], g.getSelectedNodes() )
-			}
 			break
 		default:
 			g = this.getGraph()
 			g_trr = GraphTransformer.transitiveReduction( g )
 			if( g.getSources().length > 0 && g.getTargets().length > 0 ){
 				g_causal = GraphTransformer.causalFlowGraph(g)
-				g_bias = GraphTransformer.activeBiasGraph(g)
+				g_bias = GraphTransformer.activeBiasGraph(g,bias_opts)
+				switch( this.getBiasMode() ){
+					case "causalodds":
+						if( g.getSources().length == 1 && g.getTargets().length == 1 && g.getSelectedNodes().length == 1 ){
+							g_bias = GraphTransformer.activeSelectionBiasGraph( g, g.getSources()[0], g.getTargets()[0], g.getSelectedNodes() )
+						}
+						break
+					case "direct":
+						g_bias = GraphTransformer.activeBiasGraph(g,{direct:true})
+						break
+					default:
+						g_bias = GraphTransformer.activeBiasGraph(g)
+				}
 			}
 		}
 

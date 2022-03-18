@@ -26,10 +26,18 @@ QUnit.test( "graph types", function( assert ) {
 			graphs[t].getVertex(["x","y"])).getType(), t )
 	});
 
-	_.each( ["backDoorGraph","indirectGraph","activeBiasGraph"], function(f){
+	// TODO convert these to more future-proof opt-style syntax
+	_.each( ["backDoorGraph","indirectGraph"], function(f){
 		_.each( Object.keys(graphs), function(t){
 			assert.equal( GraphTransformer[f](graphs[t],
 				graphs[t].getVertex(["x"]),graphs[t].getVertex(["z"])).getType(), t )
+		})
+	});
+
+	_.each( ["activeBiasGraph"], function(f){
+		_.each( Object.keys(graphs), function(t){
+			assert.equal( GraphTransformer[f](graphs[t],
+				{X:graphs[t].getVertex(["x"]),Y:graphs[t].getVertex(["z"])}).getType(), t )
 		})
 	});
 	
