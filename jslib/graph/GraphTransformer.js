@@ -258,6 +258,230 @@ var GraphTransformer = {
 						g.descendantsOf( X, clearVisitedWhereNotAdjusted ) ) )
 	},
 
+	/** This function retains all edges that are on "simple" open paths between sources and targets, conditioned
+ 	  * on adjusted and/or selected nodes.
+ 	  * 
+ 	  * Input must be a DAG. Bi-directed edges will be ignored. 
+	 **/
+	simpleOpenPaths : function( g, Z ){
+		var g_chain, g_canon, L, S, in_type = g.getType(),
+			reaches_source = {}, reaches_target = {}, reaches_adjusted_node = {}, retain = {}
+		var preserve_previous_visited_information = function(){}
+		var Z, Zchain, gtype = g.getType()
+		if( g.getType() != "dag" ){
+			return "illegal graph type!"
+		}
+		if( g.getSources().length == 0 || g.getTargets().length == 0 ){
+			g = new Graph()
+			g.setType( g.getType() )
+			return g
+		}
+		g = g.clone()
+		if( !Z ){
+			Z = _.union( g.getAdjustedNodes(), g.getSelectedNodes() )
+		}
+		g_chain = GraphTransformer.ancestorGraph(g)
+		Zchain = g_chain.getVertex(Z)
+		// This labels all nodes that can "directly" reach one of the source nodes
+		// without going through any other node that can also directly reach the source
+		// node.
+		_.each( g.ancestorsOf( g.getSources(),
+			function(){
+				g.clearTraversalInfo()
+				_.each( Z, function(v){ Graph.Vertex.markAsVisited(v) } )
+			} ), function(v){
+			reaches_source[v.id] = true
+		})
+		_.each( g.ancestorsOf( g.getTargets(),
+			function(){
+				g.clearTraversalInfo()
+				_.each( Z, function(v){ Graph.Vertex.markAsVisited(v) } )
+			} ), function(v){
+			reaches_target[v.id] = true
+		})
+			
+		_.each( g.ancestorsOf( Z ), function(v){
+			reaches_adjusted_node[v.id] = true
+		})
+		
+		// ..for this line, such that "pure causal paths" are traced backwards 
+		var target_ancestors_except_ancestors_of_violators = 
+		g.ancestorsOf( g.getTargets(), 
+			function(){
+				var an_violators = g.ancestorsOf(
+					GraphAnalyzer.nodesThatViolateAdjustmentCriterion(g))
+				g.clearTraversalInfo()
+				_.each( an_violators, function(v){ Graph.Vertex.markAsVisited(v) } )
+			}
+		)
+		var intermediates_after_source = _.intersection( g.childrenOf( g.getSources() ),
+			target_ancestors_except_ancestors_of_violators)
+		g.clearTraversalInfo()
+		
+
+		// Form the "partial moral" chain graph:
+		// First, delete edges emitting from adjusted nodes
+		_.each( Z, function( v ){
+			_.each( v.getChildren(), function( v2 ){ 
+				g_chain.deleteEdge( v, v2, Graph.Edgetype.Directed )
+			} )
+		} )
+	
+		// Second, all edges between ancestors of adjusted/selected nodes 
+		// are turned into undirected edges.
+		// clone because we shoulnd't modify an array while traversing it
+		_.each( g_chain.edges.slice(), function(e){
+			if( reaches_adjusted_node[e.v1.id] && reaches_adjusted_node[e.v2.id] ){
+				g_chain.deleteEdge( e.v1, e.v2, e.directed )
+				g_chain.addEdge( e.v1, e.v2, Graph.Edgetype.Undirected )
+			}
+		} )
+
+		var topological_index = GraphAnalyzer.topologicalOrdering( g_chain )
+		
+		var bottleneck_number = GraphAnalyzer.bottleneckNumbers( g,
+			topological_index )
+
+		var comps = GraphAnalyzer.connectedComponents( g_chain )
+		
+		var check_bridge_node = function(v){ 
+			return reaches_adjusted_node[v.id] && 
+					topological_index[v.id] !== undefined &&
+					bottleneck_number[v.id] !== undefined }
+
+		var vv = g_chain.getVertices()
+		
+		for( var comp_i = 0 ; comp_i < comps.length ; comp_i ++ ){
+			var comp = comps[comp_i]
+			if( comp.length > 1 ){
+				var bridge_nodes = _.filter( comp, check_bridge_node )
+
+				var current_component = GraphTransformer.inducedSubgraph( 
+					g_chain, comp )
+				var bridge_node_edges = []
+				var bridge_nodes_bottlenecks = []
+				_.each( bridge_nodes, function(bn){
+					bridge_nodes_bottlenecks.push(bottleneck_number[bn.id])
+				})
+				_.each( _.uniq(bridge_nodes_bottlenecks), function( i ){
+					current_component.addVertex( "__START"+i )
+					current_component.addVertex( "__END"+i )
+					bridge_node_edges.push( 
+						current_component.addEdge( "__START"+i, "__END"+i, 
+							Graph.Edgetype.Undirected ) )
+				})
+				
+				_.each( bridge_nodes, function( bridge ) {
+					current_component.addEdge( 
+						"__END"+bottleneck_number[bridge.id],
+						bridge.id, Graph.Edgetype.Undirected )
+				})
+	
+				var bicomps = GraphAnalyzer.biconnectedComponents( current_component )
+								
+				var current_block_tree = GraphAnalyzer.blockTree( current_component, bicomps )
+
+				_.each( bridge_node_edges, function( e ){
+					Graph.Vertex.markAsVisited(
+						current_block_tree.getVertex( "C"+e.component_index ) )
+				} )
+				current_block_tree.visitAllPathsBetweenVisitedNodesInTree()
+				
+				var visited_components = _.filter( current_block_tree.vertices.values(),
+					function(v){
+						return v.id.charAt(0) == "C" && v.traversal_info.visited 
+					})
+								
+				/** TODO is in O(|E|) - can this be accelerated? */
+				_.each( visited_components, function( vc ){
+					var component_index = parseInt(vc.id.substring(1))
+					var component = bicomps[component_index-1]
+					if( component.length > 1 || 
+						component[0].v1.id.indexOf("__") !== 0 || 
+						component[0].v2.id.indexOf("__") !== 0
+					){
+						_.each( bicomps[component_index-1], function( e ){
+							var cv1 = g_chain.getVertex( e.v1.id )
+							if( cv1 ){
+								retain[cv1.id] = true
+							}
+							var cv2 = g_chain.getVertex( e.v2.id )
+							if( cv2 ){
+								retain[cv2.id] = true
+							}
+						} )
+					}
+				} )
+			}
+		}
+		// after the above loop, all vertices that have two disjoint paths to 
+		// a source and a target have been labeled for retention
+
+
+		// now, retain all vertices that are "between" the labeled vertices and
+		// sources/targets. to this end, descend from the labeled vertices but
+		// avoid descending further than a source/target
+		_.each( vv, function(v){
+			if( g_chain.isSource(v) ){
+				if( reaches_target[v.id] ){
+					Graph.Vertex.markAsNotVisited(v)
+				} else {
+					Graph.Vertex.markAsVisited(v)
+				}
+				retain[v.id] = true
+			} else if( g_chain.isTarget(v) ){
+				if( reaches_source[v.id] ){
+					Graph.Vertex.markAsNotVisited(v)
+				} else {
+					Graph.Vertex.markAsVisited(v)
+				}
+				retain[v.id] = true
+			}
+			else{
+				Graph.Vertex.markAsNotVisited(v)
+			}
+		} )
+		
+		
+		var start_nodes = _.filter( vv, function(v){ 
+			return retain[v.id]
+				|| ( topological_index[v.id] !== undefined &&
+				topological_index[v.id] === bottleneck_number[v.id] ) } )
+		
+				
+		var nodes_to_be_retained = g_chain.descendantsOf( start_nodes, 
+			preserve_previous_visited_information )
+		_.each( nodes_to_be_retained, function( v ){ retain[v.id] = true } )		
+		// All vertices on "back-door" biasing paths (starting with a x <- ) 
+		// and all "front-door" biasing paths
+		// have been labeled for retention now. 
+		
+		// Delete all vertices that have not been marked for retention
+		_.each(vv, function(v){
+			if( !(v.id in retain) ){
+				g_chain.deleteVertex(v)
+			}
+		} )
+
+		// Restore original edge types
+		var edges_to_replace = []
+		_.each( g_chain.edges, function(e){
+			if( e.directed == Graph.Edgetype.Undirected ){
+				edges_to_replace.push( e )
+			}
+		})
+		_.each( edges_to_replace, function( e ){
+			g_chain.deleteEdge( e.v1, e.v2, Graph.Edgetype.Undirected )
+			if( g.getEdge( e.v1.id, e.v2.id, Graph.Edgetype.Directed ) ){
+				g_chain.addEdge( e.v1.id, e.v2.id, Graph.Edgetype.Directed )
+			} else {
+				g_chain.addEdge( e.v2.id, e.v1.id, Graph.Edgetype.Directed )
+			}
+		} )
+
+		return g_chain	
+	},
+
 	/** Retain subgraph that contains the paths linking X to S conditioned on Y.
  	  * Take nodes into account that have already been adjusted for. 
  	  */
@@ -268,10 +492,13 @@ var GraphTransformer = {
 		S = g.getVertex(S)
 		_.each( g.getVertices(), function(v){ r.addVertex(v.id) } )
 		g = g.clone()
+		// First, "normal" active bias graph for confounding.
 		_.each( S, function(s){ g.removeSelectedNode( s ) } )
 		_.each( this.activeBiasGraph( g ).getEdges(), function(e) {
 			r.addEdge( e.v1.id, e.v2.id, e.directed )
 		} )
+
+		// Next, we add nodes connecting X to S conditional on Y.
 		g.addAdjustedNode( y )
 		g.removeTarget( y )
 		_.each( S, function(s){ g.addTarget( s ) } )
@@ -283,12 +510,26 @@ var GraphTransformer = {
 		} )
 		return r
 	},
+
+	activeBiasGraph : function( g, opts ){
+		var S = g.getSelectedNodes()
+		_.each( S, function(v){
+			g.removeSelectedNode(v)
+			g.addAdjustedNode(v)
+		})
+		var r = this.activeBiasGraphWithoutSelectionNodes( g, opts )
+		_.each( S, function(v){
+			g.removeAdjustedNode(v)
+			g.addSelectedNode(v)
+		})
+		return r
+	},
 	
 	/**
 	 *		This function returns the subgraph of this graph that is induced
 	 *		by all open simple non-causal routes from s to t. 
 	 */
-	activeBiasGraph : function( g, opts ){
+	activeBiasGraphWithoutSelectionNodes : function( g, opts ){
 		var g_chain, g_canon, L, S, in_type = g.getType(),
 			reaches_source = {}, reaches_adjusted_node = {}, retain = {}
 		var preserve_previous_visited_information = function(){}
