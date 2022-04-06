@@ -411,6 +411,9 @@ impliedCovarianceMatrix <- function( x, b.default=NULL, b.lower=-.6, b.upper=.6,
 #'
 #' @param x the input graph, of any type.
 #' @param v name(s) of variable(s).
+#' @param proper logical. By default (\code{proper=FALSE}), the \code{descendants} or \code{ancestors}
+#' of a variable include the variable itself. For (\code{proper=TRUE}), the variable itself 
+#' is not included.
 #'
 #' \code{descendants(x,v)} retrieves variables that are are reachable from \code{v} via 
 #' a directed path.
@@ -435,7 +438,10 @@ impliedCovarianceMatrix <- function( x, b.default=NULL, b.lower=-.6, b.upper=.6,
 #'
 #' @examples
 #' g <- dagitty("graph{ a <-> x -> b ; c -- x <- d }")
+#' # Includes "x"
 #' descendants(g,"x")
+#' # Does not include "x"
+#' descendants(g,"x",TRUE)
 #' parents(g,"x")
 #' spouses(g,"x") 
 #' 
@@ -443,14 +449,24 @@ NULL
 
 #' @rdname AncestralRelations
 #' @export
-descendants <- function( x, v ){
-	.kins( x, v, "descendants" )
+descendants <- function( x, v, proper=FALSE ){
+	r <- .kins( x, v, "descendants" )
+	if( proper ){
+		setdiff( r, v )
+	} else {
+		r
+	}
 }
 
 #' @rdname AncestralRelations
 #' @export
-ancestors <- function( x, v ){
-	.kins( x, v, "ancestors" )
+ancestors <- function( x, v, proper=FALSE ){
+	r <- .kins( x, v, "ancestors" )
+	if( proper ){
+		setdiff( r, v )
+	} else {
+		r
+	}
 }
 
 #' @rdname AncestralRelations

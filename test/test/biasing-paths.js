@@ -66,10 +66,16 @@ assert.equal((function(){
 	return $es(GraphTransformer.activeBiasGraph(g))
 })(), "" )
 
-
 assert.equal( GraphTransformer.activeBiasGraph( new Graph("x->m->y z->{x y}"), { X:["x"] , Y:["y"] } ).edges.length, 2 )
 
 assert.equal( GraphTransformer.activeBiasGraph( new Graph("x->m->y"), {direct : true, X:["x"], Y:["y"] } ).edges.length, 2 )
+
+assert.equal( GraphTransformer.activeBiasGraph( new Graph("x->m->y"), {direct : true, X:["x"], Y:["y"] } ).edges.length, 2 )
+
+assert.equal( GraphTransformer.activeBiasGraph( new Graph("x->m->y"), {direct : true, X:["x"], Y:["y"] } ).edges.length, 2 )
+assert.equal( GraphTransformer.activeBiasGraph( new Graph("x->{m[a]}->y"), {direct : true, X:["x"], Y:["y"] } ).edges.length, 0 )
+assert.equal( GraphTransformer.activeBiasGraph( new Graph("x->{{m[a]}->y}<-z"), {direct : true, X:["x"], Y:["y"] } ).edges.length, 3 )
+assert.equal( GraphTransformer.activeBiasGraph( new Graph("x->{{m[a]}->y}<-{z[a]}"), {direct : true, X:["x"], Y:["y"] } ).edges.length, 0 )
 
 
 });

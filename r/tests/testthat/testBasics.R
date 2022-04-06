@@ -86,3 +86,9 @@ test_that("children and parents of nothing", {
 	expect_equal( length(parents("a->b",c())), 0 )
 } )
 
+test_that("proper and non-proper ancestors ",{
+	expect_equal( "x" %in% ancestors(dagitty("graph{a <-> x -> b ; c -- x <- d}"), "x"), TRUE )
+	expect_equal( "x" %in% ancestors(dagitty("graph{a <-> x -> b ; c -- x <- d}"), "x",TRUE), FALSE )
+	expect_equal( "x" %in% descendants(dagitty("graph{a <-> x -> b ; c -- x <- d}"), "x"), TRUE )
+	expect_equal( "x" %in% descendants(dagitty("graph{a <-> x -> b ; c -- x <- d}"), "x",TRUE), FALSE )
+} )

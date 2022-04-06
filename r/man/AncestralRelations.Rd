@@ -12,9 +12,9 @@
 \alias{markovBlanket}
 \title{Ancestral Relations}
 \usage{
-descendants(x, v)
+descendants(x, v, proper = FALSE)
 
-ancestors(x, v)
+ancestors(x, v, proper = FALSE)
 
 children(x, v)
 
@@ -31,7 +31,11 @@ markovBlanket(x, v)
 \arguments{
 \item{x}{the input graph, of any type.}
 
-\item{v}{name(s) of variable(s).
+\item{v}{name(s) of variable(s).}
+
+\item{proper}{logical. By default (\code{proper=FALSE}), the \code{descendants} or \code{ancestors}
+of a variable include the variable itself. For (\code{proper=TRUE}), the variable itself 
+is not included.
 
 \code{descendants(x,v)} retrieves variables that are are reachable from \code{v} via 
 a directed path.
@@ -58,7 +62,10 @@ ancestral relationship to the input variable \code{v}.
 }
 \examples{
 g <- dagitty("graph{ a <-> x -> b ; c -- x <- d }")
+# Includes "x"
 descendants(g,"x")
+# Does not include "x"
+descendants(g,"x",TRUE)
 parents(g,"x")
 spouses(g,"x") 
 

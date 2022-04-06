@@ -4541,7 +4541,7 @@ var GraphTransformer = {
 				}
 			})
 		})
-		
+
 		// Delete all vertices that have not been marked for retention
 		if( opts.direct ){
 			_.each( intermediates_after_source, function(v){ retain[v.id] = true } )
@@ -4551,7 +4551,7 @@ var GraphTransformer = {
 				g_chain.deleteVertex(v)
 			}
 		} )
-		
+	
 		// Restore original edge types
 		var edges_to_replace = []
 		_.each( g_chain.edges, function(e){
@@ -4567,7 +4567,8 @@ var GraphTransformer = {
 				g_chain.addEdge( e.v2.id, e.v1.id, Graph.Edgetype.Directed )
 			}
 		} )
-		
+
+
 		// Replace dummy nodes from canonical graph with original nodess
 		var Lids = _.pluck(g_canon.L,"id"), Sids = _.pluck(g_canon.S,"id")
 		L=[], S=[]
@@ -4582,17 +4583,25 @@ var GraphTransformer = {
 
 		// For direct effects, add causal paths between mediators
 		if( opts.direct ){
-			var gind = this.inducedSubgraph( g, _.intersection( g.descendantsOf( g.getSources() ),
+			_.each( Z, Graph.Vertex.markAsVisited )
+			var gind = this.inducedSubgraph( g, _.intersection( g.descendantsOf( g.getSources(), preserve_previous_visited_information ),
 					g.ancestorsOf( g.getTargets() ) ) )
 			_.each( gind.edges, function(e){
 				if( e.directed == Graph.Edgetype.Directed && !(
 						(gind.isSource(e.v1)||gind.isTarget(e.v1)) && (gind.isSource(e.v2)||gind.isTarget(e.v2))) ){
+					if( !g_chain.getVertex( e.v1.id ) ){
+						g_chain.addVertex( e.v1.id )
+					}
+					if( !g_chain.getVertex( e.v2.id ) ){
+						g_chain.addVertex( e.v2.id )
+					}
 					g_chain.addEdge( e.v1.id, e.v2.id, Graph.Edgetype.Directed )
 				} 
 			})
 		}
 		g = GraphTransformer.decanonicalize( g_chain, L, S )
 		g.setType( in_type )
+
 		return g
 	}, // end of activeBiasGraph
 	
