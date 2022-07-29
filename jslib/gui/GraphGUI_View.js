@@ -94,24 +94,6 @@ var DAGittyGraphView = Class.extend({
 		this.registerEventListeners( obj?obj.autofocus:false )
 	},
 
-	pointerX : function(e) {
-		var docElement = document.documentElement,
-			body = document.body || { scrollLeft: 0 }
-
-		return e.pageX || (e.clientX +
-			(docElement.scrollLeft || body.scrollLeft) -
-			(docElement.clientLeft || 0))
-	},
-
-	pointerY : function(e) {
-		var docElement = document.documentElement,
-			body = document.body || { scrollTop: 0 }
-
-		return  e.pageY || (e.clientY +
-			(docElement.scrollTop || body.scrollTop) -
-			(docElement.clientTop || 0))
-	},
-
 	setStyle : function( sheetname ){
 		this.impl && this.impl.setStyle( sheetname )
 	},
@@ -180,8 +162,8 @@ var DAGittyGraphView = Class.extend({
 	clickHandler : function(e){
 		// click handler can be set to emulate keypress action
 		// using this function
-		this.last_click_x = this.pointerX(e)-this.getContainer().offsetLeft
-		this.last_click_y = this.pointerY(e)-this.getContainer().offsetTop
+		this.last_click_x = e.offsetX
+		this.last_click_y = e.offsetY
 		this.last_click_g_coords = this.toGraphCoordinate( this.last_click_x, this.last_click_y )
 		this.newVertexDialog() 
 	},

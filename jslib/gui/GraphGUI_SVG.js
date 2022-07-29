@@ -273,8 +273,8 @@ var GraphGUI_SVG = Class.extend({
 	},
 	touchVertexShape : function( el, e, bidi ){
 		this.last_touched_element = {"vertex" : el, "last_touch" : e.identifier}
-		this.start_x = this.pointerX(e)-this.getContainer().offsetLeft
-		this.start_y = this.pointerY(e)-this.getContainer().offsetTop
+		this.start_x = e.offsetX
+		this.start_y = e.offsetY
 		var pel = this.getMarkedVertexShape()
 		if( pel ){
 			this.unmarkVertexShape()
@@ -290,8 +290,8 @@ var GraphGUI_SVG = Class.extend({
 	},
 	touchEdgeShape : function( el, e ){
 		this.last_touched_element = {"edge" : el, "last_touch" : e.identifier}
-		this.start_x = this.pointerX(e)-this.getContainer().offsetLeft
-		this.start_y = this.pointerY(e)-this.getContainer().offsetTop
+		this.start_x = e.offsetX
+		this.start_y = e.offsetY
 		this.cancel_next_click = true
 		this.unmarkVertexShape()
 	},
@@ -464,8 +464,8 @@ var GraphGUI_SVG = Class.extend({
 			return
 		}
 
-		var ptr_x = this.pointerX(e)-this.getContainer().offsetLeft
-		var ptr_y = this.pointerY(e)-this.getContainer().offsetTop
+		var ptr_x = e.offsetX
+		var ptr_y = e.offsetY
 		
 		if(Math.abs(this.start_x - ptr_x) + 
 			Math.abs(this.start_y - ptr_y) > 30 ){
@@ -531,24 +531,5 @@ var GraphGUI_SVG = Class.extend({
 		svg.style.height = h+"px"
 		svg.setAttribute("width", w)
 		svg.setAttribute("height", w)
-	},
-
-
-	pointerX : function(e) {
-		var docElement = document.documentElement,
-			body = document.body || { scrollLeft: 0 }
-
-		return e.pageX || (e.clientX +
-			(docElement.scrollLeft || body.scrollLeft) -
-			(docElement.clientLeft || 0))
-	},
-
-	pointerY : function(e) {
-		var docElement = document.documentElement,
-			body = document.body || { scrollTop: 0 }
-
-		return  e.pageY || (e.clientY +
-			(docElement.scrollTop || body.scrollTop) -
-			(docElement.clientTop || 0))
 	}
 })
