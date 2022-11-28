@@ -80,6 +80,12 @@ var DAGittyController = Class.extend({
 			this.view.drawGraph()
 		}
 	},
+	setBiasMode : function( biasmode ){
+		if( this.view ){
+			this.view.setBiasMode( biasmode )
+			this.view.drawGraph()
+		}
+	},
 	setStyle : function( sheetname ){
 		if( this.view ){
 			this.view.setStyle( sheetname )
@@ -257,8 +263,9 @@ var DAGittyController = Class.extend({
 		var v = this.graph.getVertex(_v)
 		if( v ){
 			var pcamel = p.substring(0,1).toUpperCase()+p.substring(1,p.length) 
-			// at the moment, just one property at a time
-			_.each(["Source","Target","AdjustedNode","LatentNode"],function(pc){
+			// At the moment, just one property at a time is supported. For instance, we can't have
+			// latent selection nodes or latent adjusted nodes.
+			_.each(["Source","Target","AdjustedNode","LatentNode","SelectedNode"],function(pc){
 				this.getGraph()["remove"+pc](v)
 			},this)
 			this.getObservedGraph()["add"+pcamel](v)

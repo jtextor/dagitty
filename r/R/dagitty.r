@@ -411,6 +411,9 @@ impliedCovarianceMatrix <- function( x, b.default=NULL, b.lower=-.6, b.upper=.6,
 #'
 #' @param x the input graph, of any type.
 #' @param v name(s) of variable(s).
+#' @param proper logical. By default (\code{proper=FALSE}), the \code{descendants} or \code{ancestors}
+#' of a variable include the variable itself. For (\code{proper=TRUE}), the variable itself 
+#' is not included.
 #'
 #' \code{descendants(x,v)} retrieves variables that are are reachable from \code{v} via 
 #' a directed path.
@@ -435,7 +438,10 @@ impliedCovarianceMatrix <- function( x, b.default=NULL, b.lower=-.6, b.upper=.6,
 #'
 #' @examples
 #' g <- dagitty("graph{ a <-> x -> b ; c -- x <- d }")
+#' # Includes "x"
 #' descendants(g,"x")
+#' # Does not include "x"
+#' descendants(g,"x",TRUE)
 #' parents(g,"x")
 #' spouses(g,"x") 
 #' 
@@ -443,14 +449,24 @@ NULL
 
 #' @rdname AncestralRelations
 #' @export
-descendants <- function( x, v ){
-	.kins( x, v, "descendants" )
+descendants <- function( x, v, proper=FALSE ){
+	r <- .kins( x, v, "descendants" )
+	if( proper ){
+		setdiff( r, v )
+	} else {
+		r
+	}
 }
 
 #' @rdname AncestralRelations
 #' @export
-ancestors <- function( x, v ){
-	.kins( x, v, "ancestors" )
+ancestors <- function( x, v, proper=FALSE ){
+	r <- .kins( x, v, "ancestors" )
+	if( proper ){
+		setdiff( r, v )
+	} else {
+		r
+	}
 }
 
 #' @rdname AncestralRelations
@@ -1086,14 +1102,27 @@ graphLayout <- function( x, method="spring" ){
 #'  the edge labels and the midpoint of the edge can be controlled using this paramer. 
 #'  Can also be a vector of 2 numbers for separate horizontal and vertical adjustment. NA means
 #'  no adjustment (default).
+#' @param node.names If not NULL, a named vector or expression list 
+#'  to rename the nodes.  
 #' @param ... not used.
+#' 
+#' @details If \code{node.names} is not \code{NULL}, it should be a 
+#'  named vector of characters or expressions to use to rename (some of) 
+#'  the nodes, e.g. node \code{"X"} could be renamed using \code{expression(X = alpha^2)}.
+#'
+#' @examples
+#'
+#' # Showing usage of "node.names"
+#' plot(dagitty('{x[pos="0,0"]}->{y[pos="1,0"]}'), node.names=expression(x = alpha^2, y=gamma^2))
+#' 
 #'
 #' @export
 plot.dagitty <- function( x,
 	abbreviate.names=FALSE, 
 	show.coefficients=FALSE,
 	adjust.coefficients=NA,
-	... ){
+	node.names=NULL,
+	... ){	
 	parms <- list(...)	
 	x <- as.dagitty( x )
 	.supportsTypes(x,c("dag","mag","pdag"))
@@ -1108,14 +1137,25 @@ plot.dagitty <- function( x,
 	} else {
 		labels <- names(coords$x)
 	}
+	if(!is.null(node.names)){
+	  names(labels) <- names(coords$x)
+	  if(is.null(names(node.names)))
+	    stop("'node.names' must be named")
+	  if(!all(names(node.names) %in% names(labels)))
+	    stop("node(s) not found: ", 
+	         paste0("'", setdiff(names(node.names), names(labels)), "'", 
+	               collapse = ","))
+	  labels[names(node.names)] <- node.names
+	  names(labels) <- names(coords$x) # If coerced to expression, names are lost
+	}
 	omar <- par("mar")
 	par(mar=rep(0,4))
 	plot.new()
 	par(new=TRUE)
-	wx <- sapply( paste0("mm",labels), 
-		function(s) strwidth(s,units="inches") )
-	wy <- sapply( paste0("\n",labels), 
-		function(s) strheight(s,units="inches") )
+	wx <- sapply( labels, 
+	              function(s) strwidth(s,units="inches") ) + strwidth("mm",units="inches")
+	wy <- sapply( labels, 
+	              function(s) strheight(s,units="inches") ) + strheight("\n")
 	ppi.x <- dev.size("in")[1] / (max(coords$x)-min(coords$x))
 	ppi.y <- dev.size("in")[2] / (max(coords$y)-min(coords$y))
 	wx <- wx/ppi.x
@@ -1134,10 +1174,8 @@ plot.dagitty <- function( x,
 
 	plot( NA, xlim=xlim, ylim=ylim, xlab="", ylab="", bty="n",
 		xaxt="n", yaxt="n" )
-	wx <- sapply( labels, 
-		function(s) strwidth(paste0("xx",s)) )
-	wy <- sapply( labels,
-		function(s) strheight(paste0("\n",s)) )
+	wx <- sapply( labels, strwidth ) + strwidth("xx") 
+	wy <- sapply( labels, strheight ) + strheight("\n")
 	asp <- par("pin")[1]/diff(par("usr")[1:2]) /
 		(par("pin")[2]/diff(par("usr")[3:4]))
 	ex <- edges(x)

@@ -1,5 +1,5 @@
 /* DAGitty - a browser-based software for causal modelling and analysis
- *   Copyright (C) 2010-2020 Johannes Textor, Benito van der Zander
+ *   Copyright (C) 2010-2022 Johannes Textor, Benito van der Zander
  * 
  *   This program is free software; you can redistribute it and/or
  *   modify it under the terms of the GNU General Public License
@@ -63,6 +63,7 @@ var DAGittyGraphView = Class.extend({
 			_.bind( function(v){ this.callEventListener( "vertex_marked", [v] ) }, this ) )
 
 		this.view_mode = "normal"
+		this.bias_mode = "normal"
 		this.drawGraph()
 	},
 
@@ -179,7 +180,6 @@ var DAGittyGraphView = Class.extend({
 	clickHandler : function(e){
 		// click handler can be set to emulate keypress action
 		// using this function
-		console.log(" click handler called on canvas" )
 		this.last_click_x = this.pointerX(e)-this.getContainer().offsetLeft
 		this.last_click_y = this.pointerY(e)-this.getContainer().offsetTop
 		this.last_click_g_coords = this.toGraphCoordinate( this.last_click_x, this.last_click_y )
@@ -234,6 +234,9 @@ var DAGittyGraphView = Class.extend({
 				e.preventDefault()
 			}
 			break
+		case 83: //s
+			if(v) this.toggleVertexProperty(v,"selectedNode")
+			break
 		case 85: //u
 			if(v) this.toggleVertexProperty(v,"latentNode")
 			break
@@ -267,13 +270,28 @@ var DAGittyGraphView = Class.extend({
 			this.drawGraph()
 		}
 	},
+	getBiasMode : function(){
+		return this.bias_mode
+	},
+	setBiasMode : function( m ){
+		if( this.bias_mode === m ){
+			return
+		}
+		this.bias_mode = m
+		this.drawGraph()
+	},
+
 	getViewMode : function(){
 		return this.view_mode
 	},
 	setViewMode : function( m ){
+		if( this.view_mode === m ){
+			return
+		}
 		this.view_mode = m
 		this.drawGraph()
 	},
+
 	connectVertices : function( v1, v2, bidi ){
 		if( this.dialogOpen() ){ return }
 		if( v1 == v2 ) return
@@ -509,9 +527,10 @@ var DAGittyGraphView = Class.extend({
 		return this.vertex_shapes.get( vid )
 	},
 	drawGraph : function(){
-		var g,i,c
+		var g,i,c,bias_opts = {direct:false}
 		var g_causal = new Graph()
 		var g_bias = new Graph()
+		var g_selection_bias = new Graph()
 		var g_trr = new Graph()
 
 		var g_an = GraphTransformer.ancestorGraph(
@@ -532,12 +551,28 @@ var DAGittyGraphView = Class.extend({
 		case "equivalence" :
 			g = GraphTransformer.dagToCpdag( this.getGraph() )
 			break
+		case "causalodds":
+			g = this.getGraph()
+			g_causal = GraphTransformer.causalFlowGraph(g)
+			break
 		default:
 			g = this.getGraph()
 			g_trr = GraphTransformer.transitiveReduction( g )
 			if( g.getSources().length > 0 && g.getTargets().length > 0 ){
 				g_causal = GraphTransformer.causalFlowGraph(g)
-				g_bias = GraphTransformer.activeBiasGraph(g)
+				g_bias = GraphTransformer.activeBiasGraph(g,bias_opts)
+				switch( this.getBiasMode() ){
+					case "causalodds":
+						if( g.getSources().length == 1 && g.getTargets().length == 1 && g.getSelectedNodes().length == 1 ){
+							g_bias = GraphTransformer.activeSelectionBiasGraph( g, g.getSources()[0], g.getTargets()[0], g.getSelectedNodes() )
+						}
+						break
+					case "direct":
+						g_bias = GraphTransformer.activeBiasGraph(g,{direct:true})
+						break
+					default:
+						g_bias = GraphTransformer.activeBiasGraph(g)
+				}
 			}
 		}
 
@@ -570,6 +605,8 @@ var DAGittyGraphView = Class.extend({
 				vertex_type = "outcome"
 			} else if( g.isAdjustedNode(vv[i]) ){
 				vertex_type = "adjusted"
+			} else if( g.isSelectedNode(vv[i]) ){ 
+				vertex_type = "selected"
 			} else if( g.isLatentNode(vv[i]) ){
 				vertex_type = "latent"
 			} else if( ean_ids[vv[i].id]
@@ -579,8 +616,7 @@ var DAGittyGraphView = Class.extend({
 				vertex_type = "anexposure"
 			} else if( oan_ids[vv[i].id] ){
 				vertex_type = "anoutcome"
-			}
-			
+			}			
 			this.impl.createVertexShape( vertex_type, vs )
 			this.vertex_shapes.set( vv[i].id, vs )
 		}

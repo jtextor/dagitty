@@ -79,3 +79,16 @@ test_that("equiv class", {
 	expect_equal( length(equivalentDAGs("dag{a->{b c d} b->{c d}}")), 10 )
 	expect_equal( length(equivalentDAGs("dag{a->{b c d} b->{c d}}",3)), 3 )	
 } )
+
+
+test_that("children and parents of nothing", {
+	expect_equal( length(children("a->b",c())), 0 )
+	expect_equal( length(parents("a->b",c())), 0 )
+} )
+
+test_that("proper and non-proper ancestors ",{
+	expect_equal( "x" %in% ancestors(dagitty("graph{a <-> x -> b ; c -- x <- d}"), "x"), TRUE )
+	expect_equal( "x" %in% ancestors(dagitty("graph{a <-> x -> b ; c -- x <- d}"), "x",TRUE), FALSE )
+	expect_equal( "x" %in% descendants(dagitty("graph{a <-> x -> b ; c -- x <- d}"), "x"), TRUE )
+	expect_equal( "x" %in% descendants(dagitty("graph{a <-> x -> b ; c -- x <- d}"), "x",TRUE), FALSE )
+} )

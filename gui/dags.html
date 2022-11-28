@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 	<head>
 	<meta http-equiv="Content-type" content="text/html; charset=UTF-8" />
 	<!--
 		DAGitty - a graphical tool for analyzing causal diagrams
-		Copyright (C) 2010-2020 Johannes Textor, Benito van der Zander
+		Copyright (C) 2010-2022 Johannes Textor, Benito van der Zander
 	
 		This program is free software; you can redistribute it and/or
 		modify it under the terms of the GNU General Public License
@@ -21,24 +21,24 @@
 		Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.   
 	-->
 
-    <title>DAGitty v3.0</title>
+    <title>DAGitty v3.1</title>
     <link rel="stylesheet" type="text/css" href="dags.css" />
 
-	<script type="text/javascript" src="js/dagitty.js"></script>
-	<script type="text/javascript" src="js/example-dags.js"></script>
+	<script src="js/dagitty.js"></script>
+	<script src="js/example-dags.js"></script>
 
-    <script type="text/javascript" src="js/styles/semlike.js"></script>
-    <script type="text/javascript" src="js/styles/original.js"></script>
+    <script src="js/styles/semlike.js"></script>
+    <script src="js/styles/original.js"></script>
 
-    <script type="text/javascript" src="js/main.js"></script>
-	<script type="text/javascript" src="js/base64.js"></script>
+    <script src="js/main.js"></script>
+	<script src="js/base64.js"></script>
 	
-	<script type="text/javascript" src="https://www.google.com/recaptcha/api.js?render=explicit" 
+	<script src="https://www.google.com/recaptcha/api.js?render=explicit" 
 		async defer></script>
 
 	<meta name="viewport" content="width=device-width, initial-scale=1" />
 
-	<script type="text/javascript">
+	<script>
 	var redraw;
 	var renderer;
 	var layouter;
@@ -60,6 +60,8 @@
 	var DAGittyControl;
 
 	function initialize(){
+
+
 		DAGitty.setup({autofocus:true});
 		DAGittyControl = DAGitty.controllers[0];
 		
@@ -78,7 +80,7 @@
 					document.getElementById("variable_id").value = ''
 				}
 				displayImplicationInfo( false )
-				causalEffectEstimates()
+				causalEffectEstimates( document.getElementById("causal_effect_kind").value )
 				displayGeneralInfo()
 				GUI.refresh_variable_status()
 			}
@@ -141,7 +143,7 @@
          <ul id="menu_model" style="z-Index:15">
             <li><a href="#" onclick="newModel();displayHide('menu_model')">New model</a></li>
             <li><a href="#" onclick="loadOnlineForm();displayHide('menu_model')">Load from dagitty.net</a></li>
-            <script type="text/javascript">
+            <script>
             	if( document.location.protocol == "http:" || document.location.protocol == "https:" ){
 	            	document.write('<li><a href="#" onclick="saveOnlineForm();displayHide(\'menu_model\')">Publish on dagitty.net</a></li>');
 	            	document.write('<li><a href="#" onclick="updateOnlineForm();displayHide(\'menu_model\')">Update on dagitty.net</a></li>');
@@ -160,7 +162,7 @@
       </li>
       <li><a href="javascript:void(0)" id="menu_examples_title">Examples</a>
        <ul id="menu_examples" style="z-Index:14">
-         <script type="text/javascript">
+         <script>
          for( var i = 0 ; i < examples.length ; i++ ){
             document.write( "<li><a href=\"#\" onclick=\"loadExample("+i+");displayHide('menu_examples')\">"+examples[i].l+"</a></li>" );
          }
@@ -177,7 +179,8 @@
             <li><a href="#" onclick="how('To save the model, copy-paste the content of the &quot;model code&quot; into your favourite text editor (e.g. &quot;Word&quot;).')">Save a model</a></li>
             <li><a href="#" onclick="how('To set the exposure variable, click/tap it and check &quot;exposure&quot; in the &quot;variable&quot; tab, or move the mouse over it and press the &quot;e&quot; key on your keyboard.')">Set exposure variable</a></li>
             <li><a href="#" onclick="how('To set the outcome variable, click/tap it and check &quot;outcome&quot; in the &quot;variable&quot; tab, or move the mouse over it and press the &quot;o&quot; key on your keyboard.')">Set outcome variable</a></li>
-            <li><a href="#" onclick="how('To toggle adjustment for a variable, click/tap it and check &quot;adjusted&quot in the &quot;variable&quot; tab, or move the mouse over it and press the &quot;a&quot; key on your keyboard.')">Adjust for variable</a></li>
+            <li><a href="#" onclick="how('To toggle adjustment for a variable, click/tap it and check &quot;adjusted&quot; in the &quot;variable&quot; tab, or move the mouse over it and press the &quot;a&quot; key on your keyboard.')">Adjust for variable</a></li>
+            <li><a href="#" onclick="how('To toggle selection status for a variable, click/tap it and check &quot;selected&quot; in the &quot;variable&quot; tab, or move the mouse over it and press the &quot;s&quot; key on your keyboard.')">Define a selection variable</a></li>
             <li><a href="#" onclick="how('To toggle observed status for a variable, click/tap it and check &quot;unobserved&quot; in the &quot;variable&quot; tab, or move the mouse over it and press the &quot;u&quot; key on your keyboard.')">Make a variable unobserved (latent)</a></li>
          </ul>
       </li>
@@ -196,18 +199,16 @@
    </ul>
 
    <div id="canvas" class="dagitty" data-mutable="true">
-dag {
-A [pos="-2.200,-1.520"]
+A [selected,pos="-2.200,-1.520"]
 B [pos="1.400,-1.460"]
 D [outcome,pos="1.400,1.621"]
 E [exposure,pos="-2.200,1.597"]
-Z [pos="-0.300,-0.082"]
+Z [adjusted,pos="-0.300,-0.082"]
 A -&gt; E
 A -&gt; Z [pos="-0.791,-1.045"]
 B -&gt; D
 B -&gt; Z [pos="0.680,-0.496"]
 E -&gt; D
-}
    </div>
 
 </main>
@@ -233,6 +234,9 @@ E -&gt; D
       <p><input type="checkbox" checked="checked" id="variable_adjusted"
          onclick="GUI.set_variable_status('adjustedNode',this.checked)" />
          	<label for="variable_adjusted">adjusted</label></p>
+      <p><input type="checkbox" checked="checked" id="variable_selected"
+         onclick="GUI.set_variable_status('selectedNode',this.checked)" />
+         	<label for="variable_selected">selected</label></p>
       <p><input type="checkbox" checked="checked" id="variable_unobserved"
          onclick="GUI.set_variable_status('latentNode',this.checked)" />
          	<label for="variable_unobserved">unobserved</label></p>
@@ -256,17 +260,17 @@ E -&gt; D
    <div id="viewmode" style="display:block">
 
       <form autocomplete="off">
-      <p><input type="radio" checked="checked" id="dagview_dag" name="dagview"
-         onclick="GUI.set_view_mode('normal')" /> 
-         	<label for="dagview_dag">normal</label></p>
+      <p><input type="radio" checked="checked" id="dagview_normal" name="dagview"
+         onclick="GUI.set_view_mode(this.value)" value="normal" /> 
+         	<label for="dagview_normal">normal</label></p>
       <p><input type="radio" name="dagview" id="dagview_moral"
-         onclick="GUI.set_view_mode('moral')"/>
+         onclick="GUI.set_view_mode(this.value)" value="moral"/>
          	<label for="dagview_moral">moral graph</label></p>
       <p><input type="radio" name="dagview" id="dagview_dependency"
-         onclick="GUI.set_view_mode('dependency')"/>
+         onclick="GUI.set_view_mode(this.value)" value="dependency"/>
          	<label for="dagview_dependency">correlation graph</label></p>
       <p><input type="radio" name="dagview" id="dagview_equivalence"
-         onclick="GUI.set_view_mode('equivalence')"/>
+         onclick="GUI.set_view_mode(this.value)" value="equivalence"/>
          	<label for="dagview_equivalence">equivalence class</label></p>
       </form>
 
@@ -281,7 +285,7 @@ E -&gt; D
       </form>
    </div>
 
-   <h3 onclick="displayToggle('dagstyle')"><img src="images/arrow-down.png" alt="" id="a_view">
+   <h3 onclick="displayToggle('dagstyle')"><img src="images/arrow-down.png" alt="" id="a_dagstyle">
    		Diagram style</h3>
    <div id="dagstyle" style="display:block">
       <form autocomplete="off">
@@ -294,7 +298,7 @@ E -&gt; D
       </form>
    </div>
 
-   <h3 onclick="displayToggle('coloring')"><img src="images/arrow-down.png" alt="" id="a_view"> Coloring</h3>
+   <h3 onclick="displayToggle('coloring')"><img src="images/arrow-down.png" alt="" id="a_coloring"> Coloring</h3>
    <div id="coloring" style="display:block">
       <form autocomplete="off">
       <p><input type="checkbox" checked="checked" id="highlight_causal"
@@ -361,22 +365,25 @@ E -&gt; D
 
 
    <div id="rlegend">
-		<h3 onclick="displayToggle('causal_effect')">
+		<h3 onclick="displayToggle('causal_effect_block')">
 			<img src="images/arrow-down.png" alt="" id="a_causal_effect" />
 			Causal effect identification
 		</h3>
+
+	<div id="causal_effect_block">
 		<p>
-			<select id="causal_effect_kind" onchange="causalEffectEstimates()">
+			<select id="causal_effect_kind" onchange="causalEffectEstimates(this.value)">
 				<option value="adj_total">Adjustment (total effect)</option>
+				<option value="adj_causalodds">Adjustment (causal odds ratio)</option>
 				<option value="adj_direct">Adjustment (direct effect)</option>
 				<option value="instrument">Instrumental variable</option>
-				<option value="treeid">TreeId</option>
+				<!--<option value="treeid">TreeId</option>-->
 			</select>
 		</p>
+	    <div id="causal_effect" style="display:block">
 
-    <div id="causal_effect" style="display:block">
-
-    </div>
+	    </div>
+	</div>
 
     <h3 onclick="displayToggle('testable_implications')"><img src="images/arrow-down.png" alt="" id="a_testable_implications" />  Testable implications</h3>
 

@@ -1,5 +1,5 @@
 /* DAGitty - a browser-based software for causal modelling and analysis
-   Copyright (C) 2010, 2017 Johannes Textor
+   Copyright (C) 2010, 2017, 2022 Johannes Textor
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License
@@ -15,32 +15,42 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA. */
 
-var examples = [ 
+
+// if the module has no dependencies, the above pattern can be simplified to
+(function (root, factory) {
+	if (typeof module === 'object' && module.exports) {
+        // Node. Does not work with strict CommonJS, but
+        // only CommonJS-like environments that support module.exports,
+        // like Node.
+        module.exports = factory();
+    } else {
+        // Browser globals (root is window)
+        root.examples = factory();
+  }
+}(typeof self !== 'undefined' ? self : this, function () {
+	return [ 
 {
-	d : "dag { \n"+
-	"bb=\"-3,-0.5,2,1.2\"" +
-	"D [outcome,pos=\"1,1\"] " +
-	"E [exposure,pos=\"-2,1\"] " +
-	"Z [pos=\"-0.5,0.5\"] " +
-	"D <-> Z [pos=\"1,-1\"] " +
-	"E -> D " +
-	"E <-> Z [pos=\"-2,-1\"] }",
+	d : `bb="-3,-0.5,2,1.2"
+	D [outcome,pos="1,1"]
+	E [exposure,pos="-2,1"]
+	Z [pos="-0.5,0.5"]
+	D <-> Z [pos="1,-1"]
+	E -> D
+	E <-> Z [pos="-2,-1"]`,
 
 	l: "The M-bias graph"
 },
 
 {
-    e: "E D\n"+
-    "A E Z\n"+
-    "B D Z\n"+
-    "Z E D\n",
-
-    v: "E E @-2.2,1.597\n"+
-"D O @1.4,1.621\n"+
-"A 1 @-2.2,-1.520\n"+
-"B 1 @1.4,-1.460\n"+
-"Z 1 @-0.3,-0.082",
-
+	d: `A [pos="-2.200,-1.520"]
+	B [pos="1.400,-1.460"]
+	D [outcome,pos="1.400,1.621"]
+	E [exposure,pos="-2.200,1.597"]
+	Z [pos="-0.300,-0.082"]
+	A -> { E Z }
+	B -> { D Z }
+	E -> D
+	Z -> { D E }`,
     l: "Extended confounding triangle"
 },
 
@@ -342,6 +352,32 @@ e:"e0 x\n"+
 	"PER DET\n",
 
 	l: "van Kampen, 2014"
-}
+},
 
+{
+	"d": `
+dag {
+Age [adjusted,pos="-1.973,-0.123"]
+HRT [exposure,pos="-0.536,-0.016"]
+Occ [pos="-1.645,0.432"]
+S [selected,pos="0.925,-0.500"]
+Smo [adjusted,pos="-0.879,0.441"]
+TCI [outcome,pos="0.488,0.090"]
+Thist [pos="-0.569,1.027"]
+Age -> HRT
+Age -> Occ
+Age -> S [pos="-0.945,-0.571"]
+Age -> TCI [pos="-0.264,-0.456"]
+HRT -> TCI
+Occ -> Smo
+Occ -> Thist
+Smo -> HRT
+Smo -> TCI
+TCI -> S
+Thist -> TCI
+}`,
+	l: "Didelez et al, 2010"
+	}
 ]; 
+
+}));

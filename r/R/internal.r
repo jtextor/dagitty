@@ -168,19 +168,22 @@
 	V8::JS( paste0( ... ) )
 }
 
+
 .kins <- function( x, v, type="descendants" ){
 	supported <- c("descendants","ancestors","neighbours","posteriors","anteriors",
 		"children","parents","spouses","adjacentNodes")
 	if( ! type %in% supported ){
 		stop("Supported kinship types : ",paste(supported,collapse=", ") )
 	}
-	.checkName( x, v )
+	if( length(v) == 0 ){
+		return( character(0) )
+	}
+	.checkAllNames( x, v )
 	r <- c()
 	xv <- .getJSVar()
 	vv <- .getJSVar()
 	tryCatch({
 		.jsassigngraph( xv, x )
-		
 		for( w in v ){
 			.jsassign( vv, as.character(w) )
 			.jsassign( vv, .jsp("global.",xv,".getVertex(global.",vv,")") )
@@ -277,8 +280,16 @@
 }
 
 .checkName <- function(x, v) {
-  if (!(v %in% names(x))) 
-    stop(paste(v, "is not a variable in `x`"))
+	# allow "no" names for convenience
+	if( length(v) == 0 ){
+		return()
+	}
+	if( length(v) > 1 ){
+		stop("This function expects a variable name")
+	}
+  	if (!(v %in% names(x))){
+    	stop(paste(v, "is not a variable in `x`"))
+	}
 }
 
 .checkAllNames <- function(x, vv) {

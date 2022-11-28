@@ -132,14 +132,16 @@ _.extend( Hash.prototype, {
  * be moved to either GraphAnalyzer, GraphTransform or GraphSerializer in the future.
  */
 
-/* globals _, Class, Hash, GraphSerializer */
+/* globals _, Class, GraphParser, Hash, GraphSerializer */
 
 var Graph = Class.extend({ 
 	// additional getter and setter methods for these properties are mixed in below,
 	// see code after definition of this class 
 	managed_vertex_property_names : ["source","target","adjustedNode",
 		"latentNode","selectedNode"],
-	init : function(){
+
+	/** @param s : allows Graph to be constructed directly from Dot statements */
+	init : function( s ){
 		this.vertices = new Hash()
 		this.edges = []
 		this.type = "digraph"
@@ -149,6 +151,9 @@ var Graph = Class.extend({
 		_.each(this.managed_vertex_property_names,function(p){
 			this.managed_vertex_properties[p] = new Hash()
 		},this)
+		if( typeof s === "string" ){
+			GraphParser.parseDot( s, this )
+		}
 	},
 
 	getBoundingBox : function(){
@@ -1149,10 +1154,10 @@ var GraphAnalyzer = {
 				if( v1_pre == v2_pre ){
 					if( v1_pre == "up_" )
 						trek_monomials[i].push( 
-								pars(g.getEdge(v2_id,v1_id,Graph.Edgetype.Directed),"b"))
-						else
-							trek_monomials[i].push( 
-								pars(g.getEdge(v1_id,v2_id,Graph.Edgetype.Directed),"b"))
+							pars(g.getEdge(v2_id,v1_id,Graph.Edgetype.Directed),"b"))
+					else
+						trek_monomials[i].push( 
+							pars(g.getEdge(v1_id,v2_id,Graph.Edgetype.Directed),"b"))
 				} else {
 					if( v1_id == v2_id ){
 						if( !standardized ){
@@ -1366,48 +1371,140 @@ var GraphAnalyzer = {
 		return i
 	},
 
-	isAdjustmentSet : function( g, Z ){
+	/**
+      * Determines whether Z is a valid adjustment set in g, with possible selection bias
+      * due to conditioning on nodes S. The nodes S and/or Z can be omitted, in which case they are
+      * taken as pre-defined from the DAG syntax (using the "adjusted" or "selected" keywords)
+      */ 
+	isAdjustmentSet : function( g, Z, S ){
 		var gtype = g.getType()
-		Z = _.map( Z, g.getVertex, g )
 		if( gtype != "dag" && gtype != "pdag" && gtype != "mag" && gtype != "pag" ){
 			throw( "Cannot compute adjustment sets for graph of type "+gtype )
 		}
 		if( g.getSources().length == 0 || g.getTargets().length == 0 ){
 			return false
 		}
-
-		if( _.intersection( this.dpcp(g), Z ).length > 0 ){
+		if( Z == null ){
+			Z = g.getAdjustedNodes()
+		}
+		if( S == null ){
+			S = g.getSelectedNodes()
+		}
+		var Zg = _.map( Z, Graph.getVertex, g )
+		if( _.intersection( this.dpcp(g), Zg ).length > 0 ){
 			return false
 		}
 		var gbd = GraphTransformer.backDoorGraph(g)
-		Z = _.map( Z, gbd.getVertex, gbd )
-		return !this.dConnected( gbd, gbd.getSources(), gbd.getTargets(), Z )
+		var Sgbd = _.map( S, gbd.getVertex, gbd )
+		var Zgbd = _.map( Zg, gbd.getVertex, gbd )
+		var r = !this.dConnected( gbd, gbd.getSources(), gbd.getTargets(), Zgbd.concat( Sgbd ) )
+		if( S.length > 0 ){
+			r = r && !this.dConnected( gbd, gbd.getTargets(), Sgbd )
+		}
+		return r
 	},
-	
-	listMsasTotalEffect : function( g, must, must_not, max_nr ){
+
+	isAdjustmentSetDirectEffect : function( g, Z ){
+		var gtype = g.getType()
+		if( gtype != "dag" ){
+			throw( "Cannot compute adjustment sets for direct effects for graph of type "+gtype )
+		}
+		if( g.getSelectedNodes().length > 0 ){
+			throw( "Cannot compute adjustment sets for direct effects when there are selection nodes!" )
+		}
+		if( Z == null ){
+			Z = g.getAdjustedNodes()
+		} else {
+		}
+		var gbd = GraphTransformer.indirectGraph(g)
+		return !this.dConnected( gbd, gbd.getSources(), gbd.getTargets(), _.map( Z, Graph.getVertex, gbd ) )
+	},
+
+	isAdjustmentSetCausalOddsRatio : function( g, Z, S ){
+		var gtype = g.getType()
+		if( gtype != "dag" ){
+			throw( "Cannot compute adjustment sets for direct effects for graph of type "+gtype )
+		}
+		if( g.getSources().length != 1 || g.getTargets().length != 1 ){
+			return null
+		}
+		if( Z == null ){
+			Z = g.getAdjustedNodes()
+		} else {
+			Z = _.map( Z, Graph.getVertex, g )
+		}
+		if( S == null ){
+			S = g.getSelectedNodes()
+		} else {
+			S = _.map( S, Graph.getVertex, g )
+		}
+		if( S.length != 1 ){
+			return null
+		}
+		var r = !this.dConnected( g, g.getSources(), S, g.getTargets().concat( Z ) )
+		if( r ){
+			r = r && this.isAdjustmentSet( g, Z, [] )
+		}
+		return r
+	},
+
+	/**
+ 	  *  Lists all minimal sufficient adjustment sets containing nodes in M (mandatory nodes) but not
+ 	  *  F (forbidden nodes). Selection nodes can also be defined within the DAG.
+ 	  */
+	listMsasTotalEffect : function( g, M, F, max_nr ){
 		var gtype = g.getType()
 		if( gtype != "dag" && gtype != "pdag" && gtype != "mag" && gtype != "pag" ){
 			throw( "Cannot compute total affect adjustment sets for graph of type "+gtype )
 		}
+
+		if( !g || g.getSources().length < 1 || g.getTargets().length < 1 ){ return [] }
+
+		var gg = g
 		if( gtype == "pdag" ){
-			g = GraphTransformer.cgToRcg( g )
-		}	
-		if( !g ){ return [] }
+			gg = GraphTransformer.cgToRcg( g )
+		}
+		if( M ){
+			_.each( M, function(v){ gg.addAdjustedNode( v ) } )
+		}
+		if( F ){
+			_.each( F, function(v){ gg.addLatentNode( v ) } )
+		}
 	
-		if(GraphAnalyzer.violatesAdjustmentCriterion(g)){ return [] }
-		var adjusted_nodes = g.getAdjustedNodes()
-		var latent_nodes = g.getLatentNodes().concat( this.dpcp(g) )
+
+		if( GraphAnalyzer.violatesAdjustmentCriterion(gg)){ return [] }
 		
-		var gam = GraphTransformer.moralGraph( 
-			GraphTransformer.ancestorGraph( 
-			GraphTransformer.backDoorGraph(g) ) )
-				
-		if( must )
-			adjusted_nodes = adjusted_nodes.concat( must )
-		if( must_not )
-			latent_nodes = latent_nodes.concat( must_not )
-		
-		return this.listMinimalSeparators( gam, adjusted_nodes, latent_nodes, max_nr )
+		var gbd = GraphTransformer.backDoorGraph(gg)
+		var S = gg.getSelectedNodes()
+		if( S.length > 0 ){
+			if( this.dConnected( gbd, gbd.getTargets(), _.map(S, Graph.getVertex, gbd ) ) ){
+				return []
+			} else {
+				_.each( S, function(s){ gbd.removeSelectedNode( s ); gbd.addAdjustedNode( s ) } )			
+			}
+		}
+
+		var gam = GraphTransformer.moralGraph( GraphTransformer.ancestorGraph( gbd ) )
+
+		var adjusted_nodes = _.map( gg.getAdjustedNodes(), Graph.getVertex, gam )
+		var latent_nodes = _.map( gg.getLatentNodes().concat( this.dpcp(gg) ), Graph.getVertex, gam )
+
+		// at this point, "latent_nodes" may contain 
+		// undefined values because not all adjusted or latent nodes may have beeen
+		// retained in the moral graph. Therefore, we use "compact" to remove such
+		// values. 
+		var r = this.listMinimalSeparators( gam, 
+			adjusted_nodes, 
+			_.compact(latent_nodes), max_nr )
+
+		// Give back vertex objects from original graph, rather than the constructed 
+		// ancestor moral graph.
+		S = _.map( S, Graph.getVertex, g )
+		for( i = 0 ; i < r.length ; i ++ ){
+			r[i] = _.map( r[i], Graph.getVertex, g )
+			r[i] = _.difference( r[i], S )
+		}
+		return r
 	},
 
 	canonicalAdjustmentSet : function( g ){
@@ -1513,10 +1610,8 @@ var GraphAnalyzer = {
 		var g2 = g.clone()
 		var vv = g2.vertices.values()
 		// this ignores adjusted vertices for now 
-		for( var i = 0 ; i < vv.length ; i ++ ){
-			g2.removeAllAdjustedNodes()
-		}
-		var n = 0
+		g2.removeAllAdjustedNodes()
+		var n = 0, i
 		for( i = 0 ; i < vv.length ; i ++ ){
 			for( var j = i+1 ; j < vv.length ; j ++ ){
 				if( !g2.isLatentNode( vv[i] ) && !g2.isLatentNode( vv[j] ) 
@@ -1548,7 +1643,7 @@ var GraphAnalyzer = {
 		var cpdag = GraphTransformer.dependencyGraph2CPDAG( g ), p1, p2
 		if( g.edges.all( function( e ){
 			if( typeof cpdag.getEdge( e.v1.id, e.v2.id, 
-					Graph.Edgetype.Undirected ) == "undefined" ){ 
+				Graph.Edgetype.Undirected ) == "undefined" ){ 
 				p1 = cpdag.getVertex(e.v1.id).getParents().pluck("id")
 				p2 = cpdag.getVertex(e.v2.id).getParents().pluck("id")
 				if( !p1.include(e.v2.id) && !p2.include(e.v1.id) 
@@ -1665,9 +1760,9 @@ var GraphAnalyzer = {
 	
 	intermediates : function( g ){
 		return _.chain( g.descendantsOf( g.getSources() ))
-		.intersection( g.ancestorsOf( g.getTargets() ) )
-		.difference( g.getSources() )
-		.difference( g.getTargets() ).value()
+			.intersection( g.ancestorsOf( g.getTargets() ) )
+			.difference( g.getSources() )
+			.difference( g.getTargets() ).value()
 	},
 	
 	/** 
@@ -1691,7 +1786,7 @@ var GraphAnalyzer = {
 		}
 		
 		gr = g.clone(false)
-		visited = []
+		visited = {} 
 		
 		var followEdges = function( u, v, kin, edgetype, reverse ){
 			var st = []
@@ -1847,27 +1942,46 @@ var GraphAnalyzer = {
 	/** d-Separation test via Shachter's "Bayes-Ball" BFS.
 	 * (actually, implements m-separation which is however not guaranteed to be meaningful
 	 * in all mixed graphs).
+	 * If X is empty, always returns "false".
 	 * If Y is nonempty, returns true iff X and Z are d-separated given Z.
 	 * If Y is empty ([]), return the set of vertices that are d-connected 
 	 * to X given Z.
 	 */
 	dConnected : function( g, X, Y, Z, AnZ ){
 		var go = g
+
 		if( g.getType() == "pag" ){
 			g = GraphTransformer.pagToPdag( g )
-			X = g.getVertex(X)
-			Y = g.getVertex(Y)
-			Z = g.getVertex(Z)
-			if( typeof AnZ !== 'undefined' ){ AnZ = g.getVertex( AnZ ) }
 		}
+
+		if( X.length == 0 ){
+			if( Y.length == 0 ){
+				return []
+			} else {
+				false
+			}
+		}
+
+		X = _.map( X, g.getVertex, g )
+		Y = _.map( Y, g.getVertex, g )
+
+		if( typeof Z == "undefined" ){
+			Z = []
+		} else {
+			Z = _.map( Z, g.getVertex, g )
+		}
+		if( typeof AnZ == "undefined" ){	
+			AnZ = g.ancestorsOf( Z )
+		} else { 
+			AnZ = _.map( AnZ, g.getVertex, g ) 
+		}
+
 		var forward_queue = []
 		var backward_queue = []
 		var forward_visited ={}
 		var backward_visited = {}
 		var i, Y_ids = {}, Z_ids = {}, AnZ_ids = {}, v, vv
-		if( typeof AnZ == "undefined" ){	
-			AnZ = g.ancestorsOf( Z )
-		}
+
 		for( i = 0 ; i < X.length ; i ++ ){
 			backward_queue.push( X[i] )
 		}
@@ -1938,7 +2052,7 @@ var GraphAnalyzer = {
 	},
 	
 	ancestralInstrument : function( g, x, y, z, 
-			g_bd, de_y ){
+		g_bd, de_y ){
 		if( arguments.length < 5 ){
 			g_bd = GraphTransformer.backDoorGraph( g, [x], [y] )
 		}
@@ -2117,11 +2231,11 @@ var GraphAnalyzer = {
 				}
 			}
 		}
-		var vv = g.vertices.values() 
-		for( var j = 0 ; j < vv.length ; j ++ ){
+		var vv = g.vertices.values(), j 
+		for( j = 0 ; j < vv.length ; j ++ ){
 			topological_index[vv[j].id] = 0
 		}
-		for( var j = 0 ; j < vv.length ; j ++ ){
+		for( j = 0 ; j < vv.length ; j ++ ){
 			visit( vv[j] )
 		}
 		return topological_index
@@ -2138,16 +2252,16 @@ var GraphAnalyzer = {
 				g.clearTraversalInfo()
 				_.each( adj, function(v){ Graph.Vertex.markAsVisited(v) })
 			} ), function(v){
-				reaches_source[v.id] = true
-			})
+			reaches_source[v.id] = true
+		})
 		_.each( g.ancestorsOf( g.getTargets(),
 			function(){
 				var adj = g.getAdjustedNodes()
 				g.clearTraversalInfo()
 				_.each( adj, function(v){ Graph.Vertex.markAsVisited(v) })
 			} ), function(v){
-				reaches_target[v.id] = true
-			})
+			reaches_target[v.id] = true
+		})
 		var vv = g.vertices.values()
 		var bn_s = topological_index[s0.id]
 		var bn_t = topological_index[t0.id]
@@ -2234,7 +2348,7 @@ var GraphAnalyzer = {
 	 *  a subset of vertices 
 	 */
 	connectedComponentAvoiding : function( g, V, U ){
-		var visited = [], q = [], r = []
+		var visited = {}, q = [], r = []
 		if( U instanceof Array ){
 			_.each( U, function(u){ visited[u.id]=1 })
 		}
@@ -2559,7 +2673,7 @@ var GraphAnalyzer = {
 	containsSemiCycle: function (g){
 		return GraphAnalyzer.containsCycle( GraphTransformer.contractComponents(g, 
 			GraphAnalyzer.connectedComponents(g), [Graph.Edgetype.Directed])
-			)
+		)
 	},
 
 	/* Check whether the directed edge e is stronlgy protected */
@@ -2677,7 +2791,7 @@ var GraphAnalyzer = {
 			_.each( v.outgoingEdges, function( e ){
 				var vc = e.v1 === v ? e.v2 : e.v1
 				if (e.directed == Graph.Edgetype.Bidirected) {
-	  			trek.push( e )
+					trek.push( e )
 					visitDown( vc, trek )
 					trek.pop()
 				}
@@ -2810,10 +2924,10 @@ var GraphAnalyzer = {
 		}
 		var primes = findPrimes(3*(MPolyHelper.variableCount + 1) + 20 )
 		var simulated = [
-										simulateNumeric(function(){ return Math.floor((1 << 52)*Math.random()) + 1 }),
-										simulateNumeric(function(i){ return primes[3*i+20] })
-										//simulateNumeric(function(i){ return 1 }) this would be stupid, but it works
-										]
+			simulateNumeric(function(){ return Math.floor((1 << 52)*Math.random()) + 1 }),
+			simulateNumeric(function(i){ return primes[3*i+20] })
+			//simulateNumeric(function(i){ return 1 }) this would be stupid, but it works
+		]
 
 
 		
@@ -2886,17 +3000,17 @@ var GraphAnalyzer = {
 					var si3 = sigma[p][q]
 					var si4 = sigma[i][q].negate()
 					return FASTP.make(  fastp.r().mul(si2).add(fastp.p().mul(si1)), fastp.s() ? fastp.t().mul(si2).add(fastp.q().mul(si1)) : null,
-															fastp.r().mul(si4).add(fastp.p().mul(si3)), fastp.s() ? fastp.t().mul(si4).add(fastp.q().mul(si3)) : null,
-															fastp.s() )
+						fastp.r().mul(si4).add(fastp.p().mul(si3)), fastp.s() ? fastp.t().mul(si4).add(fastp.q().mul(si3)) : null,
+						fastp.s() )
 				}  )
 				ID[j] = {propagate: i, 
-								propagatePath: "propagate" in ID[i] ? ID[i].propagatePath.concat([i]) : [i], 
-								fastp: newfastp, 
-								propagatedMissingCycles: "propagate" in ID[i] ? ID[i].propagatedMissingCycles : ID[i].missingCycles,
-								oldMissingCycles: ID[j] ? ID[j].missingCycles : null
-								// oldPropagatedMissingCycles: ID[j] ? ID[j].propagatedMissingCycles : null, 
-								}
-					propagate(j)
+					propagatePath: "propagate" in ID[i] ? ID[i].propagatePath.concat([i]) : [i], 
+					fastp: newfastp, 
+					propagatedMissingCycles: "propagate" in ID[i] ? ID[i].propagatedMissingCycles : ID[i].missingCycles,
+					oldMissingCycles: ID[j] ? ID[j].missingCycles : null
+					// oldPropagatedMissingCycles: ID[j] ? ID[j].propagatedMissingCycles : null, 
+				}
+				propagate(j)
 			} )
 		}
 		
@@ -2914,9 +3028,9 @@ var GraphAnalyzer = {
 			var p = pa[i]
 			var q = pa[j]
 			return [ sigma[p][q], 
-							sigma[p][j].negate(), //lambda[p][i]
-							sigma[i][q].negate(), //lambda[q][j]
-							sigma[i][j] ]
+				sigma[p][j].negate(), //lambda[p][i]
+				sigma[i][q].negate(), //lambda[q][j]
+				sigma[i][j] ]
 		}
 
 		function missingCycleToQuadraticEquation(cycle){
@@ -2928,7 +3042,7 @@ var GraphAnalyzer = {
 			var C = 2
 			var D = 3
 			var k = cycle.length - 1
-		//  var vars = cycle.slice(0, k)
+			//  var vars = cycle.slice(0, k)
 			var eqs = _.map(new Array(k), function(x,i) { return bidiEquation(cycle[i], cycle[i+1]) } )
 			while (k > 2) {
 				var newk = Math.ceil(k/2)
@@ -2942,7 +3056,7 @@ var GraphAnalyzer = {
 						DET2(eqs[i][C], eqs[i+1][C],  eqs[i+1][A], eqs[i][D]),
 						DET2(eqs[i][C], eqs[i+1][D],  eqs[i+1][B], eqs[i][D])
 					]
-			//   newvars[j] = vars[i]??
+					//   newvars[j] = vars[i]??
 				}
 				if (k % 2 == 1) neweqs[newk - 1] = eqs[k - 1]
 				k = newk
@@ -2951,10 +3065,10 @@ var GraphAnalyzer = {
 			}
 			if (k == 2) {
 				eqs[0] = [ DET2(eqs[0][A], eqs[1][C],  eqs[1][A], eqs[0][B]),
-									DET2(eqs[0][A], eqs[1][D],  eqs[1][A], eqs[0][D]),
-									DET2(eqs[0][C], eqs[1][C],  eqs[1][B], eqs[0][B]),
-									DET2(eqs[0][C], eqs[1][D],  eqs[1][B], eqs[0][D])
-								]
+					DET2(eqs[0][A], eqs[1][D],  eqs[1][A], eqs[0][D]),
+					DET2(eqs[0][C], eqs[1][C],  eqs[1][B], eqs[0][B]),
+					DET2(eqs[0][C], eqs[1][D],  eqs[1][B], eqs[0][D])
+				]
 			}
 			var a = eqs[0][0]
 			var b = eqs[0][1].add(eqs[0][2])
@@ -2972,7 +3086,7 @@ var GraphAnalyzer = {
 			var minus_b = b.negate()
 			if (isZeroSigmaPoly(ss)) return [ FASTP.makeFraction(minus_b, two_a) ]
 			return [ FASTP.make(minus_b, MINUS_ONE, two_a, ZERO, ss),
-							FASTP.make(minus_b, ONE, two_a, ZERO, ss) ]
+				FASTP.make(minus_b, ONE, two_a, ZERO, ss) ]
 		}
 
 		function fastpMightSatisfyQuadraticEquation(fastp, abc) {
@@ -3002,17 +3116,17 @@ var GraphAnalyzer = {
 				t = t.evalToBigInt(simulated[i])
 				
 				var app_aqqs_bpr_bqst_crr_ctts = (a*p*p) + (a*q*q*s) + (b*p*r) + (b*q*s*t) + (c*r*r) + (c*t*t*s)
-				var minus_2apq_bpt_bqr_2crt = - ((2n*a*p*q) + (b*p*t) + (b*q*r) +  (2n* c*r*t))
+				var minus_2apq_bpt_bqr_2crt = - (((2n)*a*p*q) + (b*p*t) + (b*q*r) +  ((2n)* c*r*t))
 				
 				if (app_aqqs_bpr_bqst_crr_ctts < 0 && minus_2apq_bpt_bqr_2crt > 0) return false
 				if (app_aqqs_bpr_bqst_crr_ctts > 0 && minus_2apq_bpt_bqr_2crt < 0) return false
 				if (app_aqqs_bpr_bqst_crr_ctts != 0 && minus_2apq_bpt_bqr_2crt == 0) return false
 				if (app_aqqs_bpr_bqst_crr_ctts == 0 && minus_2apq_bpt_bqr_2crt != 0 && s != 0) return false
-				if (app_aqqs_bpr_bqst_crr_ctts**2n != (minus_2apq_bpt_bqr_2crt**2n) * s) return false
+				if (app_aqqs_bpr_bqst_crr_ctts ** 2n != (minus_2apq_bpt_bqr_2crt**2n) * s) return false
 			}
 				
 			return true
-/*    Symbolic approach does not work (too slow and loses sign)
+			/*    Symbolic approach does not work (too slow and loses sign)
 			app_aqqs_bpr_bqst_crr_ctts = ADD(MUL(a,p,p), MUL(a,q,q,s), MUL(b,p,r), MUL(b,q,s,t), MUL(c,r, r), MUL(c,t,t,s))
 			var TWO = MPoly("2")
 			apq2_bpt_bqr_2crt =  ADD(MUL(TWO,a,p,q), MUL(b,p,t), MUL(b,q,r),  MUL(TWO, c,r,t))*/
@@ -3113,7 +3227,7 @@ var GraphAnalyzer = {
 			}
 			
 		var res = {"results": IDobject}
-		if (hasnontreenodes) res.warnings = ["Some nodes have more than one parent. The algorithm assumes all nodes except a certain root node have exactly one parent, and ignores nodes with more parents"]
+		if (hasnontreenodes) res.warnings = ["Some nodes have more than one parent. TreeID assumes all nodes except one (the root) have exactly one parent, and ignores nodes with more parents."]
 		return res
 	}
 }
@@ -3303,10 +3417,17 @@ GraphLayouter.Spring.prototype = {
 var GraphParser = {
 	VALIDATE_GRAPH_STRUCTURE : false,
 	
-	parseDot : function( code ){
+	parseDot : function( code, g ){
 		"use strict"
+		code = code.trim()
+		var isdot = code.trim().match(  /^(digraph|graph|dag|pdag|mag|pag)(\s+\w+)?\s*\{([\s\S]*)\}$/mi )
+		if( !isdot || (isdot.length <= 1) ){
+			code = "dag{ " + code + "}"
+		}
 		var ast = GraphDotParser.parse( code )
-		var g = new Graph()
+		if( typeof g === "undefined" ){
+			g = new Graph()
+		}
 		this.parseDotStatementArray( ast.statements, g )
 		g.setType( ast.type )
 		if( ast.name ){ g.setName( ast.name ) }	
@@ -3646,7 +3767,7 @@ var GraphParser = {
 				var hasarrow = firstarg.match( /(->|<->|<-)/mi )
 				// allow users to omit explicit "dag{ ... }" if at least one arrow is also specified
 				if( hasarrow  && hasarrow.length >= 1  ){
-					return this.parseDot( "dag{"+firstarg+"}" )
+					return this.parseDot( firstarg )
 				} else {
 					return this.parseAdjacencyList( adjacencyListOrMatrix, vertexLabelsAndWeights )
 				}
@@ -3819,10 +3940,10 @@ var GraphTransformer = {
 	 */
 	ancestorGraph : function( g, V ){ 
 		if( arguments.length < 2 ){
-			V = g.getSources().
-			concat(g.getTargets()).
-			concat(g.getAdjustedNodes()).
-			concat(g.getSelectedNodes())
+			V = _.union( g.getSources(),
+						g.getTargets(),
+						g.getAdjustedNodes(),
+						g.getSelectedNodes() )
 		}
 		var g_an = this.inducedSubgraph( g, g.anteriorsOf( V ) )
 		return g_an
@@ -3833,8 +3954,8 @@ var GraphTransformer = {
 	 * construction. Only such edges are deleted that are the first edge of a 
 	 * proper causal path.
 	 *
-	 *		Parameters X and Y are source and target vertex sets, respectively,
-	 *		and are optional.
+	 * Parameters X and Y are source and target vertex sets, respectively,
+	 * and are optional. If not given, they are taken from the graph.
 	 *		
 	 *
 	 **/
@@ -3848,9 +3969,13 @@ var GraphTransformer = {
 		}
 		if( typeof X == "undefined" ){
 			X = g.getSources()
+		} else {
+			X = _.map( X, Graph.getVertex, g )
 		}
 		if( typeof Y == "undefined" ){
 			Y = g.getTargets()
+		} else {
+			Y = _.map( Y, Graph.getVertex, g )
 		}
 		if( X.length == 0 || Y.length == 0 ){
 			return gback
@@ -3909,40 +4034,50 @@ var GraphTransformer = {
 				_.intersection(g.ancestorsOf( Y, clearVisitedWhereNotAdjusted ),
 						g.descendantsOf( X, clearVisitedWhereNotAdjusted ) ) )
 	},
-	
-	/**
-	 *		This function returns the subgraph of this graph that is induced
-	 *		by all open simple non-causal routes from s to t. 
-	 */
-	activeBiasGraph : function( g, X, Y ){
+
+	/** This function retains all edges that are on "simple" open paths between sources and targets, conditioned
+ 	  * on adjusted and/or selected nodes.
+ 	  * 
+ 	  * Input must be a DAG. Bi-directed edges will be ignored. 
+	 **/
+	simpleOpenPaths : function( g, Z ){
 		var g_chain, g_canon, L, S, in_type = g.getType(),
-			reaches_source = {}, reaches_adjusted_node = {}, retain = {}
+			reaches_source = {}, reaches_target = {}, reaches_adjusted_node = {}, retain = {}
 		var preserve_previous_visited_information = function(){}
-		
-		if( arguments.length > 1 ){
-			g = g.clone()
-			_.each(X,function(v){g.addSource(v.id)})
-			_.each(Y,function(v){g.addTarget(v.id)})
+		var Z, Zchain, gtype = g.getType()
+		if( g.getType() != "dag" ){
+			return "illegal graph type!"
 		}
-		
 		if( g.getSources().length == 0 || g.getTargets().length == 0 ){
-			return new Graph()
+			g = new Graph()
+			g.setType( g.getType() )
+			return g
 		}
-		
-		g_canon = GraphTransformer.canonicalDag(g)
-		g = g_canon.g
+		g = g.clone()
+		if( !Z ){
+			Z = _.union( g.getAdjustedNodes(), g.getSelectedNodes() )
+		}
 		g_chain = GraphTransformer.ancestorGraph(g)
-		
+		Zchain = g_chain.getVertex(Z)
+		// This labels all nodes that can "directly" reach one of the source nodes
+		// without going through any other node that can also directly reach the source
+		// node.
 		_.each( g.ancestorsOf( g.getSources(),
 			function(){
-				var adj = g.getAdjustedNodes()
 				g.clearTraversalInfo()
-				_.each( adj, function(v){ Graph.Vertex.markAsVisited(v) } )
+				_.each( Z, function(v){ Graph.Vertex.markAsVisited(v) } )
 			} ), function(v){
 			reaches_source[v.id] = true
 		})
+		_.each( g.ancestorsOf( g.getTargets(),
+			function(){
+				g.clearTraversalInfo()
+				_.each( Z, function(v){ Graph.Vertex.markAsVisited(v) } )
+			} ), function(v){
+			reaches_target[v.id] = true
+		})
 			
-		_.each( g.ancestorsOf( g.getAdjustedNodes() ), function(v){
+		_.each( g.ancestorsOf( Z ), function(v){
 			reaches_adjusted_node[v.id] = true
 		})
 		
@@ -3960,22 +4095,17 @@ var GraphTransformer = {
 			target_ancestors_except_ancestors_of_violators)
 		g.clearTraversalInfo()
 		
-		// Delete directed edges emitting from source that are only on causal routes
-		_.each( g.getSources(), function(s){
-			_.each( s.outgoingEdges, function(e){
-				if( g.isSource(e.v2 ) || _.contains(intermediates_after_source, e.v2 ) ){
-					g_chain.deleteEdge( e.v1, e.v2, Graph.Edgetype.Directed )
-				}
-			})
-		})
 
-		// Delete edges emitting from adjusted nodes
-		_.each( g_chain.getAdjustedNodes(), function( v ){
+		// Form the "partial moral" chain graph:
+		// First, delete edges emitting from adjusted nodes
+		_.each( Z, function( v ){
 			_.each( v.getChildren(), function( v2 ){ 
 				g_chain.deleteEdge( v, v2, Graph.Edgetype.Directed )
 			} )
 		} )
-		
+	
+		// Second, all edges between ancestors of adjusted/selected nodes 
+		// are turned into undirected edges.
 		// clone because we shoulnd't modify an array while traversing it
 		_.each( g_chain.edges.slice(), function(e){
 			if( reaches_adjusted_node[e.v1.id] && reaches_adjusted_node[e.v2.id] ){
@@ -3983,7 +4113,7 @@ var GraphTransformer = {
 				g_chain.addEdge( e.v1, e.v2, Graph.Edgetype.Undirected )
 			}
 		} )
-		
+
 		var topological_index = GraphAnalyzer.topologicalOrdering( g_chain )
 		
 		var bottleneck_number = GraphAnalyzer.bottleneckNumbers( g,
@@ -4023,7 +4153,294 @@ var GraphTransformer = {
 						"__END"+bottleneck_number[bridge.id],
 						bridge.id, Graph.Edgetype.Undirected )
 				})
+	
+				var bicomps = GraphAnalyzer.biconnectedComponents( current_component )
 								
+				var current_block_tree = GraphAnalyzer.blockTree( current_component, bicomps )
+
+				_.each( bridge_node_edges, function( e ){
+					Graph.Vertex.markAsVisited(
+						current_block_tree.getVertex( "C"+e.component_index ) )
+				} )
+				current_block_tree.visitAllPathsBetweenVisitedNodesInTree()
+				
+				var visited_components = _.filter( current_block_tree.vertices.values(),
+					function(v){
+						return v.id.charAt(0) == "C" && v.traversal_info.visited 
+					})
+								
+				/** TODO is in O(|E|) - can this be accelerated? */
+				_.each( visited_components, function( vc ){
+					var component_index = parseInt(vc.id.substring(1))
+					var component = bicomps[component_index-1]
+					if( component.length > 1 || 
+						component[0].v1.id.indexOf("__") !== 0 || 
+						component[0].v2.id.indexOf("__") !== 0
+					){
+						_.each( bicomps[component_index-1], function( e ){
+							var cv1 = g_chain.getVertex( e.v1.id )
+							if( cv1 ){
+								retain[cv1.id] = true
+							}
+							var cv2 = g_chain.getVertex( e.v2.id )
+							if( cv2 ){
+								retain[cv2.id] = true
+							}
+						} )
+					}
+				} )
+			}
+		}
+		// after the above loop, all vertices that have two disjoint paths to 
+		// a source and a target have been labeled for retention
+
+
+		// now, retain all vertices that are "between" the labeled vertices and
+		// sources/targets. to this end, descend from the labeled vertices but
+		// avoid descending further than a source/target
+		_.each( vv, function(v){
+			if( g_chain.isSource(v) ){
+				if( reaches_target[v.id] ){
+					Graph.Vertex.markAsNotVisited(v)
+				} else {
+					Graph.Vertex.markAsVisited(v)
+				}
+				retain[v.id] = true
+			} else if( g_chain.isTarget(v) ){
+				if( reaches_source[v.id] ){
+					Graph.Vertex.markAsNotVisited(v)
+				} else {
+					Graph.Vertex.markAsVisited(v)
+				}
+				retain[v.id] = true
+			}
+			else{
+				Graph.Vertex.markAsNotVisited(v)
+			}
+		} )
+		
+		
+		var start_nodes = _.filter( vv, function(v){ 
+			return retain[v.id]
+				|| ( topological_index[v.id] !== undefined &&
+				topological_index[v.id] === bottleneck_number[v.id] ) } )
+		
+				
+		var nodes_to_be_retained = g_chain.descendantsOf( start_nodes, 
+			preserve_previous_visited_information )
+		_.each( nodes_to_be_retained, function( v ){ retain[v.id] = true } )		
+		// All vertices on "back-door" biasing paths (starting with a x <- ) 
+		// and all "front-door" biasing paths
+		// have been labeled for retention now. 
+		
+		// Delete all vertices that have not been marked for retention
+		_.each(vv, function(v){
+			if( !(v.id in retain) ){
+				g_chain.deleteVertex(v)
+			}
+		} )
+
+		// Restore original edge types
+		var edges_to_replace = []
+		_.each( g_chain.edges, function(e){
+			if( e.directed == Graph.Edgetype.Undirected ){
+				edges_to_replace.push( e )
+			}
+		})
+		_.each( edges_to_replace, function( e ){
+			g_chain.deleteEdge( e.v1, e.v2, Graph.Edgetype.Undirected )
+			if( g.getEdge( e.v1.id, e.v2.id, Graph.Edgetype.Directed ) ){
+				g_chain.addEdge( e.v1.id, e.v2.id, Graph.Edgetype.Directed )
+			} else {
+				g_chain.addEdge( e.v2.id, e.v1.id, Graph.Edgetype.Directed )
+			}
+		} )
+
+		return g_chain	
+	},
+
+	/** Retain subgraph that contains the paths linking X to S conditioned on Y.
+ 	  * Take nodes into account that have already been adjusted for. 
+ 	  */
+	activeSelectionBiasGraph : function( g, x, y, S ){
+		var r = new Graph()
+		x = g.getVertex(x)
+		y = g.getVertex(y)
+		S = g.getVertex(S)
+		_.each( g.getVertices(), function(v){ r.addVertex(v.id) } )
+		g = g.clone()
+		// First, "normal" active bias graph for confounding.
+		_.each( S, function(s){ g.removeSelectedNode( s ) } )
+		_.each( this.activeBiasGraph( g ).getEdges(), function(e) {
+			r.addEdge( e.v1.id, e.v2.id, e.directed )
+		} )
+
+		// Next, we add nodes connecting X to S conditional on Y.
+		g.addAdjustedNode( y )
+		g.removeTarget( y )
+		_.each( S, function(s){ g.addTarget( s ) } )
+		_.each( this.activeBiasGraph( g ).getEdges(), function(e) {
+			r.addEdge( e.v1.id, e.v2.id, e.directed )
+		} )
+		_.each( this.causalFlowGraph( g ).getEdges(), function(e) {
+			r.addEdge( e.v1.id, e.v2.id, e.directed )
+		} )
+		return r
+	},
+
+	activeBiasGraph : function( g, opts ){
+		var S = g.getSelectedNodes()
+		_.each( S, function(v){
+			g.removeSelectedNode(v)
+			g.addAdjustedNode(v)
+		})
+		var r = this.activeBiasGraphWithoutSelectionNodes( g, opts )
+		_.each( S, function(v){
+			g.removeAdjustedNode(v)
+			g.addSelectedNode(v)
+		})
+		return r
+	},
+	
+	/**
+	 *		This function returns the subgraph of this graph that is induced
+	 *		by all open simple non-causal routes from s to t. 
+	 */
+	activeBiasGraphWithoutSelectionNodes : function( g, opts ){
+		var g_chain, g_canon, L, S, in_type = g.getType(),
+			reaches_source = {}, reaches_adjusted_node = {}, retain = {}
+		var preserve_previous_visited_information = function(){}
+		var Z, Zchain, gtype = g.getType()
+		
+		g_canon = GraphTransformer.canonicalDag(g)
+		g = g_canon.g
+
+		opts = _.defaults( opts || {}, 
+			{direct: false} )
+		if( opts.X ){
+			_.each(opts.X,function(v){g.addSource(g.getVertex(v))})
+		}
+		if( opts.Y ){
+			_.each(opts.Y,function(v){g.addTarget(g.getVertex(v))})
+		}
+
+		if( g.getSources().length == 0 || g.getTargets().length == 0 ){
+			g = new Graph()
+			g.setType( g.getType() )
+			return g
+		}
+
+		g_chain = GraphTransformer.ancestorGraph(g)
+
+		Z = _.union( g.getAdjustedNodes(), g.getSelectedNodes() )
+		Zchain = _.union( g_chain.getAdjustedNodes(), g_chain.getSelectedNodes() )
+
+		// This labels all nodes that can "directly" reach one of the source nodes
+		// without going through any other node that can also directly reach the source
+		// node.
+		_.each( g.ancestorsOf( g.getSources(),
+			function(){
+				g.clearTraversalInfo()
+				_.each( Z, function(v){ Graph.Vertex.markAsVisited(v) } )
+			} ), function(v){
+			reaches_source[v.id] = true
+		})
+			
+		_.each( g.ancestorsOf( Z ), function(v){
+			reaches_adjusted_node[v.id] = true
+		})
+		
+		// ..for this line, such that "pure causal paths" are traced backwards 
+		var target_ancestors_except_ancestors_of_violators = 
+		g.ancestorsOf( g.getTargets(), 
+			function(){
+				var an_violators = g.ancestorsOf(
+					GraphAnalyzer.nodesThatViolateAdjustmentCriterion(g))
+				g.clearTraversalInfo()
+				_.each( an_violators, function(v){ Graph.Vertex.markAsVisited(v) } )
+			}
+		)
+		var intermediates_after_source = _.intersection( g.childrenOf( g.getSources() ),
+			target_ancestors_except_ancestors_of_violators)
+		g.clearTraversalInfo()
+		
+		// Form the proper back-door graph with respect to the desired type of effect.
+		if( opts.direct ){
+			_.each( g.getSources(), function(s){
+				_.each( s.outgoingEdges, function(e){
+					if( g.isSource(e.v2) || g.isTarget(e.v2) ){ 
+						g_chain.deleteEdge( e.v1, e.v2, Graph.Edgetype.Directed )
+					}
+				})
+			})
+		} else {
+			_.each( g.getSources(), function(s){
+				_.each( s.outgoingEdges, function(e){
+					if( g.isSource(e.v2 ) || _.contains(intermediates_after_source, e.v2 ) ){
+						g_chain.deleteEdge( e.v1, e.v2, Graph.Edgetype.Directed )
+					}
+				})
+			})
+		}
+
+		// Form the "partial moral" chain graph:
+		// First, delete edges emitting from adjusted nodes
+		_.each( Z, function( v ){
+			_.each( v.getChildren(), function( v2 ){ 
+				g_chain.deleteEdge( v, v2, Graph.Edgetype.Directed )
+			} )
+		} )
+	
+		// Second, all edges between ancestors of adjusted/selected nodes 
+		// are turned into undirected edges.
+		// clone because we shoulnd't modify an array while traversing it
+		_.each( g_chain.edges.slice(), function(e){
+			if( reaches_adjusted_node[e.v1.id] && reaches_adjusted_node[e.v2.id] ){
+				g_chain.deleteEdge( e.v1, e.v2, e.directed )
+				g_chain.addEdge( e.v1, e.v2, Graph.Edgetype.Undirected )
+			}
+		} )
+
+		var topological_index = GraphAnalyzer.topologicalOrdering( g_chain )
+		
+		var bottleneck_number = GraphAnalyzer.bottleneckNumbers( g,
+			topological_index )
+
+		var comps = GraphAnalyzer.connectedComponents( g_chain )
+		
+		var check_bridge_node = function(v){ 
+			return reaches_adjusted_node[v.id] && 
+					topological_index[v.id] !== undefined &&
+					bottleneck_number[v.id] !== undefined }
+
+		var vv = g_chain.getVertices()
+		
+		for( var comp_i = 0 ; comp_i < comps.length ; comp_i ++ ){
+			var comp = comps[comp_i]
+			if( comp.length > 1 ){
+				var bridge_nodes = _.filter( comp, check_bridge_node )
+
+				var current_component = GraphTransformer.inducedSubgraph( 
+					g_chain, comp )
+				var bridge_node_edges = []
+				var bridge_nodes_bottlenecks = []
+				_.each( bridge_nodes, function(bn){
+					bridge_nodes_bottlenecks.push(bottleneck_number[bn.id])
+				})
+				_.each( _.uniq(bridge_nodes_bottlenecks), function( i ){
+					current_component.addVertex( "__START"+i )
+					current_component.addVertex( "__END"+i )
+					bridge_node_edges.push( 
+						current_component.addEdge( "__START"+i, "__END"+i, 
+							Graph.Edgetype.Undirected ) )
+				})
+				
+				_.each( bridge_nodes, function( bridge ) {
+					current_component.addEdge( 
+						"__END"+bottleneck_number[bridge.id],
+						bridge.id, Graph.Edgetype.Undirected )
+				})
+	
 				var bicomps = GraphAnalyzer.biconnectedComponents( current_component )
 								
 				var current_block_tree = GraphAnalyzer.blockTree( current_component, bicomps )
@@ -4124,14 +4541,17 @@ var GraphTransformer = {
 				}
 			})
 		})
-		
+
 		// Delete all vertices that have not been marked for retention
+		if( opts.direct ){
+			_.each( intermediates_after_source, function(v){ retain[v.id] = true } )
+		}
 		_.each(vv, function(v){
 			if( typeof retain[v.id] === "undefined" ){
 				g_chain.deleteVertex(v)
 			}
 		} )
-		
+	
 		// Restore original edge types
 		var edges_to_replace = []
 		_.each( g_chain.edges, function(e){
@@ -4141,13 +4561,14 @@ var GraphTransformer = {
 		})
 		_.each( edges_to_replace, function( e ){
 			g_chain.deleteEdge( e.v1, e.v2, Graph.Edgetype.Undirected )
-			if( g_canon.g.getEdge( e.v1.id, e.v2.id, Graph.Edgetype.Directed ) ){
+			if( g.getEdge( e.v1.id, e.v2.id, Graph.Edgetype.Directed ) ){
 				g_chain.addEdge( e.v1.id, e.v2.id, Graph.Edgetype.Directed )
 			} else {
 				g_chain.addEdge( e.v2.id, e.v1.id, Graph.Edgetype.Directed )
 			}
 		} )
-		
+
+
 		// Replace dummy nodes from canonical graph with original nodess
 		var Lids = _.pluck(g_canon.L,"id"), Sids = _.pluck(g_canon.S,"id")
 		L=[], S=[]
@@ -4159,8 +4580,28 @@ var GraphTransformer = {
 			var v = g_chain.getVertex(vid)
 			if( v ) S.push( v )
 		})
+
+		// For direct effects, add causal paths between mediators
+		if( opts.direct ){
+			_.each( Z, Graph.Vertex.markAsVisited )
+			var gind = this.inducedSubgraph( g, _.intersection( g.descendantsOf( g.getSources(), preserve_previous_visited_information ),
+					g.ancestorsOf( g.getTargets() ) ) )
+			_.each( gind.edges, function(e){
+				if( e.directed == Graph.Edgetype.Directed && !(
+						(gind.isSource(e.v1)||gind.isTarget(e.v1)) && (gind.isSource(e.v2)||gind.isTarget(e.v2))) ){
+					if( !g_chain.getVertex( e.v1.id ) ){
+						g_chain.addVertex( e.v1.id )
+					}
+					if( !g_chain.getVertex( e.v2.id ) ){
+						g_chain.addVertex( e.v2.id )
+					}
+					g_chain.addEdge( e.v1.id, e.v2.id, Graph.Edgetype.Directed )
+				} 
+			})
+		}
 		g = GraphTransformer.decanonicalize( g_chain, L, S )
 		g.setType( in_type )
+
 		return g
 	}, // end of activeBiasGraph
 	
@@ -4940,7 +5381,9 @@ var ObservedGraph = Class.extend({
 		"addLatentNode" : "change",
 		"removeLatentNode" : "change",
 		"addAdjustedNode" : "change",
-		"removeAdjustedNode" : "change"
+		"removeAdjustedNode" : "change",
+		"addSelectedNode" : "change",
+		"removeSelectedNode" : "change"
 	},
 
 	observe : function( event, listener ){
@@ -7264,7 +7707,7 @@ MPoly.minusOne = MPoly("-1")
   };
 })(this);
 /* DAGitty - a browser-based software for causal modelling and analysis
- *   Copyright (C) 2010-2020 Johannes Textor, Benito van der Zander
+ *   Copyright (C) 2010-2022 Johannes Textor, Benito van der Zander
  * 
  *   This program is free software; you can redistribute it and/or
  *   modify it under the terms of the GNU General Public License
@@ -7328,6 +7771,7 @@ var DAGittyGraphView = Class.extend({
 			_.bind( function(v){ this.callEventListener( "vertex_marked", [v] ) }, this ) )
 
 		this.view_mode = "normal"
+		this.bias_mode = "normal"
 		this.drawGraph()
 	},
 
@@ -7444,7 +7888,6 @@ var DAGittyGraphView = Class.extend({
 	clickHandler : function(e){
 		// click handler can be set to emulate keypress action
 		// using this function
-		console.log(" click handler called on canvas" )
 		this.last_click_x = this.pointerX(e)-this.getContainer().offsetLeft
 		this.last_click_y = this.pointerY(e)-this.getContainer().offsetTop
 		this.last_click_g_coords = this.toGraphCoordinate( this.last_click_x, this.last_click_y )
@@ -7499,6 +7942,9 @@ var DAGittyGraphView = Class.extend({
 				e.preventDefault()
 			}
 			break
+		case 83: //s
+			if(v) this.toggleVertexProperty(v,"selectedNode")
+			break
 		case 85: //u
 			if(v) this.toggleVertexProperty(v,"latentNode")
 			break
@@ -7532,13 +7978,28 @@ var DAGittyGraphView = Class.extend({
 			this.drawGraph()
 		}
 	},
+	getBiasMode : function(){
+		return this.bias_mode
+	},
+	setBiasMode : function( m ){
+		if( this.bias_mode === m ){
+			return
+		}
+		this.bias_mode = m
+		this.drawGraph()
+	},
+
 	getViewMode : function(){
 		return this.view_mode
 	},
 	setViewMode : function( m ){
+		if( this.view_mode === m ){
+			return
+		}
 		this.view_mode = m
 		this.drawGraph()
 	},
+
 	connectVertices : function( v1, v2, bidi ){
 		if( this.dialogOpen() ){ return }
 		if( v1 == v2 ) return
@@ -7774,9 +8235,10 @@ var DAGittyGraphView = Class.extend({
 		return this.vertex_shapes.get( vid )
 	},
 	drawGraph : function(){
-		var g,i,c
+		var g,i,c,bias_opts = {direct:false}
 		var g_causal = new Graph()
 		var g_bias = new Graph()
+		var g_selection_bias = new Graph()
 		var g_trr = new Graph()
 
 		var g_an = GraphTransformer.ancestorGraph(
@@ -7797,12 +8259,28 @@ var DAGittyGraphView = Class.extend({
 		case "equivalence" :
 			g = GraphTransformer.dagToCpdag( this.getGraph() )
 			break
+		case "causalodds":
+			g = this.getGraph()
+			g_causal = GraphTransformer.causalFlowGraph(g)
+			break
 		default:
 			g = this.getGraph()
 			g_trr = GraphTransformer.transitiveReduction( g )
 			if( g.getSources().length > 0 && g.getTargets().length > 0 ){
 				g_causal = GraphTransformer.causalFlowGraph(g)
-				g_bias = GraphTransformer.activeBiasGraph(g)
+				g_bias = GraphTransformer.activeBiasGraph(g,bias_opts)
+				switch( this.getBiasMode() ){
+					case "causalodds":
+						if( g.getSources().length == 1 && g.getTargets().length == 1 && g.getSelectedNodes().length == 1 ){
+							g_bias = GraphTransformer.activeSelectionBiasGraph( g, g.getSources()[0], g.getTargets()[0], g.getSelectedNodes() )
+						}
+						break
+					case "direct":
+						g_bias = GraphTransformer.activeBiasGraph(g,{direct:true})
+						break
+					default:
+						g_bias = GraphTransformer.activeBiasGraph(g)
+				}
 			}
 		}
 
@@ -7835,6 +8313,8 @@ var DAGittyGraphView = Class.extend({
 				vertex_type = "outcome"
 			} else if( g.isAdjustedNode(vv[i]) ){
 				vertex_type = "adjusted"
+			} else if( g.isSelectedNode(vv[i]) ){ 
+				vertex_type = "selected"
 			} else if( g.isLatentNode(vv[i]) ){
 				vertex_type = "latent"
 			} else if( ean_ids[vv[i].id]
@@ -7844,8 +8324,7 @@ var DAGittyGraphView = Class.extend({
 				vertex_type = "anexposure"
 			} else if( oan_ids[vv[i].id] ){
 				vertex_type = "anoutcome"
-			}
-			
+			}			
 			this.impl.createVertexShape( vertex_type, vs )
 			this.vertex_shapes.set( vv[i].id, vs )
 		}
@@ -7980,6 +8459,12 @@ var DAGittyController = Class.extend({
 	setViewMode : function( viewmode ){
 		if( this.view ){
 			this.view.setViewMode( viewmode )
+			this.view.drawGraph()
+		}
+	},
+	setBiasMode : function( biasmode ){
+		if( this.view ){
+			this.view.setBiasMode( biasmode )
 			this.view.drawGraph()
 		}
 	},
@@ -8160,8 +8645,9 @@ var DAGittyController = Class.extend({
 		var v = this.graph.getVertex(_v)
 		if( v ){
 			var pcamel = p.substring(0,1).toUpperCase()+p.substring(1,p.length) 
-			// at the moment, just one property at a time
-			_.each(["Source","Target","AdjustedNode","LatentNode"],function(pc){
+			// At the moment, just one property at a time is supported. For instance, we can't have
+			// latent selection nodes or latent adjusted nodes.
+			_.each(["Source","Target","AdjustedNode","LatentNode","SelectedNode"],function(pc){
 				this.getGraph()["remove"+pc](v)
 			},this)
 			this.getObservedGraph()["add"+pcamel](v)

@@ -9,6 +9,7 @@ DAGitty.stylesheets.original = {
 				exposurenode : { fill : "#bed403", stroke : "#000000" },
 				outcomenode : { fill : "#00a2e0", stroke : "#000000" },
 				adjustednode : { fill : "#ffffff", stroke : "#000000" },
+				selectednode : { 'd' : 'M  20, 0 L 20,15 L -20,15 L -20,-15 L 20,-15 Z' },
 				latentnode : {  fill : "#dddddd", stroke: "#aaaaaa" /*"stroke-dasharray" : "5,5" */},
 				confoundernode : { fill : "#ff7777", stroke : "#ff7777" },
 				anexposurenode : { fill : "#bed403", stroke : "#bed403" },

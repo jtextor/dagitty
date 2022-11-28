@@ -9,7 +9,8 @@ module.exports = Object.assign( module.exports, {
 	GraphAnalyzer: GraphAnalyzer,
 	GraphParser: GraphParser,
 	GraphTransformer: GraphTransformer,
-	GraphSerializer : GraphSerializer
+	GraphSerializer : GraphSerializer,
+	MPoly : MPoly
 } )
 
 

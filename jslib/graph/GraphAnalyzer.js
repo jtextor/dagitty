@@ -164,10 +164,10 @@ var GraphAnalyzer = {
 				if( v1_pre == v2_pre ){
 					if( v1_pre == "up_" )
 						trek_monomials[i].push( 
-								pars(g.getEdge(v2_id,v1_id,Graph.Edgetype.Directed),"b"))
-						else
-							trek_monomials[i].push( 
-								pars(g.getEdge(v1_id,v2_id,Graph.Edgetype.Directed),"b"))
+							pars(g.getEdge(v2_id,v1_id,Graph.Edgetype.Directed),"b"))
+					else
+						trek_monomials[i].push( 
+							pars(g.getEdge(v1_id,v2_id,Graph.Edgetype.Directed),"b"))
 				} else {
 					if( v1_id == v2_id ){
 						if( !standardized ){
@@ -381,48 +381,140 @@ var GraphAnalyzer = {
 		return i
 	},
 
-	isAdjustmentSet : function( g, Z ){
+	/**
+      * Determines whether Z is a valid adjustment set in g, with possible selection bias
+      * due to conditioning on nodes S. The nodes S and/or Z can be omitted, in which case they are
+      * taken as pre-defined from the DAG syntax (using the "adjusted" or "selected" keywords)
+      */ 
+	isAdjustmentSet : function( g, Z, S ){
 		var gtype = g.getType()
-		Z = _.map( Z, g.getVertex, g )
 		if( gtype != "dag" && gtype != "pdag" && gtype != "mag" && gtype != "pag" ){
 			throw( "Cannot compute adjustment sets for graph of type "+gtype )
 		}
 		if( g.getSources().length == 0 || g.getTargets().length == 0 ){
 			return false
 		}
-
-		if( _.intersection( this.dpcp(g), Z ).length > 0 ){
+		if( Z == null ){
+			Z = g.getAdjustedNodes()
+		}
+		if( S == null ){
+			S = g.getSelectedNodes()
+		}
+		var Zg = _.map( Z, Graph.getVertex, g )
+		if( _.intersection( this.dpcp(g), Zg ).length > 0 ){
 			return false
 		}
 		var gbd = GraphTransformer.backDoorGraph(g)
-		Z = _.map( Z, gbd.getVertex, gbd )
-		return !this.dConnected( gbd, gbd.getSources(), gbd.getTargets(), Z )
+		var Sgbd = _.map( S, gbd.getVertex, gbd )
+		var Zgbd = _.map( Zg, gbd.getVertex, gbd )
+		var r = !this.dConnected( gbd, gbd.getSources(), gbd.getTargets(), Zgbd.concat( Sgbd ) )
+		if( S.length > 0 ){
+			r = r && !this.dConnected( gbd, gbd.getTargets(), Sgbd )
+		}
+		return r
 	},
-	
-	listMsasTotalEffect : function( g, must, must_not, max_nr ){
+
+	isAdjustmentSetDirectEffect : function( g, Z ){
+		var gtype = g.getType()
+		if( gtype != "dag" ){
+			throw( "Cannot compute adjustment sets for direct effects for graph of type "+gtype )
+		}
+		if( g.getSelectedNodes().length > 0 ){
+			throw( "Cannot compute adjustment sets for direct effects when there are selection nodes!" )
+		}
+		if( Z == null ){
+			Z = g.getAdjustedNodes()
+		} else {
+		}
+		var gbd = GraphTransformer.indirectGraph(g)
+		return !this.dConnected( gbd, gbd.getSources(), gbd.getTargets(), _.map( Z, Graph.getVertex, gbd ) )
+	},
+
+	isAdjustmentSetCausalOddsRatio : function( g, Z, S ){
+		var gtype = g.getType()
+		if( gtype != "dag" ){
+			throw( "Cannot compute adjustment sets for direct effects for graph of type "+gtype )
+		}
+		if( g.getSources().length != 1 || g.getTargets().length != 1 ){
+			return null
+		}
+		if( Z == null ){
+			Z = g.getAdjustedNodes()
+		} else {
+			Z = _.map( Z, Graph.getVertex, g )
+		}
+		if( S == null ){
+			S = g.getSelectedNodes()
+		} else {
+			S = _.map( S, Graph.getVertex, g )
+		}
+		if( S.length != 1 ){
+			return null
+		}
+		var r = !this.dConnected( g, g.getSources(), S, g.getTargets().concat( Z ) )
+		if( r ){
+			r = r && this.isAdjustmentSet( g, Z, [] )
+		}
+		return r
+	},
+
+	/**
+ 	  *  Lists all minimal sufficient adjustment sets containing nodes in M (mandatory nodes) but not
+ 	  *  F (forbidden nodes). Selection nodes can also be defined within the DAG.
+ 	  */
+	listMsasTotalEffect : function( g, M, F, max_nr ){
 		var gtype = g.getType()
 		if( gtype != "dag" && gtype != "pdag" && gtype != "mag" && gtype != "pag" ){
 			throw( "Cannot compute total affect adjustment sets for graph of type "+gtype )
 		}
+
+		if( !g || g.getSources().length < 1 || g.getTargets().length < 1 ){ return [] }
+
+		var gg = g
 		if( gtype == "pdag" ){
-			g = GraphTransformer.cgToRcg( g )
-		}	
-		if( !g ){ return [] }
+			gg = GraphTransformer.cgToRcg( g )
+		}
+		if( M ){
+			_.each( M, function(v){ gg.addAdjustedNode( v ) } )
+		}
+		if( F ){
+			_.each( F, function(v){ gg.addLatentNode( v ) } )
+		}
 	
-		if(GraphAnalyzer.violatesAdjustmentCriterion(g)){ return [] }
-		var adjusted_nodes = g.getAdjustedNodes()
-		var latent_nodes = g.getLatentNodes().concat( this.dpcp(g) )
+
+		if( GraphAnalyzer.violatesAdjustmentCriterion(gg)){ return [] }
 		
-		var gam = GraphTransformer.moralGraph( 
-			GraphTransformer.ancestorGraph( 
-			GraphTransformer.backDoorGraph(g) ) )
-				
-		if( must )
-			adjusted_nodes = adjusted_nodes.concat( must )
-		if( must_not )
-			latent_nodes = latent_nodes.concat( must_not )
-		
-		return this.listMinimalSeparators( gam, adjusted_nodes, latent_nodes, max_nr )
+		var gbd = GraphTransformer.backDoorGraph(gg)
+		var S = gg.getSelectedNodes()
+		if( S.length > 0 ){
+			if( this.dConnected( gbd, gbd.getTargets(), _.map(S, Graph.getVertex, gbd ) ) ){
+				return []
+			} else {
+				_.each( S, function(s){ gbd.removeSelectedNode( s ); gbd.addAdjustedNode( s ) } )			
+			}
+		}
+
+		var gam = GraphTransformer.moralGraph( GraphTransformer.ancestorGraph( gbd ) )
+
+		var adjusted_nodes = _.map( gg.getAdjustedNodes(), Graph.getVertex, gam )
+		var latent_nodes = _.map( gg.getLatentNodes().concat( this.dpcp(gg) ), Graph.getVertex, gam )
+
+		// at this point, "latent_nodes" may contain 
+		// undefined values because not all adjusted or latent nodes may have beeen
+		// retained in the moral graph. Therefore, we use "compact" to remove such
+		// values. 
+		var r = this.listMinimalSeparators( gam, 
+			adjusted_nodes, 
+			_.compact(latent_nodes), max_nr )
+
+		// Give back vertex objects from original graph, rather than the constructed 
+		// ancestor moral graph.
+		S = _.map( S, Graph.getVertex, g )
+		for( i = 0 ; i < r.length ; i ++ ){
+			r[i] = _.map( r[i], Graph.getVertex, g )
+			r[i] = _.difference( r[i], S )
+		}
+		return r
 	},
 
 	canonicalAdjustmentSet : function( g ){
@@ -528,10 +620,8 @@ var GraphAnalyzer = {
 		var g2 = g.clone()
 		var vv = g2.vertices.values()
 		// this ignores adjusted vertices for now 
-		for( var i = 0 ; i < vv.length ; i ++ ){
-			g2.removeAllAdjustedNodes()
-		}
-		var n = 0
+		g2.removeAllAdjustedNodes()
+		var n = 0, i
 		for( i = 0 ; i < vv.length ; i ++ ){
 			for( var j = i+1 ; j < vv.length ; j ++ ){
 				if( !g2.isLatentNode( vv[i] ) && !g2.isLatentNode( vv[j] ) 
@@ -563,7 +653,7 @@ var GraphAnalyzer = {
 		var cpdag = GraphTransformer.dependencyGraph2CPDAG( g ), p1, p2
 		if( g.edges.all( function( e ){
 			if( typeof cpdag.getEdge( e.v1.id, e.v2.id, 
-					Graph.Edgetype.Undirected ) == "undefined" ){ 
+				Graph.Edgetype.Undirected ) == "undefined" ){ 
 				p1 = cpdag.getVertex(e.v1.id).getParents().pluck("id")
 				p2 = cpdag.getVertex(e.v2.id).getParents().pluck("id")
 				if( !p1.include(e.v2.id) && !p2.include(e.v1.id) 
@@ -680,9 +770,9 @@ var GraphAnalyzer = {
 	
 	intermediates : function( g ){
 		return _.chain( g.descendantsOf( g.getSources() ))
-		.intersection( g.ancestorsOf( g.getTargets() ) )
-		.difference( g.getSources() )
-		.difference( g.getTargets() ).value()
+			.intersection( g.ancestorsOf( g.getTargets() ) )
+			.difference( g.getSources() )
+			.difference( g.getTargets() ).value()
 	},
 	
 	/** 
@@ -706,7 +796,7 @@ var GraphAnalyzer = {
 		}
 		
 		gr = g.clone(false)
-		visited = []
+		visited = {} 
 		
 		var followEdges = function( u, v, kin, edgetype, reverse ){
 			var st = []
@@ -862,27 +952,46 @@ var GraphAnalyzer = {
 	/** d-Separation test via Shachter's "Bayes-Ball" BFS.
 	 * (actually, implements m-separation which is however not guaranteed to be meaningful
 	 * in all mixed graphs).
+	 * If X is empty, always returns "false".
 	 * If Y is nonempty, returns true iff X and Z are d-separated given Z.
 	 * If Y is empty ([]), return the set of vertices that are d-connected 
 	 * to X given Z.
 	 */
 	dConnected : function( g, X, Y, Z, AnZ ){
 		var go = g
+
 		if( g.getType() == "pag" ){
 			g = GraphTransformer.pagToPdag( g )
-			X = g.getVertex(X)
-			Y = g.getVertex(Y)
-			Z = g.getVertex(Z)
-			if( typeof AnZ !== 'undefined' ){ AnZ = g.getVertex( AnZ ) }
 		}
+
+		if( X.length == 0 ){
+			if( Y.length == 0 ){
+				return []
+			} else {
+				false
+			}
+		}
+
+		X = _.map( X, g.getVertex, g )
+		Y = _.map( Y, g.getVertex, g )
+
+		if( typeof Z == "undefined" ){
+			Z = []
+		} else {
+			Z = _.map( Z, g.getVertex, g )
+		}
+		if( typeof AnZ == "undefined" ){	
+			AnZ = g.ancestorsOf( Z )
+		} else { 
+			AnZ = _.map( AnZ, g.getVertex, g ) 
+		}
+
 		var forward_queue = []
 		var backward_queue = []
 		var forward_visited ={}
 		var backward_visited = {}
 		var i, Y_ids = {}, Z_ids = {}, AnZ_ids = {}, v, vv
-		if( typeof AnZ == "undefined" ){	
-			AnZ = g.ancestorsOf( Z )
-		}
+
 		for( i = 0 ; i < X.length ; i ++ ){
 			backward_queue.push( X[i] )
 		}
@@ -953,7 +1062,7 @@ var GraphAnalyzer = {
 	},
 	
 	ancestralInstrument : function( g, x, y, z, 
-			g_bd, de_y ){
+		g_bd, de_y ){
 		if( arguments.length < 5 ){
 			g_bd = GraphTransformer.backDoorGraph( g, [x], [y] )
 		}
@@ -1132,11 +1241,11 @@ var GraphAnalyzer = {
 				}
 			}
 		}
-		var vv = g.vertices.values() 
-		for( var j = 0 ; j < vv.length ; j ++ ){
+		var vv = g.vertices.values(), j 
+		for( j = 0 ; j < vv.length ; j ++ ){
 			topological_index[vv[j].id] = 0
 		}
-		for( var j = 0 ; j < vv.length ; j ++ ){
+		for( j = 0 ; j < vv.length ; j ++ ){
 			visit( vv[j] )
 		}
 		return topological_index
@@ -1153,16 +1262,16 @@ var GraphAnalyzer = {
 				g.clearTraversalInfo()
 				_.each( adj, function(v){ Graph.Vertex.markAsVisited(v) })
 			} ), function(v){
-				reaches_source[v.id] = true
-			})
+			reaches_source[v.id] = true
+		})
 		_.each( g.ancestorsOf( g.getTargets(),
 			function(){
 				var adj = g.getAdjustedNodes()
 				g.clearTraversalInfo()
 				_.each( adj, function(v){ Graph.Vertex.markAsVisited(v) })
 			} ), function(v){
-				reaches_target[v.id] = true
-			})
+			reaches_target[v.id] = true
+		})
 		var vv = g.vertices.values()
 		var bn_s = topological_index[s0.id]
 		var bn_t = topological_index[t0.id]
@@ -1249,7 +1358,7 @@ var GraphAnalyzer = {
 	 *  a subset of vertices 
 	 */
 	connectedComponentAvoiding : function( g, V, U ){
-		var visited = [], q = [], r = []
+		var visited = {}, q = [], r = []
 		if( U instanceof Array ){
 			_.each( U, function(u){ visited[u.id]=1 })
 		}
@@ -1574,7 +1683,7 @@ var GraphAnalyzer = {
 	containsSemiCycle: function (g){
 		return GraphAnalyzer.containsCycle( GraphTransformer.contractComponents(g, 
 			GraphAnalyzer.connectedComponents(g), [Graph.Edgetype.Directed])
-			)
+		)
 	},
 
 	/* Check whether the directed edge e is stronlgy protected */
@@ -1692,7 +1801,7 @@ var GraphAnalyzer = {
 			_.each( v.outgoingEdges, function( e ){
 				var vc = e.v1 === v ? e.v2 : e.v1
 				if (e.directed == Graph.Edgetype.Bidirected) {
-	  			trek.push( e )
+					trek.push( e )
 					visitDown( vc, trek )
 					trek.pop()
 				}
@@ -1825,10 +1934,10 @@ var GraphAnalyzer = {
 		}
 		var primes = findPrimes(3*(MPolyHelper.variableCount + 1) + 20 )
 		var simulated = [
-										simulateNumeric(function(){ return Math.floor((1 << 52)*Math.random()) + 1 }),
-										simulateNumeric(function(i){ return primes[3*i+20] })
-										//simulateNumeric(function(i){ return 1 }) this would be stupid, but it works
-										]
+			simulateNumeric(function(){ return Math.floor((1 << 52)*Math.random()) + 1 }),
+			simulateNumeric(function(i){ return primes[3*i+20] })
+			//simulateNumeric(function(i){ return 1 }) this would be stupid, but it works
+		]
 
 
 		
@@ -1901,17 +2010,17 @@ var GraphAnalyzer = {
 					var si3 = sigma[p][q]
 					var si4 = sigma[i][q].negate()
 					return FASTP.make(  fastp.r().mul(si2).add(fastp.p().mul(si1)), fastp.s() ? fastp.t().mul(si2).add(fastp.q().mul(si1)) : null,
-															fastp.r().mul(si4).add(fastp.p().mul(si3)), fastp.s() ? fastp.t().mul(si4).add(fastp.q().mul(si3)) : null,
-															fastp.s() )
+						fastp.r().mul(si4).add(fastp.p().mul(si3)), fastp.s() ? fastp.t().mul(si4).add(fastp.q().mul(si3)) : null,
+						fastp.s() )
 				}  )
 				ID[j] = {propagate: i, 
-								propagatePath: "propagate" in ID[i] ? ID[i].propagatePath.concat([i]) : [i], 
-								fastp: newfastp, 
-								propagatedMissingCycles: "propagate" in ID[i] ? ID[i].propagatedMissingCycles : ID[i].missingCycles,
-								oldMissingCycles: ID[j] ? ID[j].missingCycles : null
-								// oldPropagatedMissingCycles: ID[j] ? ID[j].propagatedMissingCycles : null, 
-								}
-					propagate(j)
+					propagatePath: "propagate" in ID[i] ? ID[i].propagatePath.concat([i]) : [i], 
+					fastp: newfastp, 
+					propagatedMissingCycles: "propagate" in ID[i] ? ID[i].propagatedMissingCycles : ID[i].missingCycles,
+					oldMissingCycles: ID[j] ? ID[j].missingCycles : null
+					// oldPropagatedMissingCycles: ID[j] ? ID[j].propagatedMissingCycles : null, 
+				}
+				propagate(j)
 			} )
 		}
 		
@@ -1929,9 +2038,9 @@ var GraphAnalyzer = {
 			var p = pa[i]
 			var q = pa[j]
 			return [ sigma[p][q], 
-							sigma[p][j].negate(), //lambda[p][i]
-							sigma[i][q].negate(), //lambda[q][j]
-							sigma[i][j] ]
+				sigma[p][j].negate(), //lambda[p][i]
+				sigma[i][q].negate(), //lambda[q][j]
+				sigma[i][j] ]
 		}
 
 		function missingCycleToQuadraticEquation(cycle){
@@ -1943,7 +2052,7 @@ var GraphAnalyzer = {
 			var C = 2
 			var D = 3
 			var k = cycle.length - 1
-		//  var vars = cycle.slice(0, k)
+			//  var vars = cycle.slice(0, k)
 			var eqs = _.map(new Array(k), function(x,i) { return bidiEquation(cycle[i], cycle[i+1]) } )
 			while (k > 2) {
 				var newk = Math.ceil(k/2)
@@ -1957,7 +2066,7 @@ var GraphAnalyzer = {
 						DET2(eqs[i][C], eqs[i+1][C],  eqs[i+1][A], eqs[i][D]),
 						DET2(eqs[i][C], eqs[i+1][D],  eqs[i+1][B], eqs[i][D])
 					]
-			//   newvars[j] = vars[i]??
+					//   newvars[j] = vars[i]??
 				}
 				if (k % 2 == 1) neweqs[newk - 1] = eqs[k - 1]
 				k = newk
@@ -1966,10 +2075,10 @@ var GraphAnalyzer = {
 			}
 			if (k == 2) {
 				eqs[0] = [ DET2(eqs[0][A], eqs[1][C],  eqs[1][A], eqs[0][B]),
-									DET2(eqs[0][A], eqs[1][D],  eqs[1][A], eqs[0][D]),
-									DET2(eqs[0][C], eqs[1][C],  eqs[1][B], eqs[0][B]),
-									DET2(eqs[0][C], eqs[1][D],  eqs[1][B], eqs[0][D])
-								]
+					DET2(eqs[0][A], eqs[1][D],  eqs[1][A], eqs[0][D]),
+					DET2(eqs[0][C], eqs[1][C],  eqs[1][B], eqs[0][B]),
+					DET2(eqs[0][C], eqs[1][D],  eqs[1][B], eqs[0][D])
+				]
 			}
 			var a = eqs[0][0]
 			var b = eqs[0][1].add(eqs[0][2])
@@ -1987,7 +2096,7 @@ var GraphAnalyzer = {
 			var minus_b = b.negate()
 			if (isZeroSigmaPoly(ss)) return [ FASTP.makeFraction(minus_b, two_a) ]
 			return [ FASTP.make(minus_b, MINUS_ONE, two_a, ZERO, ss),
-							FASTP.make(minus_b, ONE, two_a, ZERO, ss) ]
+				FASTP.make(minus_b, ONE, two_a, ZERO, ss) ]
 		}
 
 		function fastpMightSatisfyQuadraticEquation(fastp, abc) {
@@ -2017,17 +2126,17 @@ var GraphAnalyzer = {
 				t = t.evalToBigInt(simulated[i])
 				
 				var app_aqqs_bpr_bqst_crr_ctts = (a*p*p) + (a*q*q*s) + (b*p*r) + (b*q*s*t) + (c*r*r) + (c*t*t*s)
-				var minus_2apq_bpt_bqr_2crt = - ((2n*a*p*q) + (b*p*t) + (b*q*r) +  (2n* c*r*t))
+				var minus_2apq_bpt_bqr_2crt = - (((2n)*a*p*q) + (b*p*t) + (b*q*r) +  ((2n)* c*r*t))
 				
 				if (app_aqqs_bpr_bqst_crr_ctts < 0 && minus_2apq_bpt_bqr_2crt > 0) return false
 				if (app_aqqs_bpr_bqst_crr_ctts > 0 && minus_2apq_bpt_bqr_2crt < 0) return false
 				if (app_aqqs_bpr_bqst_crr_ctts != 0 && minus_2apq_bpt_bqr_2crt == 0) return false
 				if (app_aqqs_bpr_bqst_crr_ctts == 0 && minus_2apq_bpt_bqr_2crt != 0 && s != 0) return false
-				if (app_aqqs_bpr_bqst_crr_ctts**2n != (minus_2apq_bpt_bqr_2crt**2n) * s) return false
+				if (app_aqqs_bpr_bqst_crr_ctts ** 2n != (minus_2apq_bpt_bqr_2crt**2n) * s) return false
 			}
 				
 			return true
-/*    Symbolic approach does not work (too slow and loses sign)
+			/*    Symbolic approach does not work (too slow and loses sign)
 			app_aqqs_bpr_bqst_crr_ctts = ADD(MUL(a,p,p), MUL(a,q,q,s), MUL(b,p,r), MUL(b,q,s,t), MUL(c,r, r), MUL(c,t,t,s))
 			var TWO = MPoly("2")
 			apq2_bpt_bqr_2crt =  ADD(MUL(TWO,a,p,q), MUL(b,p,t), MUL(b,q,r),  MUL(TWO, c,r,t))*/
@@ -2128,7 +2237,7 @@ var GraphAnalyzer = {
 			}
 			
 		var res = {"results": IDobject}
-		if (hasnontreenodes) res.warnings = ["Some nodes have more than one parent. The algorithm assumes all nodes except a certain root node have exactly one parent, and ignores nodes with more parents"]
+		if (hasnontreenodes) res.warnings = ["Some nodes have more than one parent. TreeID assumes all nodes except one (the root) have exactly one parent, and ignores nodes with more parents."]
 		return res
 	}
 }

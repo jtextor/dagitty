@@ -9,6 +9,7 @@
   abbreviate.names = FALSE,
   show.coefficients = FALSE,
   adjust.coefficients = NA,
+  node.names = NULL,
   ...
 )
 }
@@ -25,10 +26,25 @@ the edge labels and the midpoint of the edge can be controlled using this parame
 Can also be a vector of 2 numbers for separate horizontal and vertical adjustment. NA means
 no adjustment (default).}
 
+\item{node.names}{If not NULL, a named vector or expression list 
+to rename the nodes.}
+
 \item{...}{not used.}
 }
 \description{
 A simple plot method to quickly visualize a graph. This is intended mainly for 
 simple visualization purposes and not as a full-fledged graph drawing
 function.
+}
+\details{
+If \code{node.names} is not \code{NULL}, it should be a 
+ named vector of characters or expressions to use to rename (some of) 
+ the nodes, e.g. node \code{"X"} could be renamed using \code{expression(X = alpha^2)}.
+}
+\examples{
+
+# Showing usage of "node.names"
+plot(dagitty('{x[pos="0,0"]}->{y[pos="1,0"]}'), node.names=expression(x = alpha^2, y=gamma^2))
+
+
 }
