@@ -973,7 +973,7 @@ var GraphTransformer = {
 					return true
 				}, function(w){
 					return w != u
-				})
+				}).aborted
 
 				if (!reachable) return
 
