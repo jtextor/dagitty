@@ -868,7 +868,7 @@ var GraphAnalyzer = {
 		if (!onCanVisitEdge) onCanVisitEdge = function(){return true}
 		if (!onContinueSearch) onContinueSearch = function(){return true}
 
-		var q_from_parent = [], q_from_child = startNodes
+		var q_from_parent = _.clone(startNodes), q_from_child = _.clone(startNodes)
 		var visited_from_parent = {}, visited_from_child = {}
 		var v
 		var from_parents
@@ -877,7 +877,7 @@ var GraphAnalyzer = {
 			if (!visited_from_parent[t.id]) {
 				q_from_parent.push(t)
 				visited_from_parent[t.id] = true
-			}
+			}new Hash
 		}
 		function visitFromChildLike(t){
 			if (!visited_from_child[t.id]) {
@@ -1220,6 +1220,80 @@ var GraphAnalyzer = {
 		return R
 	},
 
+  // Find a maximal front-door adjustment set within R
+	findFrontDoorAdjustmentSet : function( g, R ){ 
+		//isAdjustmentSet
+		var gtype = g.getType()
+		if( gtype != "dag" /*&& gtype != "pdag" && gtype != "mag" && gtype != "pag"*/ ){
+			throw( "Cannot compute front-door adjustment sets for graph of type "+gtype )
+		}
+		if( g.getSources().length == 0 || g.getTargets().length == 0 ){
+			return false
+		}
+		var V = g.getVertices()
+		var X = g.getSources()
+		var Xset = {}
+		_.each(X, function(v){ Xset[v.id] = true })
+		var Y = g.getTargets()
+		var Yset = {}
+		_.each(Y, function(v){ Yset[v.id] = true })
+		var R = R ? R : _.difference( V, _.union( g.getLatentNodes(), X, Y) )
+		
+		
+		var visit1 = GraphAnalyzer.visitGraph(g, X, function(e, outgoing, from_parents) {
+			//console.log("e: "+e.v1.id+ " - "+e.v2.id);
+			if (from_parents && !outgoing) return false //collider
+			var f = outgoing ? e.v1 : e.v2
+			if (outgoing && Xset[f.id]) return false
+			return true
+		})
+		var Z1 = _.filter(R, function(v) { return ! visit1.visitedIncoming[v.id] && ! visit1.visitedOutgoing[v.id] && ! Xset[v.id] } )
+		
+		var continuelater = {}
+		var forbidden = {}
+		_.each(V, function(v){ forbidden[v.id] = true })
+		_.each(Z1, function(v){ forbidden[v.id] = false})
+		GraphAnalyzer.visitGraph(g, Y, function(e, outgoing, from_parents) {
+			var V = outgoing ? e.v1 : e.v2
+			forbidden[V.id] = true
+			var VinX = Xset[V.id]
+			if (outgoing) //U in Ch(V)
+				return !VinX
+			//U in Pa(V)
+			if ( (from_parents && VinX) || ((!from_parents || continuelater[V.id]) && !VinX ) ) {
+				var U = outgoing ? e.v2 : e.v1
+				if (forbidden[U.id]) return true
+				continuelater[U.id] = true
+			}
+			return false
+		}, function(v){
+			//console.log("v: "+v.id);
+			
+			return true 
+		})
+		var Z2 = _.filter(V, function(v) { return ! forbidden[v.id] } )
+		
+		var failed = false
+		GraphAnalyzer.visitGraph(g, X, function(e, outgoing, from_parents) {
+			if (!outgoing || !from_parents) return false
+			var U = outgoing ? e.v2 : e.v1
+			if (Yset[U.id]) failed = true
+			if (!forbidden[U.id]) return false
+			return true
+		})
+		
+		if (failed) return false
+		return Z2
+	},
+	
+	isFrontDoorAdjustmentSet : function (g, Z) {
+    Z = Z ? Z : g.getAdjustedNodes()
+		var Zprime = GraphAnalyzer.findFrontDoorAdjustmentSet(g, Z)
+    //test if Z' = Z.  The length test works because findFrontDoorAdjustmentSet returns a maximal set
+		return Zprime.length == Z.length 
+	},
+	
+	
 	/** 
 	 *  Computes a topological ordering of this graph, which 
 	 *  is only meaningful if this graph is a DAG (in mixed

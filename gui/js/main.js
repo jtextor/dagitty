@@ -255,6 +255,9 @@ function causalEffectEstimates( effect_type ){
 		case "instrument" :
 			GUI.set_bias_mode('normal')
 			displayInstrumentInfo(); break
+		case "frontdoor" :
+			GUI.set_bias_mode('normal')
+			displayAdjustmentInfo("frontdoor"); break
 		case "treeid" :
 			GUI.set_bias_mode('normal')
 			displayTreeIDInfo(); break
@@ -370,11 +373,10 @@ function displayAdjustmentInfo( kind ){
 	}
 
 	let f = "isAdjustmentSet"
-	if( kind == "direct" ){
-		f = "isAdjustmentSetDirectEffect"
-	}
-	if( kind == "causalodds" ){
-		f = "isAdjustmentSetCausalOddsRatio"
+	switch (kind) {
+		case "direct": f = "isAdjustmentSetDirectEffect"; break;
+		case "causalodds": f = "isAdjustmentSetCausalOddsRatio"; break;
+		case "frontdoor": f = "isFrontDoorAdjustmentSet"; break;
 	}
 
 	if( GraphAnalyzer[f]( g ) ){
@@ -396,7 +398,7 @@ function displayAdjustmentInfo( kind ){
 	  * adjustment sets yet if there is a selection node.
 	  */
 
-	if( !["total","direct"].includes( kind ) || selected.length > 0 ){ return } 
+	if( !["total","direct", "frontdoor"].includes( kind ) || selected.length > 0 ){ return } 
 
 	let adjustment_list_el = document.createElement( "p" )
 
@@ -424,14 +426,19 @@ function displayAdjustmentInfo( kind ){
 		}
 	};
 
-	if( kind == "total" ){
-		showMsas( "total effect",
-			GraphAnalyzer.listMsasTotalEffect( g ), note_adjustment, adjustment_list_el );
-	}
-	
-	if( kind == "direct" ){
-		showMsas( "direct effect",
-			GraphAnalyzer.listMsasDirectEffect( g ), note_adjustment, adjustment_list_el );
+	switch (kind) {
+		case "total": 
+			showMsas( "total effect",
+				GraphAnalyzer.listMsasTotalEffect( g ), note_adjustment, adjustment_list_el );
+			break;
+		case "direct": 
+			showMsas( "direct effect",
+				GraphAnalyzer.listMsasDirectEffect( g ), note_adjustment, adjustment_list_el );
+			break;
+		case "frontdoor":
+			var gtemp =  GraphAnalyzer.findFrontDoorAdjustmentSet( g )
+			showMsas( "front door", gtemp ? [gtemp] :  [], note_adjustment, adjustment_list_el)
+			break;
 	}
 }
 
@@ -469,6 +476,7 @@ function displayInstrumentInfo(){
 	document.getElementById("causal_effect").innerHTML = "<p>Instruments and conditional instruments:</p>"
 		+ ivsToHtml( ivs )
 }
+
 
 function getVertexParent(v){
 	var pa = Model.dag.getVertex(v).getParents()
