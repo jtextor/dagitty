@@ -2354,7 +2354,7 @@ var GraphAnalyzer = {
 			}
 		}
 			
-		GraphAnalyzer.visitGraph(g, _.union(must, Zxy), f, null, f)
+		GraphAnalyzer.visitGraph(g, _.union(must, _.filter(R, v=>Zxy[v.id])), f, null, f)
 		return _.filter(R, v => I[v.id] || Zxy[v.id] || Zzy[v.id] )
 	},
 	
