@@ -816,6 +816,12 @@ var Graph = Class.extend({
 })(Graph)
 
 
+Graph.nodeArrayToObject = function(a){
+	var obj = {}
+	_.each(a, v => obj[v.id] = v )
+	return obj
+}
+
 Graph.Vertex = Class.extend({
 	init : function( spec ){
 		this.id = spec.id
@@ -1848,12 +1854,14 @@ var GraphAnalyzer = {
 	               return whether the search should be continued
 	             }
 	*/
-	visitGraph : function (g, startNodes, onCanVisitEdge, onContinueSearch) {
+	visitGraph : function (g, startNodes, onCanVisitEdge, onContinueSearch, onCanVisitEdgeFromStartNodes) {
 		if (!_.isArray(startNodes)) startNodes = [startNodes]
 		if (!onCanVisitEdge) onCanVisitEdge = function(){return true}
 		if (!onContinueSearch) onContinueSearch = function(){return true}
 
-		var q_from_parent = _.clone(startNodes), q_from_child = _.clone(startNodes)
+		var q_from_parent = onCanVisitEdgeFromStartNodes ? [] : _.clone(startNodes)
+		var q_from_child = onCanVisitEdgeFromStartNodes ? [] : _.clone(startNodes)
+		
 		var visited_from_parent = {}, visited_from_child = {}
 		var v
 		var from_parents
@@ -1862,7 +1870,7 @@ var GraphAnalyzer = {
 			if (!visited_from_parent[t.id]) {
 				q_from_parent.push(t)
 				visited_from_parent[t.id] = true
-			}new Hash
+			}
 		}
 		function visitFromChildLike(t){
 			if (!visited_from_child[t.id]) {
@@ -1878,17 +1886,30 @@ var GraphAnalyzer = {
 			if (arrowHeadAtT) visitFromParentLike(t)
 			else visitFromChildLike(t)
 		}
-
 		var aborted = false
-		while (q_from_parent.length > 0 || q_from_child.length > 0) {
-			from_parents = q_from_parent.length > 0
-			v = from_parents ? q_from_parent.pop() : q_from_child.pop()
-			if (!onContinueSearch(v)) {
-				aborted = true
-				break
+		function visitQ(q){
+			while (q.length > 0) {
+				v = q.pop()
+				if (!onContinueSearch(v)) {
+					aborted = true
+					break
+				}
+				_.each( v.incomingEdges, visitEdge)
+				_.each( v.outgoingEdges, visitEdge)
 			}
-			_.each( v.incomingEdges, visitEdge)
-			_.each( v.outgoingEdges, visitEdge)
+		}
+		if (onCanVisitEdgeFromStartNodes) {
+			from_parents = null
+			var tempOnCanVisitEdge = onCanVisitEdge
+			onCanVisitEdge = onCanVisitEdgeFromStartNodes
+			visitQ(startNodes)
+			onCanVisitEdge = tempOnCanVisitEdge
+		}
+
+		while ((q_from_parent.length > 0 || q_from_child.length > 0) && !aborted) {
+			from_parents = q_from_parent.length > 0
+			if (from_parents) visitQ(q_from_parent)
+			else visitQ(q_from_child)
 		}
 		return {
 			"visitedIncoming": visited_from_parent,
@@ -2217,11 +2238,9 @@ var GraphAnalyzer = {
 		}
 		var V = g.getVertices()
 		var X = g.getSources()
-		var Xset = {}
-		_.each(X, function(v){ Xset[v.id] = true })
 		var Y = g.getTargets()
-		var Yset = {}
-		_.each(Y, function(v){ Yset[v.id] = true })
+		var Xset = Graph.nodeArrayToObject(X)
+		var Yset = Graph.nodeArrayToObject(Y)
 		var R = R ? R : _.difference( V, _.union( g.getLatentNodes(), X, Y) )
 		
 		
@@ -2278,6 +2297,61 @@ var GraphAnalyzer = {
 		return Zprime.length == Z.length 
 	},
 	
+	//Algorithm 5
+	findFrontDoorAdjustmentSet5 : function( g, must, R ){ 
+		var Zii = GraphAnalyzer.findFrontDoorAdjustmentSet(g, R)
+		if (Zii === false || _.difference(must, Zii).length > 0) return false
+		var Xa = g.getSources()
+		var Ya = g.getTargets()
+		var I = Graph.nodeArrayToObject(must)
+		var X = Graph.nodeArrayToObject(X)
+		var Y = Graph.nodeArrayToObject(Y)
+		var Zii = Graph.nodeArrayToObject(Zii)
+		
+		var Za = {}
+		var f = function (e, outgoing, from_parents){
+		   var w = outgoing ? e.v2 : e.v1
+			if (outgoing || from_parents) return false
+			else if (Zii[w.id]) {
+				Za[w.id] = true
+				return false
+			} else return !(X[w.id] || Y[w.id])
+		}
+		GraphAnalyzer.visitGraph(g, Ya, f, null, f)
+		
+		var Zxy = {}
+		var f = function (e, outgoing, from_parents){
+			var w = outgoing ? e.v2 : e.v1
+			if (!outgoing || from_parents === false) return false
+			else if (Za[w.id]) {
+				Zxy[w.id] = true
+				return false
+			} else return !(X[w.id] || Y[w.id] || I[w.id])
+		}
+		GraphAnalyzer.visitGraph(g, Xa, f, null, f)
+		
+		var Zzy = {}
+		var f = function (e, outgoing, from_parents) {
+			var v = outgoing ? e.v1 : e.v2
+			var w = outgoing ? e.v2 : e.v1
+			if (from_parents === null && outgoing) return false
+			else if ( (from_parents === null || from_parents === false) && !outgoing) {
+				if (Za[w.id]) Zzy[w.id] = true
+				return !(X[w.id] || I[w.id] || Zxy[w.id])
+			} else if (outgoing) {
+				var vInIZa = I[v.id] || Za[v.id]
+				if (Za[w.id] && !vInIZa) Zzy[w.id] = true
+				return !X[w.id] && !vInIZa
+			} else {
+				var vInIZa = I[v.id] || Za[v.id]
+				if (vInIZa && Za[w.id]) Zzy[w.id] = true
+				return vInIZa && !(X[w.id] || I[w.id] || Zxy[w.id])
+			}
+		}
+			
+		GraphAnalyzer.visitGraph(g, _.union(must, Zxy), f, null, f)
+		return _.filter(R, v => I[v.id] || Zxy[v.id] || Zzy[v.id] )
+	},
 	
 	/** 
 	 *  Computes a topological ordering of this graph, which 
