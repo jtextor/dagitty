@@ -400,7 +400,7 @@ function displayAdjustmentInfo( kind ){
 
 	if( !["total","direct", "frontdoor"].includes( kind ) || selected.length > 0 ){ return } 
 
-	let adjustment_list_el = document.createElement( "p" )
+	var adjustment_list_el = document.createElement( "p" )
 
 	tgt_el.appendChild( adjustment_list_el )
 
@@ -408,21 +408,24 @@ function displayAdjustmentInfo( kind ){
 		note_adjustment = " containing "+_.pluck(adjusted_nodes,'id').sort().join(", ");
 	}
 	
+	let showNodes = function( n ) {
+		return _.pluck(n,'id').join(",")
+	}
+	let showSourceTargetNodes = function() {
+		return showNodes(Model.dag.getSources()) + " on " + showNodes(Model.dag.getTargets())
+	}
+	
 	let showMsas = function( t, msas, note_a, el ){
 		if( msas.length == 1 && msas[0].length == 0 ){
-			el.innerText = "No adjustment is necessary to estimate the "+t+" of "+
-					_.pluck(Model.dag.getSources(),'id').join(",") +
-					" on " + _.pluck(Model.dag.getTargets(),'id').join(",") + ".";
+			el.innerText = "No adjustment is necessary to estimate the "+t+" of "+showSourceTargetNodes() + ".";
 			return
 		}
 		let msas_html = msasToHtml( msas );
 		if( msas_html ){
-			el.innerText = "Minimal sufficient adjustment sets "+note_a+" for estimating the "+t+" of "
-				+ _.pluck(Model.dag.getSources(),'id').join(",") 
-				+ " on " + _.pluck(Model.dag.getTargets(),'id').join(",") + ": "
+			el.innerText = "Minimal sufficient adjustment sets "+note_a+" for estimating the "+t+" of "+showSourceTargetNodes()+ ": "
 			el.after( msas_html )
 		} else {
-			el.innerText = "No adjustment sets found.";
+			el.innerText = "No adjustment sets found."
 		}
 	};
 
@@ -436,8 +439,22 @@ function displayAdjustmentInfo( kind ){
 				GraphAnalyzer.listMsasDirectEffect( g ), note_adjustment, adjustment_list_el );
 			break;
 		case "frontdoor":
-			var gtemp =  GraphAnalyzer.findFrontDoorAdjustmentSet( g )
-			showMsas( "front door", gtemp ? [gtemp] :  [], note_adjustment, adjustment_list_el)
+			let fdmax =  GraphAnalyzer.findMaximalFrontDoorAdjustmentSet( g )
+			if (!fdmax || fdmax.length == 0) 
+				showMsas( "front door", fdmax ? [fdmax] :  [], note_adjustment, adjustment_list_el)
+			else {
+				let el = adjustment_list_el
+				let note_a = note_adjustment
+				let fdmin =  GraphAnalyzer.findMinimalFrontDoorAdjustmentSet( g )
+				el.innerText = "Maximal sufficient front-door adjustment set for estimating the effect of "+showSourceTargetNodes()+ ": "
+				el.after( msasToHtml([fdmax]) )
+				if (fdmin) {
+					adjustment_list_el = msgP("A minimal sufficient front-door adjustment set "+note_a+" for estimating the effect of "+showSourceTargetNodes()+ ": ")
+					el.nextSibling.after(adjustment_list_el)
+					if (fdmin.length > 0) adjustment_list_el.after( msasToHtml([fdmin]) )
+					else showMsas( "front door effect", [[]], note_adjustment, adjustment_list_el)
+				} //if !fdmin it is "Incorrectly adjusted" which is alread
+			}
 			break;
 	}
 }

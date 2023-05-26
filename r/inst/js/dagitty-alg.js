@@ -2226,8 +2226,9 @@ var GraphAnalyzer = {
 		return R
 	},
 
-  // Find a maximal front-door adjustment set within R
-	findFrontDoorAdjustmentSet : function( g, R ){ 
+   // Find a maximal front-door adjustment set within R
+	// see "Linear-Time Algorithms for Front-Door Adjustment in Causal Graphs" by Marcel Wienöbst, Benito van der Zander, Maciej Liśkiewicz
+	findMaximalFrontDoorAdjustmentSet : function( g, R ){ 
 		//isAdjustmentSet
 		var gtype = g.getType()
 		if( gtype != "dag" /*&& gtype != "pdag" && gtype != "mag" && gtype != "pag"*/ ){
@@ -2292,20 +2293,23 @@ var GraphAnalyzer = {
 	
 	isFrontDoorAdjustmentSet : function (g, Z) {
     Z = Z ? Z : g.getAdjustedNodes()
-		var Zprime = GraphAnalyzer.findFrontDoorAdjustmentSet(g, Z)
-    //test if Z' = Z.  The length test works because findFrontDoorAdjustmentSet returns a maximal set
+		var Zprime = GraphAnalyzer.findMaximalFrontDoorAdjustmentSet(g, Z)
+    //test if Z' = Z.  The length test works because it is a maximal set
 		return Zprime.length == Z.length 
 	},
 	
-	//Algorithm 5
-	findFrontDoorAdjustmentSet5 : function( g, must, R ){ 
-		var Zii = GraphAnalyzer.findFrontDoorAdjustmentSet(g, R)
-		if (Zii === false || _.difference(must, Zii).length > 0) return false
+	//Minimal front-door adjustment set
+	findMinimalFrontDoorAdjustmentSet : function( g, must, R ){ 
 		var Xa = g.getSources()
 		var Ya = g.getTargets()
+		must = must ? must : g.getAdjustedNodes()
+		R = R ? R : _.difference( g.getVertices(), _.union( g.getLatentNodes(), Xa, Ya) )
+
+		var Zii = GraphAnalyzer.findMaximalFrontDoorAdjustmentSet(g, R)
+		if (Zii === false || _.difference(must, Zii).length > 0) return false
 		var I = Graph.nodeArrayToObject(must)
-		var X = Graph.nodeArrayToObject(X)
-		var Y = Graph.nodeArrayToObject(Y)
+		var X = Graph.nodeArrayToObject(Xa)
+		var Y = Graph.nodeArrayToObject(Ya)
 		var Zii = Graph.nodeArrayToObject(Zii)
 		
 		var Za = {}
@@ -2348,7 +2352,7 @@ var GraphAnalyzer = {
 				return vInIZa && !(X[w.id] || I[w.id] || Zxy[w.id])
 			}
 		}
-			
+		
 		GraphAnalyzer.visitGraph(g, _.union(must, _.filter(R, v=>Zxy[v.id])), f, null, f)
 		return _.filter(R, v => I[v.id] || Zxy[v.id] || Zzy[v.id] )
 	},
