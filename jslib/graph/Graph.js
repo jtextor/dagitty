@@ -694,6 +694,12 @@ var Graph = Class.extend({
 })(Graph)
 
 
+Graph.nodeArrayToObject = function(a){
+	var obj = {}
+	_.each(a, v => obj[v.id] = v )
+	return obj
+}
+
 Graph.Vertex = Class.extend({
 	init : function( spec ){
 		this.id = spec.id
