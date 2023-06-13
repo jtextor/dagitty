@@ -5,7 +5,7 @@
  * be moved to either GraphAnalyzer, GraphTransform or GraphSerializer in the future.
  */
 
-/* globals _, Class, GraphParser, Hash, GraphSerializer */
+/* globals Class, GraphParser, Hash, GraphSerializer */
 
 var Graph = Class.extend({ 
 	// additional getter and setter methods for these properties are mixed in below,
@@ -21,7 +21,7 @@ var Graph = Class.extend({
 		this.name = null
 		this.bb = null
 		this.managed_vertex_properties = {}
-		_.each(this.managed_vertex_property_names,function(p){
+		this.managed_vertex_property_names.forEach(function(p){
 			this.managed_vertex_properties[p] = new Hash()
 		},this)
 		if( typeof s === "string" ){
@@ -101,12 +101,12 @@ var Graph = Class.extend({
 	    vertex in g2 and sets the type of g2 to the type of this graph. */
 	copyAllPropertiesTo : function( g2 ){
 		var g = this
-		_.each( g.managed_vertex_property_names, ( function( p ){
-			_.each( g.getVerticesWithProperty( p ), function( v ){
+		g.managed_vertex_property_names.forEach( function( p ){
+			g.getVerticesWithProperty( p ).forEach( function( v ){
 				g2.addVertexProperty( v, p ) 
 			} )
-		} ) )
-		_.each( g.getEdges(), function(e){
+		} )
+		g.getEdges().forEach( function(e){
 			var e2 = g2.getEdge( e.v1, e.v2, e.directed )
 			if( e2 ){
 				e2.layout_pos_x = e.layout_pos_x
@@ -148,19 +148,18 @@ var Graph = Class.extend({
 	renameVertex : function( id_old, id_new ){
 		var v = this.getVertex( id_old )
 		var properties = []
-		_.each( 
-			this.managed_vertex_property_names, function(p){
-				var pcamel = p.substring(0,1).toUpperCase()+
+		this.managed_vertex_property_names.forEach( function(p){
+			var pcamel = p.substring(0,1).toUpperCase()+
 				p.substring(1,p.length)
-				if( this["is"+pcamel]( v ) ){
-					properties.push(pcamel)
-					this["remove"+pcamel]( v )
-				}
-			},this)
+			if( this["is"+pcamel]( v ) ){
+				properties.push(pcamel)
+				this["remove"+pcamel]( v )
+			}
+		},this)
 		this.vertices.unset( id_old )
 		v.id = id_new
 		this.vertices.set( v.id, v )
-		_.each( properties, function(p){ this["add"+p](v) },this )
+		properties.forEach( function(p){ this["add"+p](v) },this )
 		return this
 	},
 	
@@ -168,10 +167,10 @@ var Graph = Class.extend({
 		// first remove all edges adjacent to v 
 		v = this.getVertex( v )
 	
-		_.each( v.outgoingEdges, function( e ) {
+		v.outgoingEdges.forEach( function( e ) {
 			e.v2.incomingEdges = _.without(e.v2.incomingEdges, e )
 		} )
-		_.each( v.incomingEdges, function( e ) {
+		v.incomingEdges.forEach( function( e ) {
 			e.v1.outgoingEdges = _.without(e.v1.outgoingEdges, e )
 		} )
 		this.edges = _.filter(this.edges, 
@@ -180,7 +179,7 @@ var Graph = Class.extend({
 			_.contains( v.outgoingEdges, e ) ) } )
 		
 		// remove the vertex from all property lists
-		_.each( this.managed_vertex_property_names, function(p){
+		this.managed_vertex_property_names.forEach( function(p){
 			var pcamel = p.substring(0,1).toUpperCase()+p.substring(1,p.length)
 			this["remove"+pcamel]( v )
 		},this)
@@ -195,11 +194,11 @@ var Graph = Class.extend({
 			include_edges = true
 		}
 		var g2 = new Graph()
-		_.each( this.getVertices(), function( v ){
+		this.getVertices().forEach( function( v ){
 			g2.addVertex( v.cloneWithoutEdges() )
 		} )
 		if( include_edges ){
-			_.each( this.edges, function( e ){
+			this.edges.forEach( function( e ){
 				g2.addEdge( e.v1.id, e.v2.id, e.directed )
 			} )
 		}
@@ -219,33 +218,33 @@ var Graph = Class.extend({
 		
 		var self = this
 		
-		_.each(children, function(v){
-			_.each(children, function(w){   if (v.id != w.id) self.addEdge(w, v, Graph.Edgetype.Bidirected ) }) // v <- v0 -> w
-			_.each(parents, function(w){ if (v.id != w.id) self.addEdge(w, v, Graph.Edgetype.Directed ) }) // v <- v0 <- w
-			_.each(spouses, function(w){    if (v.id != w.id) self.addEdge(w, v, Graph.Edgetype.Bidirected ) }) // v <- v0 <-> w
-			_.each(neighbours, function(w){ if (v.id != w.id) self.addEdge(w, v, Graph.Edgetype.Directed ) }) // v <- v0 - w
+		children.forEach( function(v){
+			children.forEach( function(w){   if (v.id != w.id) self.addEdge(w, v, Graph.Edgetype.Bidirected ) }) // v <- v0 -> w
+			parents.forEach( function(w){ if (v.id != w.id) self.addEdge(w, v, Graph.Edgetype.Directed ) }) // v <- v0 <- w
+			spouses.forEach( function(w){    if (v.id != w.id) self.addEdge(w, v, Graph.Edgetype.Bidirected ) }) // v <- v0 <-> w
+			neighbours.forEach( function(w){ if (v.id != w.id) self.addEdge(w, v, Graph.Edgetype.Directed ) }) // v <- v0 - w
 		})
-		_.each(parents, function(v){
-			_.each(neighbours, function(w){ if (v.id != w.id) self.addEdge(v, w, Graph.Edgetype.Directed ) }) // v -> v0 - w
+		parents.forEach( function(v){
+			neighbours.forEach( function(w){ if (v.id != w.id) self.addEdge(v, w, Graph.Edgetype.Directed ) }) // v -> v0 - w
 		})
-		_.each(spouses, function(v){
-			_.each(neighbours, function(w){ if (v.id != w.id) self.addEdge(v, w, Graph.Edgetype.Bidirected ) }) // v <-> v0 - w
+		spouses.forEach( function(v){
+			neighbours.forEach( function(w){ if (v.id != w.id) self.addEdge(v, w, Graph.Edgetype.Bidirected ) }) // v <-> v0 - w
 		})
-		_.each(neighbours, function(v){
-			_.each(neighbours, function(w){ if (v.id != w.id) self.addEdge(v, w, Graph.Edgetype.Undirected ) }) // v - v0 - w
+		neighbours.forEach( function(v){
+			neighbours.forEach( function(w){ if (v.id != w.id) self.addEdge(v, w, Graph.Edgetype.Undirected ) }) // v - v0 - w
 		})
 		this.deleteVertex( v0 )
 	},
 	
 	clearVisited : function(){
-		_.each( this.getVertices(), function( v ){
+		this.getVertices().forEach( function( v ){
 			v.traversal_info.visited = false
 		} )
 		return this
 	},
 	
 	clearTraversalInfo : function(){
-		_.each( this.getVertices(), function( v ){
+		this.getVertices().forEach( function( v ){
 			v.traversal_info = {}
 		} )
 		return this
@@ -259,7 +258,7 @@ var Graph = Class.extend({
 			this.clearVisited()
 		}
 		var q = _.reject( vertex_array.slice(), Graph.Vertex.isVisited )
-		_.each( q, Graph.Vertex.markAsVisited )
+		q.forEach( Graph.Vertex.markAsVisited )
 		var r = []
 		var visitAndPush = function(vn){
 			Graph.Vertex.markAsVisited(vn)
@@ -268,7 +267,7 @@ var Graph = Class.extend({
 		while( q.length > 0 ){
 			var v = q.pop()
 			var vv = _.reject( v[kinship_function](), Graph.Vertex.isVisited )
-			_.each(vv, visitAndPush)
+			vv.forEach(visitAndPush)
 			r.push(v)
 		}
 		this.clearVisited()
@@ -323,12 +322,12 @@ var Graph = Class.extend({
 	 */ 
 	neighboursOf : function( vertex_array ){
 		var vh = new Hash()
-		_.each( vertex_array, function(v){
+		vertex_array.forEach( function(v){
 			vh.set( v.id, v )
 		})
 		var rh = new Hash()
-		_.each( vertex_array, function(v){
-			_.each( v.getNeighbours(), function(w){
+		vertex_array.forEach( function(v){
+			v.getNeighbours().forEach( function(w){
 				if( !vh.get( w.id ) ){
 					rh.set(w.id,w)
 				}
@@ -339,12 +338,12 @@ var Graph = Class.extend({
 	
 	spousesOf : function( vertex_array ){
 		var vh = new Hash()
-		_.each( vertex_array, function(v){
+		vertex_array.forEach( function(v){
 			vh.set( v.id, v )
 		})
 		var rh = new Hash()
-		_.each( vertex_array, function(v){
-			_.each( v.getSpouses(), function(w){
+		vertex_array.forEach( function(v){
+			v.getSpouses().forEach( function(w){
 				if( !vh.get( w.id ) ){
 					rh.set(w.id,w)
 				}
@@ -355,12 +354,12 @@ var Graph = Class.extend({
 	
 	adjacentNodesOf : function( vertex_array ){
 		var vh = new Hash()
-		_.each( vertex_array, function(v){
+		vertex_array.forEach( function(v){
 			vh.set( v.id, v )
 		})
 		var rh = new Hash()
-		_.each( vertex_array, function(v){
-			_.each( v.getAdjacentNodes(), function(w){
+		vertex_array.forEach( function(v){
+			v.getAdjacentNodes().forEach( function(w){
 				if( !vh.get( w.id ) ){
 					rh.set(w.id,w)
 				}
@@ -372,10 +371,10 @@ var Graph = Class.extend({
 	areAdjacent : function( v1, v2 ){
 		v1 = this.getVertex(v1)
 		v2 = this.getVertex(v2)
-		if( _.any( _.map( v1.outgoingEdges, function(e){ return e.v2 == v2 } ) ) ){
+		if( _.any( v1.outgoingEdges.map( function(e){ return e.v2 == v2 } ) ) ){
 			return true
 		}
-		return _.any( _.map( v1.incomingEdges, function(e){ return e.v1 == v2 } ) ) 
+		return _.any( v1.incomingEdges.map( function(e){ return e.v1 == v2 } ) ) 
 	},
 	
 	/**
@@ -388,7 +387,7 @@ var Graph = Class.extend({
 		if( !root ) return 
 		// calculate the depth of all nodes in the tree 
 		var q = [root]
-		_.each( this.vertices.values(), function(v){
+		this.vertices.values().forEach( function(v){
 			v.traversal_info.depth = 0
 		})
 		root.traversal_info.parent = null        
@@ -397,7 +396,7 @@ var Graph = Class.extend({
 			v = q.pop()
 			var children = _.reject( v.getNeighbours(), 
 				function(v2){ return (v2 === root) || (v2.traversal_info.depth > 0) })
-			_.each( children, function(v2){
+			children.forEach( function(v2){
 				v2.traversal_info.depth = v.traversal_info.depth + 1
 				if(  Graph.Vertex.isVisited(v2) && 
 					v2.traversal_info.depth > max_depth ){
@@ -524,12 +523,12 @@ var Graph = Class.extend({
 	toAdjacencyList: function(){
 		var ra = []
 		var g = this
-		_.each( g.vertices.values(), function( v ){
+		g.vertices.values().forEach( function( v ){
 			var children = v.getChildren(), neighbours = v.getNeighbours(), spouses= v.getSpouses()
 			var r = "",rc = []
 			if( children.length + neighbours.length
 				+ spouses.length > 0 ){
-				_.each( neighbours, function( v2 ){
+				neighbours.forEach( function( v2 ){
 					var e = g.getEdge( v, v2, Graph.Edgetype.Undirected )
 					if( e.v1.id === v.id ){
 						r = encodeURIComponent(e.v2.id)
@@ -542,17 +541,16 @@ var Graph = Class.extend({
 					}
 					rc.push(r)
 				} )
-				_.each( 
-					children, function( v2 ){
-						var e = g.getEdge( v, v2, Graph.Edgetype.Directed )
-						r = encodeURIComponent(v2.id)
-						if( e.layout_pos_x ){
-							r += " @"+e.layout_pos_x.toFixed(3)+","
+				children.forEach( function( v2 ){
+					var e = g.getEdge( v, v2, Graph.Edgetype.Directed )
+					r = encodeURIComponent(v2.id)
+					if( e.layout_pos_x ){
+						r += " @"+e.layout_pos_x.toFixed(3)+","
 						+e.layout_pos_y.toFixed(3)
-						}
-						rc.push(r)
-					} )
-				_.each( spouses, function( v2 ){
+					}
+					rc.push(r)
+				} )
+				spouses.forEach( function( v2 ){
 					var e = g.getEdge( v, v2, Graph.Edgetype.Bidirected )
 					if( e.v1.id === v.id ){
 						r = encodeURIComponent(e.v2.id)
@@ -590,8 +588,8 @@ var Graph = Class.extend({
 		var r = ""
 		var g = this
 		var ra = []
-		_.each( 
-			this.vertices.values(), function( v ){
+		this.vertices.values().forEach( 
+			function( v ){
 				ra.push(expandLabel( v, g )+"\n")
 			} )
 		ra.sort()
@@ -629,7 +627,7 @@ var Graph = Class.extend({
 					v.traversal_info.paths_to_sink = 1
 				} else { 
 					v.traversal_info.paths_to_sink = 0
-					_.each(v.getChildren(), function( vc ){
+					v.getChildren().forEach( function( vc ){
 						v.traversal_info.paths_to_sink += visit( vc, t )
 					} )
 				}
@@ -637,8 +635,8 @@ var Graph = Class.extend({
 			return v.traversal_info.paths_to_sink
 		}
 		var r = 0
-		_.each(this.getSources(), function( s ){
-			_.each( this.getTargets(), function( t ){
+		this.getSources().forEach( function( s ){
+			this.getTargets().forEach( function( t ){
 				this.clearTraversalInfo()
 				r = r + visit( s, t )
 			}, this )
@@ -655,7 +653,7 @@ var Graph = Class.extend({
 		} else if( arguments.length == 1 ){
 			var avoid_nodes = arguments[0]
 			this.clearTraversalInfo()
-			_.each( avoid_nodes, function(v){ 
+			avoid_nodes.forEach( function(v){ 
 				this.getVertex(v) && (this.getVertex(v).traversal_info.visited = true)
 			}, this )
 			return this.sourceConnectedToTarget( this.getSource(), this.getTarget() )
@@ -679,7 +677,7 @@ var Graph = Class.extend({
 
 // mixin getters & setters for managed vertex properties
 (function(c){
-	_.each( c.prototype.managed_vertex_property_names, function(p){
+	c.prototype.managed_vertex_property_names.forEach( function(p){
 		var pcamel = p.substring(0,1).toUpperCase()+p.substring(1,p.length)
 		c.prototype["is"+pcamel] = function( v ){ return this.vertexHasProperty( v, p ) }
 		c.prototype["add"+pcamel] = function( v ){ return this.addVertexProperty( v, p ) }
@@ -687,7 +685,7 @@ var Graph = Class.extend({
 		c.prototype["get"+pcamel+"s"] = function(){ return this.getVerticesWithProperty( p ) }
 		c.prototype["set"+pcamel+"s"] = function( vs ){ 
 			this.removePropertyFromAllVertices( p )
-			_.each(vs, function(v){ this.addVertexProperty( v, p ) }, this)
+			vs.forEach( function(v){ this.addVertexProperty( v, p ) }, this)
 		}
 		c.prototype["removeAll"+pcamel+"s"] = function(){ return this.removePropertyFromAllVertices( p ) }
 	} )
@@ -696,7 +694,7 @@ var Graph = Class.extend({
 
 Graph.nodeArrayToObject = function(a){
 	var obj = {}
-	_.each(a, function(v){ obj[v.id] = v } )
+	a.forEach( function(v){ obj[v.id] = v } )
 	return obj
 }
 
@@ -721,12 +719,12 @@ Graph.Vertex = Class.extend({
 		var r = [], n = this
 		if( arguments.length == 1 ){ outward = true }
 		if( outward || Graph.Edgetype.Symmetric[edgetype] ){
-			_.each( n.outgoingEdges, function( e ){
+			n.outgoingEdges.forEach( function( e ){
 				if( e.directed == edgetype ) r.push( e.v1 === n ? e.v2 : e.v1 )
 			} )
 		}
 		if( !outward || Graph.Edgetype.Symmetric[edgetype] ){
-			_.each( n.incomingEdges, function( e ){
+			n.incomingEdges.forEach( function( e ){
 				if( e.directed == edgetype ) r.push( e.v1 === n ? e.v2 : e.v1 )
 			} )
 		}
