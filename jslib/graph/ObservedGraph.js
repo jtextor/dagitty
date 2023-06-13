@@ -40,9 +40,9 @@ var ObservedGraph = Class.extend({
 						return function(){
 							var r = f.apply( graph, arguments )
 							_.each(this.event_listeners[this.event_mapping[k]],
-							function(l){
-								l()
-							})
+								function(l){
+									l()
+								})
 							return r
 						}
 					})(f,k)

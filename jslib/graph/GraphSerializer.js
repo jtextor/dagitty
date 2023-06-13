@@ -15,7 +15,7 @@ var GraphSerializer = {
 	
 	toDotVertexStatements : function( g ){
 		var expandLabel = function( v, g ){
-			var properties = [], property_string = ""
+			var properties = [] 
 			g.isSource(v) && properties.push("exposure")
 			g.isTarget(v) && properties.push("outcome")
 			g.isAdjustedNode(v) && properties.push("adjusted")
@@ -53,12 +53,12 @@ var GraphSerializer = {
 		var r = ""
 		var ra = []
 		_.each( 
-		g.vertices.values(), function( v ){
-			var vl = expandLabel( v, g )
-			if( vl ){
-				ra.push(vl+"\n")
-			}
-		} )
+			g.vertices.values(), function( v ){
+				var vl = expandLabel( v, g )
+				if( vl ){
+					ra.push(vl+"\n")
+				}
+			} )
 		ra.sort()
 		return r + ra.join("")
 	},

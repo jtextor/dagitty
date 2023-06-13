@@ -1,6 +1,6 @@
 
 /*  DAGitty - a browser-based software for causal modelling and analysis
- *  Copyright (C) 2010-2015 Johannes Textor, Benito van der Zander
+ *  Copyright (C) 2010-2023 Johannes Textor, Benito van der Zander
  * 
  *   This program is free software; you can redistribute it and/or
  *   modify it under the terms of the GNU General Public License
@@ -26,7 +26,7 @@ function Hash(){
 
 _.extend( Hash.prototype, {
 	contains : function( key ){
-		return this.kv.hasOwnProperty( key )
+		return this.kv.hasOwnProperty( key ) // eslint-disable-line no-prototype-builtins
 	},
 	get : function( key ){
 		return this.kv[key]

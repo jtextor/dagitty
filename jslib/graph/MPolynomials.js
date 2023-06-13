@@ -1,3 +1,5 @@
+/* globals _ */
+
 /*
 	Multivariate polynomial representation
 	MPoly = sum of subterms                    (an array)
@@ -379,4 +381,4 @@ MPoly.one = MPoly("1")
 MPoly.minusOne = MPoly("-1")
 
 
-;
+; //eslint-disable-line

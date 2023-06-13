@@ -149,14 +149,14 @@ var Graph = Class.extend({
 		var v = this.getVertex( id_old )
 		var properties = []
 		_.each( 
-		this.managed_vertex_property_names, function(p){
-			var pcamel = p.substring(0,1).toUpperCase()+
+			this.managed_vertex_property_names, function(p){
+				var pcamel = p.substring(0,1).toUpperCase()+
 				p.substring(1,p.length)
-			if( this["is"+pcamel]( v ) ){
-				properties.push(pcamel)
-				this["remove"+pcamel]( v )
-			}
-		},this)
+				if( this["is"+pcamel]( v ) ){
+					properties.push(pcamel)
+					this["remove"+pcamel]( v )
+				}
+			},this)
 		this.vertices.unset( id_old )
 		v.id = id_new
 		this.vertices.set( v.id, v )
@@ -175,8 +175,8 @@ var Graph = Class.extend({
 			e.v1.outgoingEdges = _.without(e.v1.outgoingEdges, e )
 		} )
 		this.edges = _.filter(this.edges, 
-		function( e ){ return ! ( 
-			_.contains( v.incomingEdges, e ) || 
+			function( e ){ return ! ( 
+				_.contains( v.incomingEdges, e ) || 
 			_.contains( v.outgoingEdges, e ) ) } )
 		
 		// remove the vertex from all property lists
@@ -386,7 +386,7 @@ var Graph = Class.extend({
 		var root = this.getVertex( Object.keys( this.vertices.kv )[0] )
 		var v
 		if( !root ) return 
-						// calculate the depth of all nodes in the tree 
+		// calculate the depth of all nodes in the tree 
 		var q = [root]
 		_.each( this.vertices.values(), function(v){
 			v.traversal_info.depth = 0
@@ -396,7 +396,7 @@ var Graph = Class.extend({
 		while( q.length > 0 ){
 			v = q.pop()
 			var children = _.reject( v.getNeighbours(), 
-			function(v2){ return (v2 === root) || (v2.traversal_info.depth > 0) })
+				function(v2){ return (v2 === root) || (v2.traversal_info.depth > 0) })
 			_.each( children, function(v2){
 				v2.traversal_info.depth = v.traversal_info.depth + 1
 				if(  Graph.Vertex.isVisited(v2) && 
@@ -543,15 +543,15 @@ var Graph = Class.extend({
 					rc.push(r)
 				} )
 				_.each( 
-				children, function( v2 ){
-					var e = g.getEdge( v, v2, Graph.Edgetype.Directed )
-					r = encodeURIComponent(v2.id)
-					if( e.layout_pos_x ){
-						r += " @"+e.layout_pos_x.toFixed(3)+","
+					children, function( v2 ){
+						var e = g.getEdge( v, v2, Graph.Edgetype.Directed )
+						r = encodeURIComponent(v2.id)
+						if( e.layout_pos_x ){
+							r += " @"+e.layout_pos_x.toFixed(3)+","
 						+e.layout_pos_y.toFixed(3)
-					}
-					rc.push(r)
-				} )
+						}
+						rc.push(r)
+					} )
 				_.each( spouses, function( v2 ){
 					var e = g.getEdge( v, v2, Graph.Edgetype.Bidirected )
 					if( e.v1.id === v.id ){
@@ -584,16 +584,16 @@ var Graph = Class.extend({
 			//+ (v.weight !== undefined ? v.weight : "");
 			if( !property_string ){ property_string = 1 }
 			return encodeURIComponent(v.id) + " " + property_string + (v.layout_pos_x !== undefined ? 
-			" @"+v.layout_pos_x.toFixed( 3 ) +","
+				" @"+v.layout_pos_x.toFixed( 3 ) +","
 			+v.layout_pos_y.toFixed( 3 ) : "")
 		}
 		var r = ""
 		var g = this
 		var ra = []
 		_.each( 
-		this.vertices.values(), function( v ){
-			ra.push(expandLabel( v, g )+"\n")
-		} )
+			this.vertices.values(), function( v ){
+				ra.push(expandLabel( v, g )+"\n")
+			} )
 		ra.sort()
 		return r + ra.join("")
 	},
@@ -696,7 +696,7 @@ var Graph = Class.extend({
 
 Graph.nodeArrayToObject = function(a){
 	var obj = {}
-	_.each(a, v => obj[v.id] = v )
+	_.each(a, function(v){ obj[v.id] = v } )
 	return obj
 }
 

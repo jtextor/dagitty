@@ -1,24 +1,28 @@
 {
+    "env": {
+        "browser": true,
+        "es2021": true
+    },
+    "extends": "eslint:recommended",
+    "parserOptions": {
+        "ecmaVersion": "latest"
+    },
     "rules": {
         "indent": [
-            2,
+            "error",
             "tab"
         ],
-        "quotes": [
-            2,
-            "double"
-        ],
         "linebreak-style": [
-            2,
+            "error",
             "unix"
         ],
+        "quotes": [
+            "error",
+            "double"
+        ],
         "semi": [
-            2,
+            "error",
             "never"
         ]
-    },
-    "env": {
-        "browser": true
-    },
-    "extends": "eslint:recommended"
+    }
 }

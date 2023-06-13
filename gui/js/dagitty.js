@@ -75,7 +75,7 @@ if( typeof module !== 'undefined' && typeof module.exports !== 'undefined' ){
 }
 
 /*  DAGitty - a browser-based software for causal modelling and analysis
- *  Copyright (C) 2010-2015 Johannes Textor, Benito van der Zander
+ *  Copyright (C) 2010-2023 Johannes Textor, Benito van der Zander
  * 
  *   This program is free software; you can redistribute it and/or
  *   modify it under the terms of the GNU General Public License
@@ -101,7 +101,7 @@ function Hash(){
 
 _.extend( Hash.prototype, {
 	contains : function( key ){
-		return this.kv.hasOwnProperty( key )
+		return this.kv.hasOwnProperty( key ) // eslint-disable-line no-prototype-builtins
 	},
 	get : function( key ){
 		return this.kv[key]
@@ -276,14 +276,14 @@ var Graph = Class.extend({
 		var v = this.getVertex( id_old )
 		var properties = []
 		_.each( 
-		this.managed_vertex_property_names, function(p){
-			var pcamel = p.substring(0,1).toUpperCase()+
+			this.managed_vertex_property_names, function(p){
+				var pcamel = p.substring(0,1).toUpperCase()+
 				p.substring(1,p.length)
-			if( this["is"+pcamel]( v ) ){
-				properties.push(pcamel)
-				this["remove"+pcamel]( v )
-			}
-		},this)
+				if( this["is"+pcamel]( v ) ){
+					properties.push(pcamel)
+					this["remove"+pcamel]( v )
+				}
+			},this)
 		this.vertices.unset( id_old )
 		v.id = id_new
 		this.vertices.set( v.id, v )
@@ -302,8 +302,8 @@ var Graph = Class.extend({
 			e.v1.outgoingEdges = _.without(e.v1.outgoingEdges, e )
 		} )
 		this.edges = _.filter(this.edges, 
-		function( e ){ return ! ( 
-			_.contains( v.incomingEdges, e ) || 
+			function( e ){ return ! ( 
+				_.contains( v.incomingEdges, e ) || 
 			_.contains( v.outgoingEdges, e ) ) } )
 		
 		// remove the vertex from all property lists
@@ -513,7 +513,7 @@ var Graph = Class.extend({
 		var root = this.getVertex( Object.keys( this.vertices.kv )[0] )
 		var v
 		if( !root ) return 
-						// calculate the depth of all nodes in the tree 
+		// calculate the depth of all nodes in the tree 
 		var q = [root]
 		_.each( this.vertices.values(), function(v){
 			v.traversal_info.depth = 0
@@ -523,7 +523,7 @@ var Graph = Class.extend({
 		while( q.length > 0 ){
 			v = q.pop()
 			var children = _.reject( v.getNeighbours(), 
-			function(v2){ return (v2 === root) || (v2.traversal_info.depth > 0) })
+				function(v2){ return (v2 === root) || (v2.traversal_info.depth > 0) })
 			_.each( children, function(v2){
 				v2.traversal_info.depth = v.traversal_info.depth + 1
 				if(  Graph.Vertex.isVisited(v2) && 
@@ -670,15 +670,15 @@ var Graph = Class.extend({
 					rc.push(r)
 				} )
 				_.each( 
-				children, function( v2 ){
-					var e = g.getEdge( v, v2, Graph.Edgetype.Directed )
-					r = encodeURIComponent(v2.id)
-					if( e.layout_pos_x ){
-						r += " @"+e.layout_pos_x.toFixed(3)+","
+					children, function( v2 ){
+						var e = g.getEdge( v, v2, Graph.Edgetype.Directed )
+						r = encodeURIComponent(v2.id)
+						if( e.layout_pos_x ){
+							r += " @"+e.layout_pos_x.toFixed(3)+","
 						+e.layout_pos_y.toFixed(3)
-					}
-					rc.push(r)
-				} )
+						}
+						rc.push(r)
+					} )
 				_.each( spouses, function( v2 ){
 					var e = g.getEdge( v, v2, Graph.Edgetype.Bidirected )
 					if( e.v1.id === v.id ){
@@ -711,16 +711,16 @@ var Graph = Class.extend({
 			//+ (v.weight !== undefined ? v.weight : "");
 			if( !property_string ){ property_string = 1 }
 			return encodeURIComponent(v.id) + " " + property_string + (v.layout_pos_x !== undefined ? 
-			" @"+v.layout_pos_x.toFixed( 3 ) +","
+				" @"+v.layout_pos_x.toFixed( 3 ) +","
 			+v.layout_pos_y.toFixed( 3 ) : "")
 		}
 		var r = ""
 		var g = this
 		var ra = []
 		_.each( 
-		this.vertices.values(), function( v ){
-			ra.push(expandLabel( v, g )+"\n")
-		} )
+			this.vertices.values(), function( v ){
+				ra.push(expandLabel( v, g )+"\n")
+			} )
 		ra.sort()
 		return r + ra.join("")
 	},
@@ -823,7 +823,7 @@ var Graph = Class.extend({
 
 Graph.nodeArrayToObject = function(a){
 	var obj = {}
-	_.each(a, v => obj[v.id] = v )
+	_.each(a, function(v){ obj[v.id] = v } )
 	return obj
 }
 
@@ -4101,9 +4101,9 @@ var GraphTransformer = {
 	ancestorGraph : function( g, V ){ 
 		if( arguments.length < 2 ){
 			V = _.union( g.getSources(),
-						g.getTargets(),
-						g.getAdjustedNodes(),
-						g.getSelectedNodes() )
+				g.getTargets(),
+				g.getAdjustedNodes(),
+				g.getSelectedNodes() )
 		}
 		var g_an = this.inducedSubgraph( g, g.anteriorsOf( V ) )
 		return g_an
@@ -4191,8 +4191,8 @@ var GraphTransformer = {
 			})
 		}
 		return this.inducedSubgraph( g, 
-				_.intersection(g.ancestorsOf( Y, clearVisitedWhereNotAdjusted ),
-						g.descendantsOf( X, clearVisitedWhereNotAdjusted ) ) )
+			_.intersection(g.ancestorsOf( Y, clearVisitedWhereNotAdjusted ),
+				g.descendantsOf( X, clearVisitedWhereNotAdjusted ) ) )
 	},
 
 	/** This function retains all edges that are on "simple" open paths between sources and targets, conditioned
@@ -4201,10 +4201,9 @@ var GraphTransformer = {
  	  * Input must be a DAG. Bi-directed edges will be ignored. 
 	 **/
 	simpleOpenPaths : function( g, Z ){
-		var g_chain, g_canon, L, S, in_type = g.getType(),
+		var g_chain, 
 			reaches_source = {}, reaches_target = {}, reaches_adjusted_node = {}, retain = {}
 		var preserve_previous_visited_information = function(){}
-		var Z, Zchain, gtype = g.getType()
 		if( g.getType() != "dag" ){
 			return "illegal graph type!"
 		}
@@ -4218,7 +4217,6 @@ var GraphTransformer = {
 			Z = _.union( g.getAdjustedNodes(), g.getSelectedNodes() )
 		}
 		g_chain = GraphTransformer.ancestorGraph(g)
-		Zchain = g_chain.getVertex(Z)
 		// This labels all nodes that can "directly" reach one of the source nodes
 		// without going through any other node that can also directly reach the source
 		// node.
@@ -4242,19 +4240,6 @@ var GraphTransformer = {
 		})
 		
 		// ..for this line, such that "pure causal paths" are traced backwards 
-		var target_ancestors_except_ancestors_of_violators = 
-		g.ancestorsOf( g.getTargets(), 
-			function(){
-				var an_violators = g.ancestorsOf(
-					GraphAnalyzer.nodesThatViolateAdjustmentCriterion(g))
-				g.clearTraversalInfo()
-				_.each( an_violators, function(v){ Graph.Vertex.markAsVisited(v) } )
-			}
-		)
-		var intermediates_after_source = _.intersection( g.childrenOf( g.getSources() ),
-			target_ancestors_except_ancestors_of_violators)
-		g.clearTraversalInfo()
-		
 
 		// Form the "partial moral" chain graph:
 		// First, delete edges emitting from adjusted nodes
@@ -4470,7 +4455,7 @@ var GraphTransformer = {
 		var g_chain, g_canon, L, S, in_type = g.getType(),
 			reaches_source = {}, reaches_adjusted_node = {}, retain = {}
 		var preserve_previous_visited_information = function(){}
-		var Z, Zchain, gtype = g.getType()
+		var Z
 		
 		g_canon = GraphTransformer.canonicalDag(g)
 		g = g_canon.g
@@ -4493,7 +4478,6 @@ var GraphTransformer = {
 		g_chain = GraphTransformer.ancestorGraph(g)
 
 		Z = _.union( g.getAdjustedNodes(), g.getSelectedNodes() )
-		Zchain = _.union( g_chain.getAdjustedNodes(), g_chain.getSelectedNodes() )
 
 		// This labels all nodes that can "directly" reach one of the source nodes
 		// without going through any other node that can also directly reach the source
@@ -4745,10 +4729,10 @@ var GraphTransformer = {
 		if( opts.direct ){
 			_.each( Z, Graph.Vertex.markAsVisited )
 			var gind = this.inducedSubgraph( g, _.intersection( g.descendantsOf( g.getSources(), preserve_previous_visited_information ),
-					g.ancestorsOf( g.getTargets() ) ) )
+				g.ancestorsOf( g.getTargets() ) ) )
 			_.each( gind.edges, function(e){
 				if( e.directed == Graph.Edgetype.Directed && !(
-						(gind.isSource(e.v1)||gind.isTarget(e.v1)) && (gind.isSource(e.v2)||gind.isTarget(e.v2))) ){
+					(gind.isSource(e.v1)||gind.isTarget(e.v1)) && (gind.isSource(e.v2)||gind.isTarget(e.v2))) ){
 					if( !g_chain.getVertex( e.v1.id ) ){
 						g_chain.addVertex( e.v1.id )
 					}
@@ -5063,8 +5047,8 @@ var GraphTransformer = {
 			}
 		} )
 		return gn.
-		setSource(gn.getVertex("O"+g.getSource().id)).
-		setTarget(gn.getVertex("I"+g.getTarget().id))
+			setSource(gn.getVertex("O"+g.getSource().id)).
+			setTarget(gn.getVertex("I"+g.getTarget().id))
 	},
 	
 	/***
@@ -5083,7 +5067,7 @@ var GraphTransformer = {
 			if( en ){
 				// delete edge (u,v) if there is at least one mediator between u and v 
 				if( _.intersection( g.descendantsOf( [e.v1] ), 
-						g.ancestorsOf( [e.v2] ) ).length > 2 ){
+					g.ancestorsOf( [e.v2] ) ).length > 2 ){
 					gn.deleteEdge( e.v1, e.v2, Graph.Edgetype.Directed )
 				}
 			}
@@ -5204,10 +5188,10 @@ var GraphTransformer = {
 			var e = g.edges[ei]
 			for( i = 0 ; i < e.v2.topological_index-1; i ++ ){
 				gp.quickAddDirectedEdge( 
-				gp.getVertex( topo_sort[i]+":"+e.v1.id ),
+					gp.getVertex( topo_sort[i]+":"+e.v1.id ),
 					gp.getVertex( topo_sort[i] +":"+e.v2.id ) )
 				gp.quickAddDirectedEdge( 
-				gp.getVertex( e.v1.id+":"+topo_sort[i] ),
+					gp.getVertex( e.v1.id+":"+topo_sort[i] ),
 					gp.getVertex( e.v2.id+":"+topo_sort[i] ) )
 			}
 		}
@@ -5239,10 +5223,10 @@ var GraphTransformer = {
 			_.each(b.getNeighbours(), function(c){
 				if (a.id != c.id && !areConnected(a, c)) {
 					_.each(gn.getVertex(c.id).getParents(),  //parents in gn is a superset of the parents in g
-									function(d){ 
-										if (a.id != d.id && b.id != d.id && !areConnected(b,d)) 
-											fail = true 
-									})
+						function(d){ 
+							if (a.id != d.id && b.id != d.id && !areConnected(b,d)) 
+								fail = true 
+						})
 					if (fail) return
 					if (!gn.getEdge(b.id, c.id, Graph.Edgetype.Directed)) {
 						gn.addEdge(b.id, c.id, Graph.Edgetype.Directed)
@@ -5513,9 +5497,9 @@ var ObservedGraph = Class.extend({
 						return function(){
 							var r = f.apply( graph, arguments )
 							_.each(this.event_listeners[this.event_mapping[k]],
-							function(l){
-								l()
-							})
+								function(l){
+									l()
+								})
 							return r
 						}
 					})(f,k)
@@ -5568,7 +5552,7 @@ var GraphSerializer = {
 	
 	toDotVertexStatements : function( g ){
 		var expandLabel = function( v, g ){
-			var properties = [], property_string = ""
+			var properties = [] 
 			g.isSource(v) && properties.push("exposure")
 			g.isTarget(v) && properties.push("outcome")
 			g.isAdjustedNode(v) && properties.push("adjusted")
@@ -5606,12 +5590,12 @@ var GraphSerializer = {
 		var r = ""
 		var ra = []
 		_.each( 
-		g.vertices.values(), function( v ){
-			var vl = expandLabel( v, g )
-			if( vl ){
-				ra.push(vl+"\n")
-			}
-		} )
+			g.vertices.values(), function( v ){
+				var vl = expandLabel( v, g )
+				if( vl ){
+					ra.push(vl+"\n")
+				}
+			} )
 		ra.sort()
 		return r + ra.join("")
 	},
@@ -5943,6 +5927,8 @@ var GraphSerializer = {
 		return "causal.effect(y = "+nodeList(g.getTargets())+", x = "+nodeList(g.getSources())+", G = "+this.toCausalEffectIgraphRCode(g)+")"
 	}
 }; // eslint-disable-line 
+
+/* globals _ */
 
 /*
 	Multivariate polynomial representation
@@ -6325,7 +6311,7 @@ MPoly.one = MPoly("1")
 MPoly.minusOne = MPoly("-1")
 
 
-;
+; //eslint-disable-line
 /*
  * Generated by PEG.js 0.10.0.
  *

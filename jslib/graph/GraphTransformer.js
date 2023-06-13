@@ -164,9 +164,9 @@ var GraphTransformer = {
 	ancestorGraph : function( g, V ){ 
 		if( arguments.length < 2 ){
 			V = _.union( g.getSources(),
-						g.getTargets(),
-						g.getAdjustedNodes(),
-						g.getSelectedNodes() )
+				g.getTargets(),
+				g.getAdjustedNodes(),
+				g.getSelectedNodes() )
 		}
 		var g_an = this.inducedSubgraph( g, g.anteriorsOf( V ) )
 		return g_an
@@ -254,8 +254,8 @@ var GraphTransformer = {
 			})
 		}
 		return this.inducedSubgraph( g, 
-				_.intersection(g.ancestorsOf( Y, clearVisitedWhereNotAdjusted ),
-						g.descendantsOf( X, clearVisitedWhereNotAdjusted ) ) )
+			_.intersection(g.ancestorsOf( Y, clearVisitedWhereNotAdjusted ),
+				g.descendantsOf( X, clearVisitedWhereNotAdjusted ) ) )
 	},
 
 	/** This function retains all edges that are on "simple" open paths between sources and targets, conditioned
@@ -264,10 +264,9 @@ var GraphTransformer = {
  	  * Input must be a DAG. Bi-directed edges will be ignored. 
 	 **/
 	simpleOpenPaths : function( g, Z ){
-		var g_chain, g_canon, L, S, in_type = g.getType(),
+		var g_chain, 
 			reaches_source = {}, reaches_target = {}, reaches_adjusted_node = {}, retain = {}
 		var preserve_previous_visited_information = function(){}
-		var Z, Zchain, gtype = g.getType()
 		if( g.getType() != "dag" ){
 			return "illegal graph type!"
 		}
@@ -281,7 +280,6 @@ var GraphTransformer = {
 			Z = _.union( g.getAdjustedNodes(), g.getSelectedNodes() )
 		}
 		g_chain = GraphTransformer.ancestorGraph(g)
-		Zchain = g_chain.getVertex(Z)
 		// This labels all nodes that can "directly" reach one of the source nodes
 		// without going through any other node that can also directly reach the source
 		// node.
@@ -305,19 +303,6 @@ var GraphTransformer = {
 		})
 		
 		// ..for this line, such that "pure causal paths" are traced backwards 
-		var target_ancestors_except_ancestors_of_violators = 
-		g.ancestorsOf( g.getTargets(), 
-			function(){
-				var an_violators = g.ancestorsOf(
-					GraphAnalyzer.nodesThatViolateAdjustmentCriterion(g))
-				g.clearTraversalInfo()
-				_.each( an_violators, function(v){ Graph.Vertex.markAsVisited(v) } )
-			}
-		)
-		var intermediates_after_source = _.intersection( g.childrenOf( g.getSources() ),
-			target_ancestors_except_ancestors_of_violators)
-		g.clearTraversalInfo()
-		
 
 		// Form the "partial moral" chain graph:
 		// First, delete edges emitting from adjusted nodes
@@ -533,7 +518,7 @@ var GraphTransformer = {
 		var g_chain, g_canon, L, S, in_type = g.getType(),
 			reaches_source = {}, reaches_adjusted_node = {}, retain = {}
 		var preserve_previous_visited_information = function(){}
-		var Z, Zchain, gtype = g.getType()
+		var Z
 		
 		g_canon = GraphTransformer.canonicalDag(g)
 		g = g_canon.g
@@ -556,7 +541,6 @@ var GraphTransformer = {
 		g_chain = GraphTransformer.ancestorGraph(g)
 
 		Z = _.union( g.getAdjustedNodes(), g.getSelectedNodes() )
-		Zchain = _.union( g_chain.getAdjustedNodes(), g_chain.getSelectedNodes() )
 
 		// This labels all nodes that can "directly" reach one of the source nodes
 		// without going through any other node that can also directly reach the source
@@ -808,10 +792,10 @@ var GraphTransformer = {
 		if( opts.direct ){
 			_.each( Z, Graph.Vertex.markAsVisited )
 			var gind = this.inducedSubgraph( g, _.intersection( g.descendantsOf( g.getSources(), preserve_previous_visited_information ),
-					g.ancestorsOf( g.getTargets() ) ) )
+				g.ancestorsOf( g.getTargets() ) ) )
 			_.each( gind.edges, function(e){
 				if( e.directed == Graph.Edgetype.Directed && !(
-						(gind.isSource(e.v1)||gind.isTarget(e.v1)) && (gind.isSource(e.v2)||gind.isTarget(e.v2))) ){
+					(gind.isSource(e.v1)||gind.isTarget(e.v1)) && (gind.isSource(e.v2)||gind.isTarget(e.v2))) ){
 					if( !g_chain.getVertex( e.v1.id ) ){
 						g_chain.addVertex( e.v1.id )
 					}
@@ -1126,8 +1110,8 @@ var GraphTransformer = {
 			}
 		} )
 		return gn.
-		setSource(gn.getVertex("O"+g.getSource().id)).
-		setTarget(gn.getVertex("I"+g.getTarget().id))
+			setSource(gn.getVertex("O"+g.getSource().id)).
+			setTarget(gn.getVertex("I"+g.getTarget().id))
 	},
 	
 	/***
@@ -1146,7 +1130,7 @@ var GraphTransformer = {
 			if( en ){
 				// delete edge (u,v) if there is at least one mediator between u and v 
 				if( _.intersection( g.descendantsOf( [e.v1] ), 
-						g.ancestorsOf( [e.v2] ) ).length > 2 ){
+					g.ancestorsOf( [e.v2] ) ).length > 2 ){
 					gn.deleteEdge( e.v1, e.v2, Graph.Edgetype.Directed )
 				}
 			}
@@ -1267,10 +1251,10 @@ var GraphTransformer = {
 			var e = g.edges[ei]
 			for( i = 0 ; i < e.v2.topological_index-1; i ++ ){
 				gp.quickAddDirectedEdge( 
-				gp.getVertex( topo_sort[i]+":"+e.v1.id ),
+					gp.getVertex( topo_sort[i]+":"+e.v1.id ),
 					gp.getVertex( topo_sort[i] +":"+e.v2.id ) )
 				gp.quickAddDirectedEdge( 
-				gp.getVertex( e.v1.id+":"+topo_sort[i] ),
+					gp.getVertex( e.v1.id+":"+topo_sort[i] ),
 					gp.getVertex( e.v2.id+":"+topo_sort[i] ) )
 			}
 		}
@@ -1302,10 +1286,10 @@ var GraphTransformer = {
 			_.each(b.getNeighbours(), function(c){
 				if (a.id != c.id && !areConnected(a, c)) {
 					_.each(gn.getVertex(c.id).getParents(),  //parents in gn is a superset of the parents in g
-									function(d){ 
-										if (a.id != d.id && b.id != d.id && !areConnected(b,d)) 
-											fail = true 
-									})
+						function(d){ 
+							if (a.id != d.id && b.id != d.id && !areConnected(b,d)) 
+								fail = true 
+						})
 					if (fail) return
 					if (!gn.getEdge(b.id, c.id, Graph.Edgetype.Directed)) {
 						gn.addEdge(b.id, c.id, Graph.Edgetype.Directed)
