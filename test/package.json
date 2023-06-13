@@ -3,7 +3,7 @@
     "test": "qunit"
   },
   "dependencies": {
-    "qunit": "^2.18.0",
-    "underscore": "^1.13.2"
+    "qunit": "^2.19.1",
+    "underscore": "^1.13.6"
   }
 }

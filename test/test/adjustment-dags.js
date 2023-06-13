@@ -1,15 +1,14 @@
 
 const {GraphParser,GraphAnalyzer,GraphTransformer} = require("../../jslib/dagitty-node.js")
 const TestGraphs = require("../test-graphs.js")
-const _ = require("underscore")
 
 const $p = (s) => GraphParser.parseGuess(s)
 const sep_2_str = (ss) => {
    var r = [];
    if( ss.length == 0 )
       return "";
-   _.each( ss, function(s){
-      var rs = _.pluck( s, 'id').sort().join(", ");
+   ss.forEach( function(s){
+      var rs = s.map( x => x['id'] ).sort().join(", ");
       r.push(rs);
    });
    r.sort();
@@ -31,17 +30,17 @@ QUnit.test( "adjustment in DAGs", function( assert ) {
 
 	assert.equal((function(){
 		var g = $p("pdag{ x -> {a -- b -- c -- a } b -> y x[e] y[o] }")
-		return _.pluck(GraphAnalyzer.properPossibleCausalPaths(g),"id").sort().join(" ")
+		return GraphAnalyzer.properPossibleCausalPaths(g).map(x=>x["id"]).sort().join(" ")
 	})(), "a b c x y" )
 
 	assert.equal((function(){
 		var g = $p("pdag{ x -> a -- b -> y x[e] y[o] }")
-		return _.pluck(GraphAnalyzer.properPossibleCausalPaths(g),"id").sort().join(" ")
+		return GraphAnalyzer.properPossibleCausalPaths(g).map(x=>x["id"]).sort().join(" ")
 	})(), "a b x y" )
 
 	assert.equal((function(){
 		var g = $p("pdag{ x -> a -- b -- c -> y x[e] y[o] }")
-		return _.pluck(GraphAnalyzer.properPossibleCausalPaths(g),"id").sort().join(" ")
+		return GraphAnalyzer.properPossibleCausalPaths(g).map(x=>x["id"]).sort().join(" ")
 	})(), "a b c x y" )
 
 
