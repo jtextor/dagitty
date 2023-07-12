@@ -703,7 +703,7 @@ function supportsSVG() {
 function exportPDF(){
 	if( supportsSVG() ){
 		document.getElementById("exportformsvg").value = document.getElementById("canvas").innerHTML;
-		document.getElementById("exportform").action = "http://www.dagitty.net/pdf/batik-pdf.php";
+		document.getElementById("exportform").action = "https://"+hostName()+ "/pdf/batik-pdf.php";
 		document.getElementById("exportform").submit();
 	}
 }
@@ -711,7 +711,7 @@ function exportPDF(){
 function exportJPEG(){
 	if( supportsSVG() ){
 		document.getElementById("exportformsvg").value = document.getElementById("canvas").innerHTML;
-		document.getElementById("exportform").action = "http://www.dagitty.net/pdf/batik-jpeg.php";
+		document.getElementById("exportform").action = "https://"+hostName()+ "/pdf/batik-jpeg.php";
 		document.getElementById("exportform").submit();
 	}
 }
@@ -719,7 +719,7 @@ function exportJPEG(){
 function exportPNG(){
 	if( supportsSVG() ){
 		document.getElementById("exportformsvg").value = document.getElementById("canvas").innerHTML;
-		document.getElementById("exportform").action = "http://www.dagitty.net/pdf/batik-png.php";
+		document.getElementById("exportform").action = "https://"+hostName()+ "/pdf/batik-png.php";
 		document.getElementById("exportform").submit();
 	}
 }
@@ -727,7 +727,7 @@ function exportPNG(){
 function exportSVG(){
 	if( supportsSVG() ){
 		document.getElementById("exportformsvg").value = document.getElementById("canvas").innerHTML;
-		document.getElementById("exportform").action = "http://www.dagitty.net/pdf/svg.php";
+		document.getElementById("exportform").action = "https://"+hostName()+ "/pdf/svg.php";
 		document.getElementById("exportform").submit();
 	}
 }
@@ -802,7 +802,7 @@ function saveOnlineForm(){
 	if( typeof grecaptcha === "undefined" ){
 		networkFailMsg(); return
 	}
-	DAGitty.Ajax.Request("http://"+hostName()+"/dags/save-form.php",
+	DAGitty.Ajax.Request("https://"+hostName()+"/dags/save-form.php",
 		{
 			method:'POST',
 			onFailure: networkFailMsg,
@@ -820,7 +820,7 @@ function saveOnlineForm(){
 
 function validateCaptcha()
 {
-	DAGitty.Ajax.Request("http://"+hostName()+"/dags/recaptcha-validate-v2.php",{
+	DAGitty.Ajax.Request("https://"+hostName()+"/dags/recaptcha-validate-v2.php",{
 		method: "POST",
 		parameters: { 
 			"g-recaptcha-response" : grecaptcha.getResponse(),
