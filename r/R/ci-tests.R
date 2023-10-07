@@ -2,6 +2,8 @@
 
 ## BEGIN functions that implement conditional independence tests
 
+## the functions below are convenience functions called from within the CI tests.
+
 .rmsea <- function( r ){
 	if( r$statistic==0 ){
 		return( 0 )
@@ -14,6 +16,22 @@
 	.rmsea( list( parameter=r$parameter,
                       statistic=chi,
                       observed=r$observed ) )
+}
+
+.perm.cor.test <- function( a, b, conf.level, R ){
+	requireNamespace("boot",quietly=TRUE)
+	bo <- boot::boot( cbind(a,b), function(data,i){
+		cor(data[i,1],data[i,2])
+	}, R )
+	r <- c(
+		bo$t0,
+		sd(bo$t),
+		quantile(bo$t,c((1-conf.level)/2,1-(1-conf.level)/2),na.rm=TRUE)
+	)
+	w <- (1-conf.level)/2
+	names(r) <- c("estimate","std.error",
+		      paste0(100*w,"%"),paste0(100*(1-w),"%"))
+	r
 }
 
 .chisq.test <- function( x ){
@@ -38,6 +56,84 @@
 	       observed=n ) 
 }
 
+# These functios implement the actual CI tests.
+
+.ci.test.pillai <- function( x, ind, conf.level ){
+	w <- (1-conf.level)/2
+	r <- c(NA,NA,NA,NA)
+
+	X <- x[,ind$X,drop=FALSE]
+	if( is.logical(X[,1]) ){
+		X[,1] <- as.numeric(X[,1])
+	} else if( is.factor(X[,1]) ){
+		if( length(levels(X[,1])) <= 2 ){
+			X[,1] <- as.integer(X[,1])
+		} else {
+			if( !requireNamespace( "fastDummies", quietly=TRUE ) ){
+				stop("This function requires the 'fastDummies' package!")
+			}
+			X <- dummy_cols( X, remove_most_frequent_dummy=TRUE,remove_selected_columns=TRUE )
+		}
+	} else if( !is.numeric(X[,1]) ){
+		stop(paste0("Variable ",ind$X," must be numeric or factor, found ",class(X[,1])))
+	}
+
+
+	Y <- x[,ind$Y,drop=FALSE]
+	if( is.logical(Y[,1]) ){
+		Y[,1] <- as.numeric(Y[,1])
+	} else if( is.factor(Y[,1]) ){
+		if( length(levels(Y[,1])) <= 2 ){
+			Y[,1] <- as.integer(Y[,1])
+		} else {
+			if( !requireNamespace( "fastDummies", quietly=TRUE ) ){
+				stop("This function requires the 'fastDummies' package!")
+			}
+			Y <- dummy_cols( Y, remove_most_frequent_dummy=TRUE,remove_selected_columns=TRUE )
+		}
+	} else if( !is.numeric(Y[,1]) ){
+		stop(paste0("Variable ",ind$Y," must be numeric or factor, found ",class(Y[,1])))
+	}
+
+	if( !is.numeric(X[,1]) ){
+		X[,1] <- as.integer(X[,1])
+	}
+	if( !is.numeric(Y[,1]) ){
+		Y[,1] <- as.integer(Y[,1])
+	}
+
+
+	if( length(ind$Z) > 0 ){
+		Z <- x[,ind$Z,drop=FALSE]
+		for( i in seq_len(ncol(X)) ){
+			X[,i] <- lm( data=cbind(X[,i],Z) )$residuals
+		}
+		for( i in seq_len(ncol(Y)) ){
+			Y[,i] <- lm( data=cbind(Y[,i],Z) )$residuals
+		}
+	}
+
+	if( ncol(X) == 1 && ncol(Y) == 1 ){
+		tst <- cor.test( X[,1], Y[,1] )
+		r[1] <- tst$estimate
+		r[2] <- tst$p.value
+		r[c(3,4)] <- tst$conf.int
+	} else {
+		if( !requireNamespace( "CCP", quietly=TRUE ) ){
+			stop("This function requires the 'CCP' package!")
+		}
+		rho <- cancor(X,Y)$cor
+		N = dim(X)[1]; p = dim(X)[2]; q = dim(Y)[2]
+		r[c(1,3,4)] <- sqrt(mean(rho^2))
+		capture.output( pv <- p.asym( rho, N, p, q, tstat="Pillai" ) )
+		r[2] <- pv$p.value[1]
+	}
+	names(r) <- c("estimate","p.value",
+		      paste0(100*w,"%"),paste0(100*(1-w),"%"))
+	r
+}
+
+# standard chi-square test
 .ci.test.chisq <- function( x, ind, conf.level ){
 	w <- (1 - conf.level) / 2
 	if( length(ind$Z) > 0 ){
@@ -90,7 +186,7 @@
 }
 
 .ci.test.chisq.perm <- function( x, ind, conf.level, R ){
-	requireNamespace("boot",quietly=TRUE)
+	requireNamespace( "boot", quietly=TRUE )
 	bo <- boot::boot( x, function(data,i){
 		.ci.test.chisq(x[i,],ind,conf.level)[1]
 	}, R )
@@ -133,21 +229,6 @@
 	.perm.cor.test(ix,iy,conf.level,R)
 }
 
-.perm.cor.test <- function( a, b, conf.level, R ){
-	requireNamespace("boot",quietly=TRUE)
-	bo <- boot::boot( cbind(a,b), function(data,i){
-		cor(data[i,1],data[i,2])
-	}, R )
-	r <- c(
-		bo$t0,
-		sd(bo$t),
-		quantile(bo$t,c((1-conf.level)/2,1-(1-conf.level)/2),na.rm=TRUE)
-	)
-	w <- (1-conf.level)/2
-	names(r) <- c("estimate","std.error",
-		      paste0(100*w,"%"),paste0(100*(1-w),"%"))
-	r
-}
 
 .ci.test.covmat <- function( sample.cov, sample.nobs,
 	ind, conf.level, tol ){

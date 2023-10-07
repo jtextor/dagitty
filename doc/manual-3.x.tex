@@ -19,7 +19,7 @@
 \usepackage{fancyvrb}
 \definecolor{shadecolor}{rgb}{.97, .97, .97}
 
-\newcommand{\pp}{{\sc DAG}itty\xspace}
+\newcommand{\pp}{DAGitty\xspace}
 \newcommand{\action}[1]{\emph{``#1''}}
 \setlength{\columnsep}{1cm}
 
@@ -27,25 +27,6 @@
 \title{Drawing and Analyzing Causal DAGs with \pp}
 \author{Johannes Textor}
 \date{\today}
-
-
-\makeatletter
-\newenvironment{kframe}{%
- \def\at@end@of@kframe{}%
- \ifinner\ifhmode%
-  \def\at@end@of@kframe{\end{minipage}}%
-  \begin{minipage}{\columnwidth}%
- \fi\fi%
- \def\FrameCommand##1{\hskip\@totalleftmargin \hskip-\fboxsep
- \colorbox{shadecolor}{##1}\hskip-\fboxsep
-     % There is no \\@totalrightmargin, so:
-     \hskip-\linewidth \hskip-\@totalleftmargin \hskip\columnwidth}%
- \MakeFramed {\advance\hsize-\width
-   \@totalleftmargin\z@ \linewidth\hsize
-   \@setminipage}}%
- {\par\unskip\endMakeFramed%
- \at@end@of@kframe}
-\makeatother
 
 
 \DefineVerbatimEnvironment% 
@@ -69,8 +50,8 @@
 
 \pp is provided in the hope that it is useful for researchers and students in Epidemiology, Sociology, Psychology, and other empirical disciplines. The software should run in any modern web browser that supports JavaScript, HTML, and SVG.
 
-This is the user manual for \pp version 3.0. The manual is updated with every release of
-a new stable version. \pp is available at \href{http://dagitty.net}{dagitty.net}. An R package ‘dagitty’ implementing the same functionality is also available on CRAN and at 
+This is the user manual for \pp version 3.2. The manual is updated with every release of
+a new stable version. \pp is available at \href{https://dagitty.net}{dagitty.net}. An R package ‘dagitty’ implementing the same functionality is also available on CRAN and at 
 \href{https://github.com/jtextor/dagitty}{github.com/jtextor/dagitty}.
 \vspace{20pt}
     \end{quote}
@@ -111,7 +92,7 @@ which is based on the same software library, and therefore also serves as a refe
 
 There are two ways to run \pp: either from the internet or from your
 own computer. To run \pp online, visit the URL
-\href{http://www.dagitty.net}{\tt dagitty.net}.
+\href{https://dagitty.net}{\tt dagitty.net}.
 \pp should run in every modern browser. Specifically, I expect it
 to work well on recent versions of Firefox, Chrome, Opera, and Safari
 as well as on Internet Explorer (IE) version 9.0 or later, which all
@@ -123,7 +104,7 @@ Keep in mind that \pp is used by hundreds of people per day from all over the wo
 
 \pp can be ``installed'' on your computer for use without an internet
 connection. To do this, download the file 
-\href{http://www.dagitty.net/dagitty.zip}{\tt dagitty.net/dagitty.zip}
+\href{https://dagitty.net/dagitty.zip}{\tt dagitty.net/dagitty.zip}
 which is a ZIP archive containing \pp's source. Unpack this ZIP file anywhere
 in your file system. To run \pp, just open the file \verb|dags.html| in the
 unpacked folder. 
@@ -162,7 +143,7 @@ In this section, we will briefly review what causal diagrams are and how they ca
 applied in empirical sciences. For a more detailed account, we recommend 
 the book \emph{Causal Inference in Statistics: A Primer} by Pearl, Glymour and Jewell \cite{Pearl2016}, or the chapter \emph{Causal Diagrams} in the Epidemiology 
 textbook of Rothman, Greenland, and Lash \cite{RothmanGL2008}. 
-Also take a look at the web page \href{http://www.dagitty.net/learn/}{\tt dagitty.net/learn/}, where I am collecting several tutorials (some of them interactive) on specific DAG-related  topics.
+Also take a look at the web page \href{https://dagitty.net/learn/}{\tt dagitty.net/learn/}, where I am collecting several tutorials (some of them interactive) on specific DAG-related  topics.
  
 In Epidemiology, causal diagrams are also frequently
 called \emph{DAGs}.\footnote{The term ``DAG'' is
@@ -288,6 +269,37 @@ not open new ones or closes causal paths in the process) is called an
 \emph{adjustment sets}.  Adjustment sets will be explained in more detail in 
 Section~\ref{sec:adjustment}.
 
+In \pp we can distinguish between \emph{observed} and \emph{unobserved} 
+(latent) variables. This distinction is important when it comes to identifying 
+causal effects: if there are many unobserved variables in a DAG, then this can 
+make identification difficult or impossible. A common situation is when one 
+has so-called ``latent confounding factors'' affecting two variables of interest; 
+often, one does not know all these confounding factors and just represents this 
+situation as follows:
+
+ \begin{center}
+\begin{tikzpicture}
+\node (sm) at (0,0)  {U};
+\node [anchor=east] (c) at (-1,-1) {coffee};
+\node [anchor=west] (s) at (1,-1) {smoking};
+\draw [->] (sm) -- (c);
+\draw [->] (sm) -- (s);
+\end{tikzpicture}
+\end{center}
+
+Since this situation is so common, there is an abbreviated notation for this 
+using a \emph{bi-directed arrow}: 
+
+ \begin{center}
+\begin{tikzpicture}
+\node [anchor=east] (c) at (-1,-1) {coffee};
+\node [anchor=west] (s) at (1,-1) {smoking};
+\draw (c) edge [<->, bend left=30] (s);
+\end{tikzpicture}
+\end{center}
+
+Importantly, this means that bi-directed edges do \emph{not} represent reciprocal causation (which is impossible to represent in a DAG). A common use-case is to depict unknown or unobserved confounders without specifying explicitly what those confounders are.
+
 The purpose of \pp is to aid study design through devising identification
 strategies in (possibly complex) causal diagrams and,
 more generally, through the identification of causal and biasing paths as
@@ -316,7 +328,7 @@ the \action{Examples} menu.
 \subsection{\pp's textual syntax for causal diagrams} 
 
 The textual syntax in DAGitty is based on the ‘dot’ language by graphviz. In fact, many dot graphs should work directly in dagitty without modifications, although most of the style attributes of the dot language are not supported by dagitty.
-I believe it is best to introduce the syntax by a series of examples. Let us start by defining the example used in the introduction above.
+I believe it's best to introduce the syntax by a series of examples. Let's start by defining the example used in the introduction above.
 
 \begin{dagcode}
 dag{ 
@@ -335,7 +347,7 @@ This example shows the three basic components of the syntax in action:
 
 \item The variable (vertex) statements. These consist of a variable name and a list of options enclosed in square brackets. For instance, the options ``exposure'' and ``outcome'' set a variable to be an exposure or outcome, respectively. Other relevant options are ``latent'' (for unobserved variables) and ``adjusted'' (for variables that have been adjusted for in a statistical analysis). It is necessary to double-quote the variable names if they contain spaces or other special characters, like for the variable ``carry matches''.
 
-\item The edge statements. These consist of a source variable, and edge type (which can be  \verb|->|, \verb|<-|, or \verb|<->|), and a target variable. Double-headed edges (\verb|x<->y|) are simply an equivalent shortand for typing \verb|x<-u->y; u[latent]|. Importantly, this means that double-headed edges are \emph{not} meant to represent reciprocal causation (which is impossible to represent in a DAG). Instead, they are commonly used to depict unknown or unobserved confounders without specifying explicitly what those confounders are. 
+\item The edge statements. These consist of a source variable, and edge type (which can be  \verb|->|, \verb|<-|, or \verb|<->|), and a target variable. As explained above, bi-directed edges (\verb|x<->y|) are simply an equivalent shorthand for typing \verb|x<-u->y; u[latent]|.  
 \end{itemize}
 
 These three syntax components are in fact enough to define any DAG. We are now going to define the same DAG in various different ways to showcase various convenient features of the syntax that make DAG definitions more compact; it is not necessary to use any of these features, but they can save a lot of typing.
@@ -511,8 +523,7 @@ for each variable, which are indicated as an option of the corresponding node.
 \subsection{Loading a model text}
 
 To load a textually defined diagram into \pp, simply copy\&paste the 
-variable list, followed by a blank line,
-followed by the list of arrows into the \action{Model code} text
+textual description into the \action{Model code} text
 box. Then click on \action{Update DAG}.
 \pp will now generate a preliminary graphical layout for your diagram on 
 the canvas, which may not yet look the way you intended, but can be freely 
@@ -525,7 +536,7 @@ did, simply drag the vertices with your mouse on the canvas. You may notice
 that \pp modifies the information in the \action{Model code} field
 on the fly, and augments it with additional position information for each
 vertex. In general, all changes you make to your diagram within \pp 
-are immediately reflected in the model code. 
+are immediately reflected in the model code.
 
 \subsection{Saving the diagram} 
 
@@ -559,7 +570,7 @@ DAG (or its model code) in the manuscript itself, here's another option:
 Store the DAG on the \pp website and get a short URL under which
 this DAG will be accessible. Then include this URL in the manuscript,
 or its supporting information. For example, one of the \pp examples
-is stored at the URL \href{http://dagitty.net/mvcFQ}{\tt dagitty.net/mvcFQ}.
+is stored at the URL \href{https://dagitty.net/mvcFQ}{\tt dagitty.net/mvcFQ}.
 
 Here's how it works: Draw your DAG to full satisfaction, then choose 
 \action{Publish on dagitty.net} from the \action{Model} menu. You have
@@ -636,13 +647,16 @@ statuses:
 \begin{itemize} 
 \item Exposure
 \item Outcome
-\item Unobserved (latent)
 \item Adjusted
+\item Selected
+\item Unobserved (latent)
 \item Other
 \end{itemize}
 
-
-To turn a variable into an exposure, move the
+You can change these statuses when you click on the variable 
+using the checkboxes in the \action{Variable} field.
+There are also keyboard shortcuts available.
+For example, to turn a variable into an exposure, move the
 mouse pointer over that variable and hit the \action{e} key; 
 for an outcome, hit the \action{o} key instead.
 To toggle whether a variable is observed or unobserved,
@@ -652,7 +666,7 @@ Changing the status of variables may change the
 colors of the diagram vertices to reflect the new structure 
 and information flow in the diagram (see below). 
 
-At present, these statuses are mutually exclusive --  e.g.,
+At present, the statuses are mutually exclusive --  e.g.,
 a variable cannot be both unobserved and adjusted 
 or both exposure and unobserved. This could change
 in future versions of \pp.
@@ -662,8 +676,14 @@ in future versions of \pp.
 To add a new arrow, double-click first on the source vertex 
 (which will become highlighted) and then on the target vertex.
 The arrow will be inserted. If an arrow existed before
-in the opposite direction, that arrow will be deleted, because otherwise
-there would now be a cycle in the model. 
+in the opposite direction, then a bi-directed arrow will be created.
+If a bi-directed arrow already existed, then it will be deleted.
+This means it is currently not possible to have both a directed
+ and a bi-directed arrow between the same variables. If you want to represent
+such structures, please represent the bi-directed arrow 
+$x \Leftrightarrow y$ explicitly as $x \leftarrow u \rightarrow y$, 
+where $u$ is a latent variable. (Remember that $x \Leftrightarrow y$
+is simply a shorthand for $x \leftarrow u \rightarrow y$.)
 
 Instead of double-clicking on a vertex, you can also move the mouse pointer
 over the vertex and press the key \action{c}. Arrows are by default
@@ -1068,7 +1088,7 @@ generous support.
 \section{Legal notice}
 
 Use of \pp is (and will always be) freely permitted and free of charge. 
-You may download a copy of \pp's source code from its website at \url{www.dagitty.net}.
+You can download \pp's source code from \url{github.com/jtextor/dagitty}.
 The source code is available under the GNU General Public License (GPL),
 either version 2.0, or any later version, at the licensee's choice;
 see the file \verb|LICENSE.txt| in the download archive for details.
@@ -1097,6 +1117,7 @@ scientific meetings. These are, in inverse chronological order:
  \item van Kampen 2014 \cite{Kampen2014} 
  \item Polzer et al., 2012 \cite{Polzer2012}
  \item Schipf et al., 2010 \cite{Schipf2010}
+ \item Didelez et al., 2010 \cite{Didelez2010}
  \item Shrier \& Pratt, 2008 \cite{ShrierP2008}
  \item Sebastiani et al.\footnote{The example actually shows only a small part of their DAG.}, 
     2005 \cite{Sebastiani2005}
@@ -1119,13 +1140,13 @@ you miss in \pp.
 
 \noindent
 Johannes Textor \\
-Tumor Immunology Department \\
-Radboud University Medical Center \\
+Data Science group \\
+Radboud University \\
  Nijmegen, The Netherlands \\
 \\
 \href{mailto:johannes.textor@gmx.de}{\tt johannes.textor@gmx.de} \\
-\href{http://johannes-textor.name}{\tt johannes-textor.name} \\
-Twitter: \href{https://twitter.com/JohannesTextor}{\tt @JohannesTextor}
+\href{https://johannes-textor.name}{\tt johannes-textor.name} \\
+Mastodon: \href{https://mastodon.social/@johannes\_textor}{\tt @johannes\_textor}
 
 \bigskip
 

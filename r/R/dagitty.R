@@ -2075,6 +2075,8 @@ downloadGraph <- function(x="dagitty.net/mz-Tuw9"){
 #'    parameter can be used to perform only those tests where the number of conditioning
 #'   variables does not exceed the given value. High-dimensional
 #'   conditional independence tests can be very unreliable.
+#' @param abbreviate.names logical. Whether to abbreviate variable names (these are used as 
+#'   row names in the returned data frame).
 #' @param conf.level determines the size of confidence intervals for test
 #'   statistics.
 #' @param ... parameters passed on from \code{ciTest} to \code{localTests}
@@ -2118,12 +2120,13 @@ downloadGraph <- function(x="dagitty.net/mz-Tuw9"){
 #'
 #' @export
 localTests <- function(x=NULL, data=NULL, 
-	type=c("cis","cis.loess","cis.chisq",
+	type=c("cis","cis.loess","cis.chisq","cis.pillai",
 	       "tetrads","tetrads.within","tetrads.between","tetrads.epistemic"),
 	tests=NULL,
 	sample.cov=NULL,sample.nobs=NULL,
 	conf.level=.95,R=NULL,
 	max.conditioning.variables=NULL,
+	abbreviate.names=TRUE,
 	tol=NULL,
 	loess.pars=NULL){
 	type <- match.arg(type)
@@ -2225,7 +2228,7 @@ localTests <- function(x=NULL, data=NULL,
 		if( length(tests) == 0 ){
 			return(data.frame())
 		}
-		row.names <- sapply(tests,as.character)
+		row.names <- sapply(tests,function(x){ as.character(x,abbreviate.names=abbreviate.names) })
 		if( !is.null(R) ){
 			if( type == "cis" ){
 				f <- function(i) .ci.test.lm.perm(data,i,conf.level,R)
@@ -2251,6 +2254,9 @@ localTests <- function(x=NULL, data=NULL,
 			} else if( type.postfix == "chisq" ){
 				f <- function(i) 
 					.ci.test.chisq(data,i,conf.level)
+			} else if( type.postfix == "pillai" ){
+				f <- function(i)
+					.ci.test.pillai(data,i,conf.level)
 			}
 			r <- as.data.frame(
 				row.names=row.names,
@@ -2264,7 +2270,7 @@ localTests <- function(x=NULL, data=NULL,
 #' @rdname localTests
 #' @export
 ciTest <- function(X,Y,Z=NULL,data,...){
-	localTests( data=data, tests=structure(
+	localTests( data=data[,c(X,Y,Z)], tests=structure(
 		list(structure(list(X=X,Y=Y,Z=Z),class="dagitty.ci")),
 		class="dagitty.cis"), ...)
 }
@@ -2541,10 +2547,13 @@ print.dagitty.sets <- function( x, prefix="", ... ){
 }
 
 #' @export
-as.character.dagitty.ci <- function( x, ... ){
+as.character.dagitty.ci <- function( x, abbreviate.names=TRUE, ... ){
 	nX <- length(x$X)
 	nY <- length(x$Y)
-	nn <- abbreviate(c(x$X, x$Y, x$Z))
+	nn <- c(x$X, x$Y, x$Z)
+	if( abbreviate.names ){
+		nn <- abbreviate(nn)
+	}
 	r <- paste0( paste(nn[seq_along(x$X)],collapse=", "), " _||_ ", 
 		paste(nn[seq_along(x$Y)+nX],collapse=", ") )
 	if( length( x$Z > 0 ) ){

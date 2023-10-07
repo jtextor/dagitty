@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+	<meta http-equiv="Content-type" content="text/html; charset=UTF-8" />
+	<!--
+		DAGitty - a graphical tool for analyzing causal diagrams
+		Copyright (C) 2010-2022 Johannes Textor, Benito van der Zander
+	
+		This program is free software; you can redistribute it and/or
+		modify it under the terms of the GNU General Public License
+		as published by the Free Software Foundation; either version 2
+		of the License, or (at your option) any later version.
+	
+		This program is distributed in the hope that it will be useful,
+		but WITHOUT ANY WARRANTY; without even the implied warranty of
+		MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+		GNU General Public License for more details.
+	
+		You should have received a copy of the GNU General Public License
+		along with this program; if not, write to the Free Software
+		Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.   
+	-->
+
+    <title>DAGitty v3.1</title>
+    <link rel="stylesheet" type="text/css" href="dags.css" />
+
+	<script src="js/dagitty.js"></script>
+	<script src="js/example-dags.js"></script>
+
+    <script src="js/styles/semlike.js"></script>
+    <script src="js/styles/original.js"></script>
+
+    <script src="js/main.js"></script>
+	<script src="js/base64.js"></script>
+	
+	<script src="https://www.google.com/recaptcha/api.js?render=explicit" 
+		async defer></script>
+
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+
+	<script>
+	var redraw;
+	var renderer;
+	var layouter;
+	var height = 300;
+	var width = 600;
+	var mouse_on_canvas;
+	var resize_timeout;
+	var mouse_x = 0;
+	var mouse_y = 0;
+
+	var Model = {
+		dag : null, 
+		dag_active_bias_graph : null,
+		dag_ancestor_moral_graph : null,
+		dag_ancestor_pair_graph : null,
+		dag_model_text_data : null
+	};
+
+	var DAGittyControl;
+
+	function initialize(){
+
+
+		DAGitty.setup({autofocus:true});
+		DAGittyControl = DAGitty.controllers[0];
+		
+		GUI.menus = ["model","examples","howto","layout","help"]
+		_.each(GUI.menus,function(t){
+			document.getElementById("menu_"+t+"_title").addEventListener( 'click', 
+				function(){menuToggle(t)} );
+		});
+		
+		DAGittyControl.observe( 'graphchange',
+			function(g){
+				Model.dag = g;
+				document.getElementById("adj_matrix").value = g.toString();
+				// if previously highlighted variable no longer exists, fold up this menu
+				if( !g.getVertex(document.getElementById("variable_id").value) ){
+					document.getElementById("variable_id").value = ''
+				}
+				displayImplicationInfo( false )
+				causalEffectEstimates( document.getElementById("causal_effect_kind").value )
+				displayGeneralInfo()
+				GUI.refresh_variable_status()
+			}
+		);
+		
+		DAGittyControl.observe( 'graphlayoutchange',
+			function(g){
+				document.getElementById("adj_matrix").value = g.toString();
+			}
+		);
+
+		DAGittyControl.observe( 'vertex_marked',
+			function( v ){
+				if( v ){
+					displayShow( 'variable' )
+					document.getElementById("variable_id").value = v.id
+					GUI.refresh_variable_status()
+				} else {
+					if( !Model.dag.getVertex(document.getElementById("variable_id").value) ){
+						displayHide( 'variable' )
+					}
+				}
+			}
+		);
+
+		var getid = (function(){
+			var regexS = "[\\?&]id=([^&#]*)";
+			var regex = new RegExp(regexS);
+			var results = regex.exec(window.location.search);
+			if(results == null)
+				return "";
+			else
+				return decodeURIComponent(results[1].replace(/\+/g, " "));
+		})();
+
+		if( getid ){
+			// load user-supplied model
+			loadOnline( "dagitty.net/m"+getid );
+		} else {
+			DAGittyControl.graphChanged();
+		}
+
+		document.onkeydown = function(e){
+			if( e.keyCode == 27 ){
+				DAGittyControl.getView().getImplementation().stopMousemove()
+				DAGittyControl.getView().closeDialog()
+			}
+		}
+	}
+	window.onload = initialize;
+    </script>
+	
+</head>
+<body>
+
+<main>
+
+    <ul id="menu">
+      <li><a href="javascript:void(0)" id="menu_model_title">Model</a>
+         <ul id="menu_model" style="z-Index:15">
+            <li><a href="#" onclick="newModel();displayHide('menu_model')">New model</a></li>
+            <li><a href="#" onclick="loadOnlineForm();displayHide('menu_model')">Load from dagitty.net</a></li>
+            <script>
+            	if( document.location.protocol == "http:" || document.location.protocol == "https:" ){
+	            	document.write('<li><a href="#" onclick="saveOnlineForm();displayHide(\'menu_model\')">Publish on dagitty.net</a></li>');
+	            	document.write('<li><a href="#" onclick="updateOnlineForm();displayHide(\'menu_model\')">Update on dagitty.net</a></li>');
+	            	document.write('<li><a href="#" onclick="deleteOnlineForm();displayHide(\'menu_model\')">Delete on dagitty.net</a></li>');
+	        }
+
+               if( supportsSVG() ){
+					document.write( '<li><a href="#" onclick="exportPDF();displayHide(\'menu_model\')">Export as PDF</a></li>' );
+					document.write( '<li><a href="#" onclick="exportPNG();displayHide(\'menu_model\')">Export as PNG</a></li>' );
+					document.write( '<li><a href="#" onclick="exportJPEG();displayHide(\'menu_model\')">Export as JPEG</a></li>' );
+					document.write( '<li><a href="#" onclick="exportSVG();displayHide(\'menu_model\')">Export as SVG</a></li>' );
+               }
+            </script>
+        <li><a href="#" onclick="exportTikzCode();displayHide('menu_model')">Export LaTeX code</a></li>
+	</ul>
+      </li>
+      <li><a href="javascript:void(0)" id="menu_examples_title">Examples</a>
+       <ul id="menu_examples" style="z-Index:14">
+         <script>
+         for( var i = 0 ; i < examples.length ; i++ ){
+            document.write( "<li><a href=\"#\" onclick=\"loadExample("+i+");displayHide('menu_examples')\">"+examples[i].l+"</a></li>" );
+         }
+         </script>
+       </ul>
+      </li>
+      <li><a href="javascript:void(0)" id="menu_howto_title">How to ...</a>
+         <ul id="menu_howto" style="z-Index:13">
+            <li><a href="#" onclick="how('To add a new variable, click/tap on the canvas.')">Add a variable</a></li>
+			<li><a href="#" onclick="how('To rename a variable, click/tap it and click/tap &quot;rename&quot; in the &quot;variable&quot; tab, or move the mouse over it and press the &quot;r&quot; key on your keyboard.')">Rename a variable</a></li>
+            <li><a href="#" onclick="how('To add a new connection, click/tap on the start variable and then on the end variable.')">Add a connection</a></li>
+            <li><a href="#" onclick="how('To delete a variable, click/tap it and then clik/tap &quot;delete&quot; in the &quot;variable&quot; tab, or move the mouse over it and press the &quot;delete&quot; or the &quot;d&quot; key on your keyboard.')">Delete a variable</a></li>
+            <li><a href="#" onclick="how('To delete a connection, click/tap on the start variable and then on the end variable.')">Delete a connection</a></li>   
+            <li><a href="#" onclick="how('To save the model, copy-paste the content of the &quot;model code&quot; into your favourite text editor (e.g. &quot;Word&quot;).')">Save a model</a></li>
+            <li><a href="#" onclick="how('To set the exposure variable, click/tap it and check &quot;exposure&quot; in the &quot;variable&quot; tab, or move the mouse over it and press the &quot;e&quot; key on your keyboard.')">Set exposure variable</a></li>
+            <li><a href="#" onclick="how('To set the outcome variable, click/tap it and check &quot;outcome&quot; in the &quot;variable&quot; tab, or move the mouse over it and press the &quot;o&quot; key on your keyboard.')">Set outcome variable</a></li>
+            <li><a href="#" onclick="how('To toggle adjustment for a variable, click/tap it and check &quot;adjusted&quot; in the &quot;variable&quot; tab, or move the mouse over it and press the &quot;a&quot; key on your keyboard.')">Adjust for variable</a></li>
+            <li><a href="#" onclick="how('To toggle selection status for a variable, click/tap it and check &quot;selected&quot; in the &quot;variable&quot; tab, or move the mouse over it and press the &quot;s&quot; key on your keyboard.')">Define a selection variable</a></li>
+            <li><a href="#" onclick="how('To toggle observed status for a variable, click/tap it and check &quot;unobserved&quot; in the &quot;variable&quot; tab, or move the mouse over it and press the &quot;u&quot; key on your keyboard.')">Make a variable unobserved (latent)</a></li>
+         </ul>
+      </li>
+      <li><a href="javascript:void(0)" id="menu_layout_title">Layout</a>
+         <ul id="menu_layout" style="z-Index:12">
+            <li><a href="#" onclick="generateSpringLayout();displayHide('menu_layout');return false">Generate layout automatically</a></li>
+         </ul>
+      </li>
+      <li style="border-right:none"><a href="javascript:void(0)" id="menu_help_title">Help</a>
+         <ul id="menu_help" style="z-Index:11">
+            <li><a href="manual-3.x.pdf" target="_blank" onclick="displayHide('menu_help')">Manual</a></li>
+            <li><a href="https://dagitty.net/learn/" target="_blank" onclick="displayHide('menu_help')">Other Resources</a></li>
+         </ul>
+      </li>
+      <li style="float:none; overflow: hidden; border-right: none;"> &nbsp;</li>
+   </ul>
+
+   <div id="canvas" class="dagitty" data-mutable="true">
+A [selected,pos="-2.200,-1.520"]
+B [pos="1.400,-1.460"]
+D [outcome,pos="1.400,1.621"]
+E [exposure,pos="-2.200,1.597"]
+Z [adjusted,pos="-0.300,-0.082"]
+A -&gt; E
+A -&gt; Z [pos="-0.791,-1.045"]
+B -&gt; D
+B -&gt; Z [pos="0.680,-0.496"]
+E -&gt; D
+   </div>
+
+</main>
+
+<aside>
+
+   <div id="llegend">
+
+    <h3 onclick="displayToggle('variable')"><img src="images/arrow-down.png" alt="" id="a_variable">
+   		Variable</h3>
+   <div id="variable" style="display:block">
+
+      <form autocomplete="off">
+	<p>
+		<span id="variable_label" style="font-weight:bold"></span>
+	</p>
+      <p><input type="checkbox" checked="checked" id="variable_exposure"
+         onclick="GUI.set_variable_status('source',this.checked)" />
+         	<label for="variable_exposure">exposure</label></p>
+      <p><input type="checkbox" checked="checked" id="variable_outcome"
+         onclick="GUI.set_variable_status('target',this.checked)" />
+         	<label for="variable_outcome">outcome</label></p>
+      <p><input type="checkbox" checked="checked" id="variable_adjusted"
+         onclick="GUI.set_variable_status('adjustedNode',this.checked)" />
+         	<label for="variable_adjusted">adjusted</label></p>
+      <p><input type="checkbox" checked="checked" id="variable_selected"
+         onclick="GUI.set_variable_status('selectedNode',this.checked)" />
+         	<label for="variable_selected">selected</label></p>
+      <p><input type="checkbox" checked="checked" id="variable_unobserved"
+         onclick="GUI.set_variable_status('latentNode',this.checked)" />
+         	<label for="variable_unobserved">unobserved</label></p>
+
+	<input type="hidden" id="variable_id" value="">
+
+	<p>
+		<button type="button" onclick="DAGittyControl.deleteVertex(document.getElementById('variable_id').value)">delete</button>
+		<button type="button" onclick="DAGittyControl.getView().renameVertexDialog(document.getElementById('variable_id').value)">rename</button>
+	</p>
+
+      </form>
+
+
+
+   </div>
+   
+  
+   <h3 onclick="displayToggle('viewmode')"><img src="images/arrow-down.png" alt="" id="a_view">
+   		View mode</h3>
+   <div id="viewmode" style="display:block">
+
+      <form autocomplete="off">
+      <p><input type="radio" checked="checked" id="dagview_normal" name="dagview"
+         onclick="GUI.set_view_mode(this.value)" value="normal" /> 
+         	<label for="dagview_normal">normal</label></p>
+      <p><input type="radio" name="dagview" id="dagview_moral"
+         onclick="GUI.set_view_mode(this.value)" value="moral"/>
+         	<label for="dagview_moral">moral graph</label></p>
+      <p><input type="radio" name="dagview" id="dagview_dependency"
+         onclick="GUI.set_view_mode(this.value)" value="dependency"/>
+         	<label for="dagview_dependency">correlation graph</label></p>
+      <p><input type="radio" name="dagview" id="dagview_equivalence"
+         onclick="GUI.set_view_mode(this.value)" value="equivalence"/>
+         	<label for="dagview_equivalence">equivalence class</label></p>
+      </form>
+
+   </div>
+   
+   <h3 onclick="displayToggle('effects')"><img src="images/arrow-down.png" alt="" id="a_effects"> Effect analysis</h3>
+   <div id="effects" style="display:block">
+      <form autocomplete="off">
+      <p><input type="checkbox" id="highlight_puredirect"
+         onclick="GUI.set_highlight_puredirect(this.checked)"/>
+         	<label for="highlight_puredirect">atomic direct effects</label></p>
+      </form>
+   </div>
+
+   <h3 onclick="displayToggle('dagstyle')"><img src="images/arrow-down.png" alt="" id="a_dagstyle">
+   		Diagram style</h3>
+   <div id="dagstyle" style="display:block">
+      <form autocomplete="off">
+      <p><input type="radio" checked="checked" id="dagstyle_original" name="dagstyle"
+         onclick="GUI.set_style('original')" /> 
+         	<label for="dagstyle_original">classic</label></p>
+      <p><input type="radio" name="dagstyle" id="dagstyle_semlike"
+         onclick="GUI.set_style('semlike')"/>
+         	<label for="dagstyle_semlike">SEM-like</label></p>
+      </form>
+   </div>
+
+   <h3 onclick="displayToggle('coloring')"><img src="images/arrow-down.png" alt="" id="a_coloring"> Coloring</h3>
+   <div id="coloring" style="display:block">
+      <form autocomplete="off">
+      <p><input type="checkbox" checked="checked" id="highlight_causal"
+         onclick="GUI.set_highlight_causal(this.checked)" />
+         	<label for="highlight_causal">causal paths</label></p>
+      <p><input type="checkbox" checked="checked" id="highlight_biasing"
+         onclick="GUI.set_highlight_biasing(this.checked)"/>
+         	<label for="highlight_biasing">biasing paths</label></p>
+      <p><input type="checkbox" checked="checked" id="highlight_ancestral"
+         onclick="GUI.set_highlight_ancestors(this.checked)"/>
+         	<label for="highlight_ancestral">ancestral structure</label></p>
+      </form>
+   </div>
+
+
+
+   <h3 onclick="displayToggle('legend')"><img src="images/arrow-down.png" alt="" id="a_legend"> Legend</h3>
+   <div id="legend" style="display:block">
+      <p>
+        <img id="liexposure" src="images/legend/original/exposure.png" alt="" />
+        exposure
+      </p>
+      <p>
+    	<img id="lioutcome" src="images/legend/original/outcome.png" alt="" />
+         outcome
+      </p>
+      <div id="legend_ancestors">
+      <p>
+         <img id="lilnode" src="images/legend/original/lnode.png" alt="" />
+         ancestor of exposure
+      </p>
+      <p>
+        <img id="lirnode" src="images/legend/original/rnode.png" alt="" />
+         ancestor of outcome
+      </p>
+      <p>
+        <img id="limnode"  src="images/legend/original/mnode.png" alt="" />
+        ancestor of exposure <em>and</em> outcome
+      </p> 
+      </div>
+      <p>
+        <img id="liadjustednode" src="images/legend/original/adjustednode.png" alt="" />
+        adjusted variable
+      </p>
+      <p>
+        <img id="lilatentnode" src="images/legend/original/latentnode.png" alt="" />
+        unobserved (latent)
+      </p>
+      <p>
+        <img id="liother" src="images/legend/original/other.png" alt="" />
+         other variable
+      </p>
+      <p id="legend_causal">
+        <img id="licausalpath" src="images/legend/original/causalpath.png" alt="" />
+        causal path
+      </p>
+      <p id="legend_biasing">
+        <img id="libiasingpath" src="images/legend/original/biasingpath.png" alt="" />
+        biasing path
+      </p>
+   </div>
+
+  </div>
+
+
+   <div id="rlegend">
+		<h3 onclick="displayToggle('causal_effect_block')">
+			<img src="images/arrow-down.png" alt="" id="a_causal_effect" />
+			Causal effect identification
+		</h3>
+
+	<div id="causal_effect_block">
+		<p>
+			<select id="causal_effect_kind" onchange="causalEffectEstimates(this.value)">
+				<option value="adj_total">Adjustment (total effect)</option>
+				<option value="adj_causalodds">Adjustment (causal odds ratio)</option>
+				<option value="adj_direct">Adjustment (direct effect)</option>
+				<option value="instrument">Instrumental variable</option>
+				<!--<option value="treeid">TreeId</option>-->
+			</select>
+		</p>
+	    <div id="causal_effect" style="display:block">
+
+	    </div>
+	</div>
+
+    <h3 onclick="displayToggle('testable_implications')"><img src="images/arrow-down.png" alt="" id="a_testable_implications" />  Testable implications</h3>
+
+    <div id="testable_implications" style="display:block">
+
+    </div>
+
+    <h3 onclick="displayToggle('model_data')"><img src="images/arrow-down.png" alt="" id="a_model_data" />  Model code</h3>
+    <div id="model_data" style="display:block">
+      <form name="model_data_frm">
+      <textarea rows="10" cols="35" name="adj_matrix" id="adj_matrix"
+         onkeydown="if(this.value != Model.dag_model_text_data){ displayShow('model_refresh');this.style.backgroundColor='#fec'; }"></textarea>
+      </form>
+      <p id="model_refresh" style="display:none">You have modified the model code. To
+      draw the modified model, click here: <button onclick="loadDAGFromTextData()">Update DAG</button></p>
+    </div>
+
+   <h3 onclick="displayToggle('summary')"><img src="images/arrow-down.png" alt="" id="a_summary"> Summary</h3>
+   <div id="summary" style="display:block">
+      <div id="info_cycle"> </div>
+      <table id="info_summary">
+         <tr><td>exposure(s)</td><td class="info" id="info_exposure">not set</td></tr>
+         <tr><td>outcome(s)</td><td class="info" id="info_outcome">not set</td></tr>
+         <tr><td>covariates</td><td class="info" id="info_covariates">0</td></tr>
+         <tr><td>causal paths</td><td class="info" id="info_frontdoor">0</td></tr>
+      </table>
+   </div>
+
+   </div>
+
+</aside>
+
+   
+   <div id="export" style="display: none;">
+      <form name="exportform" id="exportform" action="https://dagitty.net/pdf/pdf.php" method="POST" target="_blank">
+         <input type="hidden" name="exportformsvg" id="exportformsvg" />
+      </form>
+   </div>
+</body>
+</html>
