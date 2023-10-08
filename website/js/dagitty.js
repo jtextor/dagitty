@@ -8154,10 +8154,7 @@ var DAGittyGraphView = Class.extend({
 		qf = el("button")
 		qf.setAttribute("type","submit")
 		txt(qf,"OK")
-		qf.onclick = function(){ 
-			f.call(myself,qfin.value)
-		}
-		qform.onsubmit = function(){qf.onclick(); return false}
+		qform.onsubmit = function(){f.call(myself,qfin.value); return false}
 		qform.appendChild(qf)
 		var qfc = el("button")
 		qfc.setAttribute("type","button")

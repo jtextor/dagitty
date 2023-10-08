@@ -921,31 +921,28 @@ function deleteOnlineForm( id, pw ){
 		"Please enter the model URL", "dagitty.net/m"+(Model.uniqid||""), deleteOnlineForm2 )
 }
 
-function loadOnline( url ){
+async function loadOnline( url ){
 	var graphid = getModelIdFromURL( url )
-	DAGitty.Ajax.Request("http://"+hostName()+"/dags/load.php",
-		{
-			method:'POST',
-			parameters: { id:graphid },
-			onFailure: networkFailMsg,
-			onSuccess: function( t ) { 
-				if( t.readyState==4 && t.status == 0 ){
-					networkFailMsg(); return
-				}
-				DAGittyControl.getView().closeDialog()
-				if( t.responseText ){
-					document.getElementById("adj_matrix").value = B64.decode( t.responseText ).replace(/\0*$/g,'')
-					Model.uniqid=graphid
-					loadDAGFromTextData()
-				} else {
-					msg("model not found!")
-				}
-			}
+	try{
+	   	const response = await fetch( "https://dagitty."+
+			"computational-immunology.org/db/id/"+graphid )
+		if( response.ok ){
+			const modelsyntax = await response.json()
+			DAGittyControl.getView().closeDialog()
+			document.getElementById("adj_matrix").value = modelsyntax.g
+			Model.uniqid = modelsyntax.g.id
+			loadDAGFromTextData()
+		} else {
+       	 		networkFailMsg(); return
 		}
-	);
+	} catch( err ){
+		networkFailMsg(); 
+		console.log( err );
+		return
+	}
 }
 
 function loadOnlineForm(){
 	DAGittyControl.getView().openPromptDialog(
-		"Enter the URL","dagitty.net/mVpq3",loadOnline)
+		"Enter the URL","dagitty.net/mOWOV4V",loadOnline)
 }
