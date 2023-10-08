@@ -89,7 +89,7 @@
 			if( !requireNamespace( "fastDummies", quietly=TRUE ) ){
 				stop("This function requires the 'fastDummies' package!")
 			}
-			Y <- dummy_cols( Y, remove_most_frequent_dummy=TRUE,remove_selected_columns=TRUE )
+			Y <- fastDummies::dummy_cols( Y, remove_most_frequent_dummy=TRUE,remove_selected_columns=TRUE )
 		}
 	} else if( !is.numeric(Y[,1]) ){
 		stop(paste0("Variable ",ind$Y," must be numeric or factor, found ",class(Y[,1])))
@@ -125,7 +125,7 @@
 		rho <- cancor(X,Y)$cor
 		N = dim(X)[1]; p = dim(X)[2]; q = dim(Y)[2]
 		r[c(1,3,4)] <- sqrt(mean(rho^2))
-		capture.output( pv <- p.asym( rho, N, p, q, tstat="Pillai" ) )
+		capture.output( pv <- CCP::p.asym( rho, N, p, q, tstat="Pillai" ) )
 		r[2] <- pv$p.value[1]
 	}
 	names(r) <- c("estimate","p.value",
