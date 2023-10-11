@@ -655,6 +655,27 @@ function loadDAGFromTextData(){
 	document.getElementById("adj_matrix").style.backgroundColor="#fff";
 }
 
+// Read a Dag from a URL parameter
+// e.g. http://www.dagitty.net/dags.html?adjmatrix=B%201%20@1.400,-1.460%0AD%20O%20@1.400,1.621%0A%0AB%20D
+function loadDagFromUrlParameter(){
+	var adjMatrixFromUrlParameter = getUrlParameter("adjmatrix");
+	if((adjMatrixFromUrlParameter!==undefined) && (adjMatrixFromUrlParameter!='')){
+		document.getElementById("adj_matrix").value = adjMatrixFromUrlParameter;
+		loadDAGFromTextData();
+	}
+}
+
+function getUrlParameter(sParam) {
+    var sPageURL = decodeURIComponent(window.location.search.substring(1));
+    var sURLVariables = sPageURL.split('&');
+    for (var i = 0; i < sURLVariables.length; i++) {
+        var sParameterName = sURLVariables[i].split('=');
+        if (sParameterName[0] === sParam) {
+            return sParameterName[1] === undefined ? true : sParameterName[1];
+        }
+    }
+};
+
 function generateSpringLayout(){
 	var layouter = new GraphLayouter.Spring( Model.dag );
 	_.each(Model.dag.edges,function(e){delete e["layout_pos_x"];delete e["layout_pos_y"]})
