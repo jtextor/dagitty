@@ -143,6 +143,8 @@
          <ul id="menu_model" style="z-Index:15">
             <li><a href="#" onclick="newModel();displayHide('menu_model')">New model</a></li>
             <li><a href="#" onclick="loadOnlineForm();displayHide('menu_model')">Load from dagitty.net</a></li>
+            <li><a href="#" onclick="exportPNG();displayHide('menu_model')">Export as PNG</a></li>
+
             <script>
                 if( false && document.location.protocol == "https:" ){
                     document.write('<li><a href="#" onclick="saveOnlineForm();displayHide(\'menu_model\')">Publish on dagitty.net</a></li>');
@@ -152,7 +154,6 @@
 
                if( false && supportsSVG() ){
                     document.write( '<li><a href="#" onclick="exportPDF();displayHide(\'menu_model\')">Export as PDF</a></li>' );
-                    document.write( '<li><a href="#" onclick="exportPNG();displayHide(\'menu_model\')">Export as PNG</a></li>' );
                     document.write( '<li><a href="#" onclick="exportJPEG();displayHide(\'menu_model\')">Export as JPEG</a></li>' );
                     document.write( '<li><a href="#" onclick="exportSVG();displayHide(\'menu_model\')">Export as SVG</a></li>' );
                }

@@ -717,11 +717,37 @@ function exportJPEG(){
 }
 
 function exportPNG(){
-	if( supportsSVG() ){
-		document.getElementById("exportformsvg").value = document.getElementById("canvas").innerHTML;
-		document.getElementById("exportform").action = "https://"+hostName()+ "/pdf/batik-png.php";
-		document.getElementById("exportform").submit();
+	const svgElement = document.querySelector('svg');
+	const w = svgElement.getBoundingClientRect().width;
+	const h = svgElement.getBoundingClientRect().height;
+	svgElement.setAttribute("width", w)
+	svgElement.setAttribute("height", h)
+	const svgString = new XMLSerializer().serializeToString(svgElement);
+	const blob = new Blob([svgString], { type: 'image/svg+xml' });
+	const img = new Image();
+	const url = URL.createObjectURL(blob);
+	console.log("done something")
+	img.onload=function(){
+		const canv = document.createElement("canvas")
+		const ctx = canv.getContext("2d")
+		ctx.imageSmoothingQuality = "high"
+		canv.width = 2*w	
+		canv.height = 2*h
+		ctx.fillStyle = "white"
+		ctx.fillRect( 0, 0, 2*w, 2*h )	
+		ctx.drawImage(img, 0, 0, w, h, 0, 0, 2*w, 2*h )
+		URL.revokeObjectURL( url )
+		const uri = canv.toDataURL('image/png').replace('image/png', 'octet/stream');
+		const a = document.createElement('a');
+		document.body.appendChild(a);
+    		a.style = 'display: none';
+	   	a.href = uri
+		a.download="dagitty-model.png"
+		a.click()
+		window.URL.revokeObjectURL(uri)
+		document.body.removeChild(a)
 	}
+	img.src = url
 }
 
 function exportSVG(){
@@ -924,8 +950,7 @@ function deleteOnlineForm( id, pw ){
 async function loadOnline( url ){
 	var graphid = getModelIdFromURL( url )
 	try{
-	   	const response = await fetch( "https://dagitty."+
-			"computational-immunology.org/db/id/"+graphid )
+	   	const response = await fetch( "https://dagitty.net/db/id/"+graphid )
 		if( response.ok ){
 			const modelsyntax = await response.json()
 			DAGittyControl.getView().closeDialog()
