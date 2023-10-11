@@ -72,7 +72,7 @@
 			if( !requireNamespace( "fastDummies", quietly=TRUE ) ){
 				stop("This function requires the 'fastDummies' package!")
 			}
-			X <- dummy_cols( X, remove_most_frequent_dummy=TRUE,remove_selected_columns=TRUE )
+			X <- fastDummies::dummy_cols( X, remove_most_frequent_dummy=TRUE,remove_selected_columns=TRUE )
 		}
 	} else if( !is.numeric(X[,1]) ){
 		stop(paste0("Variable ",ind$X," must be numeric or factor, found ",class(X[,1])))
