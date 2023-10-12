@@ -5,13 +5,13 @@ graphical causal models (DAGs).
 
 The main componsents of the repository arre:
 
- * `jslib`: a JavaScript library implementing many DAG algorithms. This library underpins
+ * [jslib](jslib): a JavaScript library implementing many DAG algorithms. This library underpins
  both the web interface and the R package, but could also be used independently, like in node.js.
- * `gui`: HTML interface for a GUI that exposes most of the functions in the JavaScript library.
- * `r`: R package that exposes most of the functions in the JavaScript library.
- * `website`: The current content of [https://dagitty.net](dagitty.net), including a version of the
- GUI (which may be older than the one in `gui`. 
- * `doc`: LaTeX source of the dagitty PDF documentation.
+ * [gui](gui): HTML interface for a GUI that exposes most of the functions in the JavaScript library.
+ * [r](r): R package that exposes most of the functions in the JavaScript library.
+ * [website](website): The current content of [dagitty.net](https://dagitty.net), including a version of the
+ GUI (which may be older than the one in [gui](gui). 
+ * [doc](doc): LaTeX source of the dagitty PDF documentation.
 
 
 
@@ -19,7 +19,7 @@ The main componsents of the repository arre:
 
 Clone the repository and open the file `gui/dags.html` in your web browser.
 Currently most functionality should work locally, but you will need an internet
-connection if you want to load or save DAG models on [https://dagitty.net](dagitty.net).
+connection if you want to load or save DAG models on [dagitty.net](https://dagitty.net).
 
 ## Running the R package
 
@@ -38,8 +38,8 @@ in a future version.
 
 # More information
 
-You can get more information on dagitty at [https://dagitty.net](dagitty.net) and
- [https://dagitty.net](dagitty.net/learn). The R package is documented through the standard
+You can get more information on dagitty at [dagitty.net](https://dagitty.net) and
+ [dagitty.net/learn](https://dagitty.net/learn). The R package is documented through the standard
 R interface. There are also a few papers available:
 
 
