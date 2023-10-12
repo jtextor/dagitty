@@ -708,15 +708,8 @@ function exportPDF(){
 	}
 }
 
-function exportJPEG(){
-	if( supportsSVG() ){
-		document.getElementById("exportformsvg").value = document.getElementById("canvas").innerHTML;
-		document.getElementById("exportform").action = "https://"+hostName()+ "/pdf/batik-jpeg.php";
-		document.getElementById("exportform").submit();
-	}
-}
-
-function exportPNG(){
+function exportBitmap( format ){
+	if( !format ) format = "png"
 	const svgElement = document.querySelector('svg');
 	const w = svgElement.getBoundingClientRect().width;
 	const h = svgElement.getBoundingClientRect().height;
@@ -726,7 +719,6 @@ function exportPNG(){
 	const blob = new Blob([svgString], { type: 'image/svg+xml' });
 	const img = new Image();
 	const url = URL.createObjectURL(blob);
-	console.log("done something")
 	img.onload=function(){
 		const canv = document.createElement("canvas")
 		const ctx = canv.getContext("2d")
@@ -737,25 +729,47 @@ function exportPNG(){
 		ctx.fillRect( 0, 0, 2*w, 2*h )	
 		ctx.drawImage(img, 0, 0, w, h, 0, 0, 2*w, 2*h )
 		URL.revokeObjectURL( url )
-		const uri = canv.toDataURL('image/png').replace('image/png', 'octet/stream');
-		const a = document.createElement('a');
-		document.body.appendChild(a);
+		const uri = canv.toDataURL( 'image/'+format )
+		const a = document.createElement( 'a' );
+		document.body.appendChild( a );
     		a.style = 'display: none';
 	   	a.href = uri
-		a.download="dagitty-model.png"
+		a.download="dagitty-model."+format
 		a.click()
-		window.URL.revokeObjectURL(uri)
-		document.body.removeChild(a)
+		window.URL.revokeObjectURL( uri )
+		document.body.removeChild( a )
 	}
 	img.src = url
 }
 
+function exportPNG(){
+	exportBitmap( "png" )
+}
+
+function exportJPEG(){
+	exportBitmap( "jpeg" )
+}
+
+
 function exportSVG(){
-	if( supportsSVG() ){
-		document.getElementById("exportformsvg").value = document.getElementById("canvas").innerHTML;
-		document.getElementById("exportform").action = "https://"+hostName()+ "/pdf/svg.php";
-		document.getElementById("exportform").submit();
-	}
+	const svgElement = document.querySelector('svg');
+	svgElement.setAttribute("xmlns", "http://www.w3.org/2000/svg");
+	const w = svgElement.getBoundingClientRect().width;
+	const h = svgElement.getBoundingClientRect().height;
+	svgElement.setAttribute("width", w)
+	svgElement.setAttribute("height", h)
+	const preface = '<?xml version="1.0" standalone="no"?>\r\n';
+	const svgString = svgElement.outerHTML
+	const blob = new Blob([preface,svgString], {type:"image/svg+xml;charset=utf-8"} );
+	const url = URL.createObjectURL(blob);
+	const a = document.createElement( 'a' );
+    	a.style = 'display: none';
+	a.href = url
+	a.download="dagitty-model.svg"
+	document.body.appendChild( a );
+	a.click()
+	document.body.removeChild( a )
+	window.URL.revokeObjectURL( url )
 }
 
 function hostName(){

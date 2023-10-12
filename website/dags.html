@@ -144,6 +144,8 @@
             <li><a href="#" onclick="newModel();displayHide('menu_model')">New model</a></li>
             <li><a href="#" onclick="loadOnlineForm();displayHide('menu_model')">Load from dagitty.net</a></li>
             <li><a href="#" onclick="exportPNG();displayHide('menu_model')">Export as PNG</a></li>
+            <li><a href="#" onclick="exportJPEG();displayHide('menu_model')">Export as JPEG</a></li>
+            <!--<li><a href="#" onclick="exportSVG();displayHide('menu_model')">Export as SVG</a></li>-->
 
             <script>
                 if( false && document.location.protocol == "https:" ){
@@ -154,8 +156,6 @@
 
                if( false && supportsSVG() ){
                     document.write( '<li><a href="#" onclick="exportPDF();displayHide(\'menu_model\')">Export as PDF</a></li>' );
-                    document.write( '<li><a href="#" onclick="exportJPEG();displayHide(\'menu_model\')">Export as JPEG</a></li>' );
-                    document.write( '<li><a href="#" onclick="exportSVG();displayHide(\'menu_model\')">Export as SVG</a></li>' );
                }
             </script>
         <li><a href="#" onclick="exportTikzCode();displayHide('menu_model')">Export LaTeX code</a></li>
@@ -417,11 +417,5 @@ E -&gt; D
 
 </aside>
 
-   
-   <div id="export" style="display: none;">
-      <form name="exportform" id="exportform" action="https://dagitty.net/pdf/pdf.php" method="POST" target="_blank">
-         <input type="hidden" name="exportformsvg" id="exportformsvg" />
-      </form>
-   </div>
 </body>
 </html>
