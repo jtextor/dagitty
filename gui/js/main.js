@@ -716,7 +716,8 @@ function exportJPEG(){
 	}
 }
 
-function exportPNG(){
+function exportBitmap( format ){
+	if( !format ) format = "png"
 	const svgElement = document.querySelector('svg');
 	const w = svgElement.getBoundingClientRect().width;
 	const h = svgElement.getBoundingClientRect().height;
@@ -726,7 +727,6 @@ function exportPNG(){
 	const blob = new Blob([svgString], { type: 'image/svg+xml' });
 	const img = new Image();
 	const url = URL.createObjectURL(blob);
-	console.log("done something")
 	img.onload=function(){
 		const canv = document.createElement("canvas")
 		const ctx = canv.getContext("2d")
@@ -737,15 +737,15 @@ function exportPNG(){
 		ctx.fillRect( 0, 0, 2*w, 2*h )	
 		ctx.drawImage(img, 0, 0, w, h, 0, 0, 2*w, 2*h )
 		URL.revokeObjectURL( url )
-		const uri = canv.toDataURL('image/png').replace('image/png', 'octet/stream');
-		const a = document.createElement('a');
-		document.body.appendChild(a);
+		const uri = canv.toDataURL( 'image/'+format )
+		const a = document.createElement( 'a' );
+		document.body.appendChild( a );
     		a.style = 'display: none';
 	   	a.href = uri
 		a.download="dagitty-model.png"
 		a.click()
-		window.URL.revokeObjectURL(uri)
-		document.body.removeChild(a)
+		window.URL.revokeObjectURL( uri )
+		document.body.removeChild( a )
 	}
 	img.src = url
 }
