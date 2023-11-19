@@ -59,6 +59,27 @@
 
     var DAGittyControl;
 
+    function convertDAGToLavaan(dag) {
+      const relations = [];
+      const lines = dag.split('\n');
+  
+      for (const line of lines) {
+         if (line.includes('<->')) {
+            const parts = line.split('<->');
+            const var1 = parts[0].trim().split(' ')[0];
+            const var2 = parts[1].trim().split(' ')[0];
+            relations.push(`${var1} ~~ ${var2}`); // Notação `lavaan` para correlações
+        }else if (line.includes('->')) {
+         const parts = line.split('->');
+         const from = parts[0].trim().split(' ')[0]; // Ignora atributos extras
+         const to = parts[1].trim().split(' ')[0];
+         relations.push(`${to} ~ ${from}`);
+     } 
+      }
+  
+      return relations.join('\n');
+  }
+
     function initialize(){
 
 
@@ -91,6 +112,28 @@
                 document.getElementById("adj_matrix").value = g.toString();
             }
         );
+
+        DAGittyControl.observe( 'graphchange',
+        function(g){
+            debugger;
+            Model.dag = g;
+            document.getElementById("adj_matrix_lavaan").value = convertDAGToLavaan(g.toString());
+            // if previously highlighted variable no longer exists, fold up this menu
+            if( !g.getVertex(document.getElementById("variable_id").value) ){
+                document.getElementById("variable_id").value = ''
+            }
+            displayImplicationInfo( false )
+            causalEffectEstimates( document.getElementById("causal_effect_kind").value )
+            displayGeneralInfo()
+            GUI.refresh_variable_status()
+        }
+    );
+
+        DAGittyControl.observe( 'graphlayoutchange',
+        function(g){
+            document.getElementById("adj_matrix_lavaan").value = convertDAGToLavaan(g.toString());
+        }
+    );
 
         DAGittyControl.observe( 'vertex_marked',
             function( v ){
@@ -396,6 +439,16 @@ E -&gt; D
     <div id="model_data" style="display:block">
       <form name="model_data_frm">
       <textarea rows="10" cols="35" name="adj_matrix" id="adj_matrix"
+         onkeydown="if(this.value != Model.dag_model_text_data){ displayShow('model_refresh');this.style.backgroundColor='#fec'; }"></textarea>
+      </form>
+      <p id="model_refresh" style="display:none">You have modified the model code. To
+      draw the modified model, click here: <button onclick="loadDAGFromTextData()">Update DAG</button></p>
+    </div>
+
+    <h3 onclick="displayToggle('model_data_lavaan')"><img src="images/arrow-down.png" alt="" id="a_model_data" /> Lavaan</h3>
+    <div id="model_data_lavaan" style="display:block">
+      <form name="model_data_frm_lavaan">
+      <textarea rows="10" cols="35" name="adj_matrix" id="adj_matrix_lavaan"
          onkeydown="if(this.value != Model.dag_model_text_data){ displayShow('model_refresh');this.style.backgroundColor='#fec'; }"></textarea>
       </form>
       <p id="model_refresh" style="display:none">You have modified the model code. To
