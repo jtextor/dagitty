@@ -1,19 +1,16 @@
 # dagitty
 
-This is a collection of algorithms, a GUI frontend and an R package for analzing
+This is a collection of algorithms, a GUI frontend and an R package for analyzing
 graphical causal models (DAGs).
 
-The main componsents of the repository arre:
+The main components of the repository are:
 
  * [jslib](jslib): a JavaScript library implementing many DAG algorithms. This library underpins
  both the web interface and the R package, but could also be used independently, like in node.js.
  * [gui](gui): HTML interface for a GUI that exposes most of the functions in the JavaScript library.
  * [r](r): R package that exposes most of the functions in the JavaScript library.
- * [website](website): The current content of [dagitty.net](https://dagitty.net), including a version of the
- GUI (which may be older than the one in [gui](gui). 
+ * [website](website): The current content of [dagitty.net](https://dagitty.net), including a version of the GUI (which may be older than the one in [gui](gui). 
  * [doc](doc): LaTeX source of the dagitty PDF documentation.
-
-
 
 ## Running the web interface locally
 
@@ -32,16 +29,17 @@ install.packages("remotes") # unless you have it already
 remotes::install_github("jtextor/dagitty/r")
 ```
 
-If you encounter any problems installing the R package, it is probably not due to dagitty
-itself, but due to the package "V8" that it depends on. I may try to remove this dependence
-in a future version.
+If you encounter any problems installing the R package,
+it is probably not due to dagitty itself, but due to the
+package "V8" that it depends on. 
+I may try to remove this dependency in a future version.
 
 # More information
 
 You can get more information on dagitty at [dagitty.net](https://dagitty.net) and
- [dagitty.net/learn](https://dagitty.net/learn). The R package is documented through the standard
-R interface. There are also a few papers available:
-
+ [dagitty.net/learn](https://dagitty.net/learn). The R package is
+documented through the standard R help interface.
+There are also a few papers available:
 
 1. Textor, J., van der Zander, B., Gilthorpe, M. S., Liśkiewicz, M., & Ellison, G. T. H. (2017). Robust causal inference using directed acyclic graphs: the R package ‘dagitty.’ In International Journal of Epidemiology (p. dyw341). Oxford University Press (OUP). https://doi.org/10.1093/ije/dyw341
 

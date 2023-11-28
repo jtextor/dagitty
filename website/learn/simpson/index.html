@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta http-equiv="Content-type" content="text/html; charset=UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+
+<link rel="stylesheet"
+	href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css"
+	integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh"
+	crossorigin="anonymous">
+
+	<script src="https://ajax.googleapis.com/ajax/libs/prototype/1.7.1.0/prototype.js"></script>
+		<script type="text/javascript" src="../../lib/dagitty-3.0.js"></script>
+		<!-- For this text we use the no-frills "SEMlike-Plain" style, which
+			 does not color any nodes. -->
+		<script type="text/javascript" src="../../lib/styles/semlike-plain.js"></script>
+		<link rel="stylesheet" type="text/css"  href="../../content.css"/>
+		<style type="text/css">
+			#rcode{ font-size: 75% }
+		</style>
+		<script type="text/javascript">
+
+			var sty = DAGitty.stylesheets.default.style
+			sty.adjustednode.fill= "#aaaaaa"
+
+			var dc
+
+			function toSimData( g, pco ){
+				var top_order = GraphAnalyzer.topologicalOrdering(g), i,
+					r = "simpson.simulator <- function(N,s,ce){\n"
+				var vv = g.getVertices()
+				var vv_o = []
+				for( i = 0 ; i < vv.length ; i ++ ){
+					vv_o[top_order[vv[i].id]-1]=vv[i].id
+				}
+				for( i = 0 ; i < vv_o.length ; i ++ ){
+					r += "\t"+vv_o[i]+" <- rnorm(N,0,s)"
+					g.parentsOf([g.getVertex(vv_o[i])]).pluck("id").each(function(id){
+						r+=" + "+(pco[id]&&pco[id][vv_o[i]]?
+							 (pco[id][vv_o[i]]+"*") 
+							: "")+id
+					})
+					r += "\n"
+				}
+				r += "\tdata.frame(Y,X"
+				for( i = 1 ; i <= vv.length-3 ; i ++ ){
+					r += ",Z"+i
+				}
+				r += ")\n}\n\n"
+				return r;
+			}
+			
+			function simRunCode( ce, g, nr, levels ){
+				var r = "# 1st parameter: sample size\n# 2nd parameter: noise standard deviation\n"
+					+"# 3rd parameter: true causal effect\n"
+					+"D <- simpson.simulator(1000,0.01,1)\n\n\n\n"
+					i=0, j=3, k=0, va = g.getAdjustedNodes()
+				if( nr > 0 ){
+					r += "# adjusted for {"+va.pluck('id').join(",")+"}\nm <- lm(D[,c(1,2"
+					for( i = 0 ; i < va.length ; i ++ ){
+						r += ","+(2+parseInt(va[i].id.substring(1)))
+					}
+					r += ")])"
+				} else {
+					r += "# unadjusted estimate\nm <- lm(D[,1:2])"
+				}
+				r+="\nsummary(m)\nci <- confint(m,'X')\n\n\n# Plot result\n"
+				r+="plot( coef(m)['X'], 1, yaxt='n', bty='n', \n"
+				r+="  xlab='X coefficient', ylab='', xlim=c(-5,5), \n",
+				r+="  panel.first=abline(v=1,col=2), pch=19 )\n"
+				r+="segments( x0=ci[1], x1=ci[2], y0=1, y1=1 )\n\n"
+				return(r)
+			}
+
+			function generateMachine( levels ){
+				document.getElementById("machine").style.display = "block"
+				var r = "X E @0,0\nY O @1,0\nU U @0,"+(-levels-.5)+
+					"\nZ1 1 @0.5,"+(-levels-1)+"\n", i 
+				for( i = 0 ; i < levels ; i ++ ){
+					r += "Z"+(2*i+2)+" 1 @0.5,"+(-levels+i)
+							+"\n"+"Z"+(2*i+3)+" 1 @1,"+(-levels+i-.25)+"\n"
+				}
+				r += "\n"
+				r += "X Y\nU X\nZ1 U\n"
+				for( i = 0 ; i < levels ; i ++ ){
+					r += "Z"+(2*i+1)+" Z"+(2*i+3)+"\n"
+					//r += "Z1 X\nX Z"+(2*i+2)+"\nZ"+(2*i+2)+" X\n"
+					r += "Z"+(2*i+3)+" Z"+(2*i+2)+"\n"
+					r += "U Z"+(2*i+2)+"\n"
+				}
+				r += "Z"+(2*levels+1)+" Y"
+				var g = GraphParser.parseGuess( r )
+				if( !dc ){
+					DAGitty.setup()
+					dc = DAGitty.controllers[0]
+				}
+				document.getElementById('dag').style.height=((levels+2)*15+100)+"px"
+				DAGitty.resize()
+				dc.setGraph( g )
+				pco = {}
+				pco["Z"+(levels*2+1)] = {Y : 10}
+				pco["X"] = {Y : "ce"}
+				document.getElementById('rcode').innerHTML = 
+					toSimData( g, pco ) + simRunCode( 0.5, g, 0, levels )
+				r = "<option value=\"0\" selected>nothing</option>\n<option value=\"1\">{Z1}</option>"
+				for( i = 1 ; i <= 2*levels ; i ++ ){
+					r += "<option value=\""+(i+1)+"\">{Z1"
+					for( j = 1 ; j <= i ; j ++ ){
+						r += ",Z"+(j+1)
+					}
+					r += "}</option>"
+				}
+				document.getElementById('adj').innerHTML = r
+				//document.getElementById('rsim').src =
+				//	 "https://dagitty.net/learn/simpson/sim.php?l="
+				//	+levels+"&a="
+			}
+
+			function refresh(){
+				var g = dc.getGraph(),
+					nr = parseInt(document.getElementById('adj').value),
+					lev = parseInt(document.getElementById('lev').value)
+				dc.graphChanged()
+				document.getElementById('rcode').innerHTML = 
+					toSimData( g, pco ) + simRunCode( 0.5, g,
+						nr, document.getElementById('lev').value )
+				var va = g.getAdjustedNodes(), node_nrs = []
+				for( i = 0 ; i < va.length ; i ++ ){
+					node_nrs.push(va[i].id.substring(1))
+				}
+				//document.getElementById('rsim').src =
+				//	 "https://dagitty.net/learn/simpson/sim.php?l="
+				//	+lev+"&a="+node_nrs.join(",")+"&t="+new Date().getTime()
+			}
+		
+			function go(){
+				generateMachine(document.getElementById('lev').value)
+			}
+
+			function adj(){
+				var nr = parseInt(document.getElementById('adj').value)
+				var g = dc.getGraph()
+				g.removeAllAdjustedNodes()
+				for( var i = 0 ; i < nr ; i ++ ){
+					g.addAdjustedNode( "Z"+(i+1) )
+				}
+				refresh()
+			}
+
+		</script>
+	</head>
+	<body onload="document.getElementById('lev').value='0'">
+<div class="container">
+		<h1>An Illustration of Pearl's Simpson Machine</h1>
+		
+		<p>
+			Judea Pearl's "Simpson Machine", introduced in his paper
+			<a href="http://ftp.cs.ucla.edu/pub/stat_ser/r414.pdf">Understanding
+			Simpson's paradox</a>,
+			is an example of a causal structure where stepwise inclusion of 
+			control variables into a regression model switches the
+			sign of an estimated causal association in every step.
+			This example illustrates not only how certain causal
+			structures lead to Simpson's Paradox, but also that
+			deciding which variables to include in a control set
+			is impossible without considering the underlying causal
+			structure.
+		</p>
+		
+		<p>
+			This web-page allows you to play around with the
+			Simpson machine and generate example data to 
+			help you understand Simpson's paradox and
+			the relationship between causal structure, adjustment,
+			and bias. You can generate Simpson machines of different
+			sizes, adjust for different variables to see the
+			effect on the causal effect estimate, and 
+			generate R code of the simulator to generate and analyse
+			the data yourself.
+		</p>
+		
+		<p>
+			Generate Simpson machine with 
+			<select id="lev" onchange="if(this.value!='0')go()" autocomplete="off">
+				<option value="0" selected>choose ...</option>
+				<option>1</option>
+				<option>2</option>
+				<option>3</option>
+<!--				<option>4</option>
+				<option>5</option>
+				<option>6</option>
+				<option>7</option>-->
+			</select>
+			level(s)
+		</p>
+
+		<div id="machine" style="display: none">
+
+		<p>
+			Adjust for:
+			<select id="adj" onchange="adj()">
+				<option value="0">nothing</option>
+				<option value="1">{Z1}</option>
+				<option value="2">{Z1,Z2}</option>
+			</select>
+		</p>
+
+		<div style="width: 400px; margin-left: 1em; float: left;">
+			<h2>DAG of Machine</h2>
+		<pre id="dag" class="dagitty" style="">
+
+		</pre>
+		</div>
+
+		<!--<div style="width: 200px; float:left; margin-left: 3em;">
+			<h2>R Simulation Output</h2>
+			<img width="200" height="300" id="rsim" src="https://dagitty.net/learn/simpson/sim.php?l=3&amp;a="/>
+		</div>-->
+
+		<div style="width: 400px; float:left; margin-left: 3em;">
+			<h2>R Simulation Code</h2>
+			<pre id="rcode">
+			</pre>
+		</div>
+
+		</div>
+
+		<div style="clear:both; padding-top: 1em">
+			<hr />
+		</div>
+
+		
+</div>
+	</body>
+</html>
