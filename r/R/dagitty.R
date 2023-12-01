@@ -272,6 +272,12 @@ simulateLogistic <- function( x, b.default=NULL,
 	} else {
 		e$a[b.not.set] <- b.default
 	}
+
+	v <- .vertexAttributes( x, "eps" )
+	v$a <- as.double(as.character(v$a))
+	v.not.set <- is.na(v$a)
+	v$a[v.not.set] <- eps
+	v$v <- paste0("v",v$v)
 	ovars <- names(x)
 	nV <- length(ovars)
 	nL <- sum(e$e=="<->")
@@ -316,7 +322,7 @@ simulateLogistic <- function( x, b.default=NULL,
 		if( verbose ){
 			print(paste("Generating",i))
 		}
-		r[,i] <- 2*rbinom( N, 1, .odds2p(eps) )-1
+		r[,i] <- 2*rbinom( N, 1, .odds2p( v$a[v$v==i] ) )-1
 	}
 	tord <- unlist(topologicalOrdering( x )[ovars])
 	if( verbose ){
@@ -328,7 +334,7 @@ simulateLogistic <- function( x, b.default=NULL,
 		if( verbose ){
 			print(paste("Generating",cn))
 		}
-		p <- .odds2p( r %*% Beta[,i] )
+		p <- .odds2p( r %*% Beta[,i] + v$a[v$v==cn] )
 		r[,cn] <- 2*rbinom( N, 1, p )-1
 	}
 	r <- r[,seq(1,nV),drop=FALSE]
