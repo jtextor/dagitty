@@ -1,7 +1,7 @@
 
 const {GraphParser,GraphAnalyzer,GraphTransformer} = require("../../jslib/dagitty-node.js")
 const TestGraphs = require("../test-graphs.js")
-const _ = require("underscore")
+const _ = require("../../jslib/underscore-mock-es6.js") 
 
 const $p = (s) => GraphParser.parseGuess(s)
 const sep_2_str = (ss) => {

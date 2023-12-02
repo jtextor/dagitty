@@ -33,6 +33,7 @@ list of tests needs to be specified.}
 test to perform. Supported values are \code{"cis"} (linear conditional independence),
 \code{"cis.loess"} (conditional independence using loess regression), 
 \code{"cis.chisq"} (for categorical data, based on the chi-square test),
+\code{"cis.pillai"} (for mixed data, based on canonical correlations),
 \code{"tetrads"} and \code{"tetrads.type"}, where "type" is one of the items of the 
 tetrad typology, e.g. \code{"tetrads.within"} (see \code{\link{vanishingTetrads}}).
 Tetrad testing is only implemented for DAGs.}
@@ -96,6 +97,12 @@ matrix is given) or a test of residual independence after linear regression
 (it the raw data is given) is performed.
 Both tetrad and CI tests also support bootstrapping instead of estimating parametric
 confidence intervals.
+For the canonical correlations approach, all ordinal variables are integer-coded, and 
+all categorical variables are dummy-coded (omitting the dummy representing the most frequent 
+category). To text X _||_ Y | Z, we first regress both X and Y (which now can be multivariate)
+on Z, and then we compute the canonical correlations between the residuals. The effect size
+is the root mean square canonical correlation (closely related to Pillai's trace, which is the 
+root of the squared sum of all canonical correlations).
 }
 \examples{
 # Simulate full mediation model with measurement error of M1

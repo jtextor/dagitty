@@ -36,6 +36,8 @@ Suggests:
     base64enc (>= 0.1-3),
     testthat,
     markdown,
-	rmarkdown,
-	lavaan
+    rmarkdown,
+    lavaan,
+    CCP,
+    fastDummies   
 RoxygenNote: 7.2.1

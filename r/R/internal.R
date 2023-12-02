@@ -80,7 +80,7 @@
 	if( !exists("ct",.dagitty.cache) ){
 		requireNamespace("V8",quietly=TRUE)
 		ct <- V8::new_context()
-		ct$source(system.file("js/underscore.js",package="V8"))
+		ct$source(system.file("js/mock-underscore.js",package="dagitty"))
 		ct$source(system.file("js/dagitty-alg.js",package="dagitty"))
 		ct$source(system.file("js/RUtil.js",package="dagitty"))
 		ct$source(system.file("js/example-dags.js",package="dagitty"))

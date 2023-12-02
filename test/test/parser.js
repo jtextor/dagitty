@@ -6,7 +6,7 @@ const {
 } = require("../../jslib/dagitty-node.js")
 const TestGraphs = require("../test-graphs.js")
 
-const _ = require("underscore")
+const _ = require("../../jslib/underscore-mock-es6.js")
 
 GraphParser.VALIDATE_GRAPH_STRUCTURE = true
 const $p = function(s){ return GraphParser.parseGuess(s) }

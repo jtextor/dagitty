@@ -1,6 +1,6 @@
 
 const {GraphParser,GraphAnalyzer} = require("../../jslib/dagitty-node.js")
-const _ = require("underscore")
+const _ = require("../../jslib/underscore-mock-es6.js") 
 
 
 const $p = (s) => GraphParser.parseGuess(s)
