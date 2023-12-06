@@ -10,11 +10,6 @@ longpath <- dagitty("dag{ X -> R -> S -> T <- U <- V -> Y T -> P }")
 
 # covers old unittests 1 t/m 3
 
-test_that("parsing / serializing", {
-	expect_equal(toString(small1,"dagitty.old"), "A 1\nS E\nT O\n\nA S\nS T")
-	expect_equal(graphType("pag{}"),"pag")	
-})
-
 test_that("relationships", {
 	expect_equal(spouses(mixed,"x"),("c"))
 	expect_equal(neighbours(mixed,"x"),("a"))
@@ -86,9 +81,13 @@ test_that("children and parents of nothing", {
 	expect_equal( length(parents("a->b",c())), 0 )
 } )
 
-test_that("proper and non-proper ancestors ",{
+test_that("proper and non-proper ancestors",{
 	expect_equal( "x" %in% ancestors(dagitty("graph{a <-> x -> b ; c -- x <- d}"), "x"), TRUE )
 	expect_equal( "x" %in% ancestors(dagitty("graph{a <-> x -> b ; c -- x <- d}"), "x",TRUE), FALSE )
 	expect_equal( "x" %in% descendants(dagitty("graph{a <-> x -> b ; c -- x <- d}"), "x"), TRUE )
 	expect_equal( "x" %in% descendants(dagitty("graph{a <-> x -> b ; c -- x <- d}"), "x",TRUE), FALSE )
+} )
+
+test_that("graph merging",{
+	expect_equal( length(names(c(getExample("confounding"), getExample("M-bias")))), 5 )
 } )

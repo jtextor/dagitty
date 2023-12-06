@@ -72,9 +72,9 @@ toString.dagitty <- function( x, format="dagitty", ... ){
 		xv <- .getJSVar()
 		tryCatch({
 			.jsassign( xv, as.character(x) )
-			.jsassign( xv, .jsp("GraphSerializer.to",
+			.jsassign( xv, .jsp("DAGitty.GraphSerializer.to",
 				toupper(substring(format, 1,1)), substring(format, 2),
-				"(GraphParser.parseGuess(global.",xv,"))") )
+				"(DAGitty.GraphParser.parseGuess(global.",xv,"))") )
 			r <- as.character( .jsget(xv) )
 		}, error=function(e){
 			stop( e )
@@ -206,7 +206,7 @@ c.dagitty <- function( ... ){
 		for( i in seq_along(args) ){ 
 			.jsassigngraph( xvs[[i]], as.dagitty( args[[i]] ) )
 		}
-		.jsassign( rv, .jsp("GraphTransformer.mergeGraphs(",
+		.jsassign( rv, .jsp("DAGitty.GraphTransformer.mergeGraphs(",
 			paste(xvs,collapse=","),").toString()") )
 		r <- .jsget( rv )
 	},finally={
