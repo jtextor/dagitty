@@ -5,13 +5,21 @@
 /* exported DagittyR */
 
 var DagittyR = {
+	"pluck" : function(arr, key){
+		if( Array.isArray( arr ) ){
+			return arr.map(obj => obj[key])
+		} else {
+			return []
+		}
+	},
+
 	adj2r : function( ss ){
 		'use strict'
 		var r = {}, i=1
 		if( ss.length === 0 )
 			return r
-		_.each( ss, function(s){
-			var rs = _.pluck( s, 'id').sort()
+		ss.forEach( function(s){
+			var rs = DagittyR.pluck( s, 'id').sort()
 			r[i++]=rs
 		})
 		return r
@@ -20,10 +28,10 @@ var DagittyR = {
 	imp2r : function( imp ){
 		'use strict'
 		var r = {}, k=1, rk
-		_.each( imp, function( i ){
-			_.each( i[2], function( z ){
+		imp.forEach( function( i ){
+			i[2].forEach( function( z ){
 				rk = { X: i[0], Y: i[1] }
-				rk.Z = _.pluck( z, 'id').sort()
+				rk.Z = DagittyR.pluck( z, 'id').sort()
 				r[k++]=rk
 			})
 		})
@@ -33,10 +41,10 @@ var DagittyR = {
 	iv2r : function( ivs ){
 		'use strict'
 		var r = {}, j=1, rk
-		_.each(ivs, function( i ){
+		ivs.forEach( function( i ){
 			rk = { "I": i[0].id }
 			if( i[1].length > 0 ){
-				rk.Z = _.pluck(i[1],'id').sort()
+				rk.Z = DagittyR.pluck(i[1],'id').sort()
 			} 
 			r[j++]=rk
 		} )
@@ -44,17 +52,17 @@ var DagittyR = {
 	},
 
 	canonicalAdjustment : function( g ){
-		return this.adj2r( GraphAnalyzer.canonicalAdjustmentSet( g ) )
+		return this.adj2r( DAGitty.GraphAnalyzer.canonicalAdjustmentSet( g ) )
 	},
 	
 	edgeAttributes2r : function( g, a ){
 		'use strict'
 		var r = { v : [], w : [], e : [], a : [] }
-		_.each(g.edges, function( e ){
+		g.edges.forEach( function( e ){
 			r.v.push( e.v1.id )
 			r.w.push( e.v2.id )
 			r.a.push( e.attributes ? e.attributes[a] : null )
-			r.e.push( Graph.Edgetype.Symbol[e.directed] )
+			r.e.push( DAGitty.Graph.Edgetype.Symbol[e.directed] )
 		} )
 		return r
 	},
@@ -62,7 +70,7 @@ var DagittyR = {
 	vertexAttributes2r : function( g, a ){
 		'use strict'
 		var r = { v : [], a : [] }
-		_.each(g.vertices.values(), function( v ){
+		g.vertices.values().forEach( function( v ){
 			r.v.push( v.id )
 			r.a.push( v.attributes ? v.attributes[a] : null )
 		} )
@@ -72,12 +80,12 @@ var DagittyR = {
 	edge2r : function( g ){
 		'use strict'
 		var r = { v : [], w : [], e : [], x : [], y : [] }
-		_.each(g.edges, function( e ){
+		g.edges.forEach( function( e ){
 			r.v.push( e.v1.id )
 			r.w.push( e.v2.id )
 			r.x.push( e.layout_pos_x )
 			r.y.push( e.layout_pos_y )
-			r.e.push( Graph.Edgetype.Symbol[e.directed] )
+			r.e.push( DAGitty.Graph.Edgetype.Symbol[e.directed] )
 		} )
 		return r
 	},
@@ -86,8 +94,8 @@ var DagittyR = {
 		var AnZ = g.ancestorsOf( g.getVertex( Z ) )
 		var i = 0, r = { paths : [], open : [] }
 		for( ; i < ga.length ; i ++ ){
-			r.paths.push( GraphSerializer.pathToDot( ga[i] ) )
-			r.open.push( GraphAnalyzer.dConnected( ga[i], 
+			r.paths.push( DAGitty.GraphSerializer.pathToDot( ga[i] ) )
+			r.open.push( DAGitty.GraphAnalyzer.dConnected( ga[i], 
 				ga[i].getSources(), ga[i].getTargets(), 
 				ga[i].getVertex( Z ), AnZ )
 			)
@@ -107,26 +115,31 @@ var DagittyR = {
 	},
 	
 	dconnected : function( g, X, Y, Z ){
-		var r = GraphAnalyzer.dConnected( g, 
+		var r = DAGitty.GraphAnalyzer.dConnected( g, 
 			g.getVertex(X), 
 			g.getVertex(Y), 
 			g.getVertex(Z) )
 		if( Y.length > 0 ){
 			return r
 		} else {
-			return _.difference( _.pluck(r,'id'),
-				_.pluck(g.S,'id'), _.pluck(g.L,'id') )
+			return [ DagittyR.pluck(r,'id'),
+				DagittyR.pluck(g.S,'id'), DagittyR.pluck(g.L,'id') ].reduce(
+				function(a, b) {
+					return a.filter(function(value) {
+						return !b.includes(value);
+					});
+				})
 		}
 	},
 	
 	findExample : function( s ){
 		'use strict'
-		for( var i = 0 ; i < examples.length ; i++ ){
+		for( let i = 0 ; i < examples.length ; i++ ){
 			if( examples[i].l.toLowerCase().indexOf(s.toLowerCase()) >= 0 ){
 				if( examples[i].d ){
-					return GraphParser.parseGuess(examples[i].d).toString()
+					return DAGitty.GraphParser.parseGuess(examples[i].d).toString()
 				} else {
-					return GraphParser.parseGuess(examples[i].e,examples[i].v).toString()
+					return DAGitty.GraphParser.parseGuess(examples[i].e,examples[i].v).toString()
 				}
 			}
 		}

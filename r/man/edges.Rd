@@ -11,7 +11,7 @@ edges(x)
 }
 \value{
 a data frame with the following variables:
-\itemize{
+\describe{
  \item{v}{ name of the start node.}
  \item{w}{ name of the end node. For symmetric edges (bidirected and undirected), the
  order of start and end node is arbitrary.}

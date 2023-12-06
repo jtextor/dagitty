@@ -49,7 +49,7 @@ graphType <- function( x ){
 #' Provides access to the builtin examples of the dagitty website.
 #'
 #' @param x name of the example, or part thereof. Supported values are:
-#' \itemize{
+#' \describe{
 #'  \item{"M-bias"}{ the M-bias graph.}
 #'  \item{"confounding"}{ an extended confounding triangle.}
 #'  \item{"mediator"}{ a small model with a mediator.}
@@ -352,8 +352,8 @@ equivalentDAGs <- function( x, n=100 ){
 	r <- NULL
 	tryCatch({
 		.jsassigngraph( xv, x )
-		.jsassign( xv, .jsp("_.map(GraphTransformer.markovEquivalentDags(global.",
-			xv,",",n,"),function(x){return x.toString()})") )
+		.jsassign( xv, .jsp("DAGitty.GraphTransformer.markovEquivalentDags(global.",
+			xv,",",n,").map(function(x){return x.toString()})") )
 		r <- .jsget( xv )
 	}, 
 	error=function(e) stop(e),
@@ -486,7 +486,7 @@ ancestorGraph <- function( x, v=NULL ){
 		.jsassigngraph( xv, x )
 		.jsassign( xv2, v )
 		.jsassign( xv2, .jsp("DagittyR.getVertices(global.",xv,",global.",xv2,")") )
-		.jsassign( xv, .jsp("GraphTransformer.ancestorGraph(global.",xv,",global.",xv2,")") )
+		.jsassign( xv, .jsp("DAGitty.GraphTransformer.ancestorGraph(global.",xv,",global.",xv2,")") )
 		r <- .jsgetgraph( xv )
 	}, 
 	error=function(e) stop(e),
@@ -581,7 +581,7 @@ setVariableStatus <- function( x, status, value ) {
 	vv <- .getJSVar()
 	tryCatch({
 		.jsassign( xv, as.character(x) )
-		.jsassign( xv, .jsp("GraphParser.parseGuess(global.",xv,")") )
+		.jsassign( xv, .jsp("DAGitty.GraphParser.parseGuess(global.",xv,")") )
 		if( status == "exposure" ){
 			jsstatname <- "Source"
 		} else if (status == "outcome" ){
@@ -684,11 +684,11 @@ coordinates <- function( x ){
 	tryCatch({
 		.jsassigngraph( xv, x )
 		.jsassign( xv, .jsp("global.",xv,".getVertices()") )
-		.jsassign( yv, .jsp("_.pluck(global.",xv,",'id')") )
+		.jsassign( yv, .jsp("DagittyR.pluck(global.",xv,",'id')") )
 		labels <- .jsget(yv)
-		.jsassign( yv, .jsp("_.pluck(global.",xv,",'layout_pos_x')") )
+		.jsassign( yv, .jsp("DagittyR.pluck(global.",xv,",'layout_pos_x')") )
 		rx <- .jsget(yv)
-		.jsassign( yv, .jsp("_.pluck(global.",xv,",'layout_pos_y')") )
+		.jsassign( yv, .jsp("DagittyR.pluck(global.",xv,",'layout_pos_y')") )
 		ry <- .jsget(yv)},
 	finally={
 		.deleteJSVar(xv)
@@ -743,11 +743,11 @@ coordinates <- function( x ){
 #' 
 #' @param x the input graph, a DAG or MAG.
 #' @return A list containing the following components:
-#' \itemize{
+#' \describe{
 #'  \item{g}{The resulting graph.}
 #'  \item{L}{Names of newly inserted latent variables.}
 #'  \item{S}{Names of newly inserted selection variables.}
-#' } 
+#' }
 #' 
 #' @examples
 #' canonicalize("mag{x<->y--z}") # introduces two new variables
@@ -760,12 +760,12 @@ canonicalize <- function( x ){
 	r <- NULL
 	tryCatch({
 		.jsassigngraph( xv, x )
-		.jsassign( xv, .jsp("GraphTransformer.canonicalDag(global.",xv,")") )
+		.jsassign( xv, .jsp("DAGitty.GraphTransformer.canonicalDag(global.",xv,")") )
 		.jsassign( xv2, .jsp("global.",xv,".g.toString()") )
 		g <- .jsget( xv2 )
-		.jsassign( xv2, .jsp("_.pluck(",xv,".L,'id')") )
+		.jsassign( xv2, .jsp("DagittyR.pluck(",xv,".L,'id')") )
 		L <- .jsget( xv2 )
-		.jsassign( xv2, .jsp("_.pluck(",xv,".S,'id')") )
+		.jsassign( xv2, .jsp("DagittyR.pluck(",xv,".S,'id')") )
 		S <- .jsget( xv2 )	
 		r <- list( g=structure(g,class="dagitty"), L=L, S=S )
 	}, 
@@ -780,7 +780,7 @@ canonicalize <- function( x ){
 #'
 #' @param x the input graph, of any type.
 #' @return a data frame with the following variables:
-#' \itemize{
+#' \describe{
 #'  \item{v}{ name of the start node.}
 #'  \item{w}{ name of the end node. For symmetric edges (bidirected and undirected), the
 #'  order of start and end node is arbitrary.}
@@ -850,7 +850,7 @@ graphLayout <- function( x, method="spring" ){
 	xv <- .getJSVar()
 	tryCatch({
 		.jsassigngraph( xv, x )
-		.jseval( paste0("(new GraphLayouter.Spring(global.",xv,")).layout()") )
+		.jseval( paste0("(new DAGitty.GraphLayouter.Spring(global.",xv,")).layout()") )
 		.jsassign( xv, .jsp("global.",xv,".toString()") )
 		r <- .jsget(xv)
 	}, finally={.deleteJSVar(xv)})
@@ -1113,9 +1113,9 @@ adjustmentSets <- function( x, exposure=NULL, outcome=NULL,
 		tryCatch({
 			.jsassigngraph( xv, x )
 			if( effect=="direct" ){	
-				.jsassign( xv, .jsp("GraphAnalyzer.listMsasDirectEffect(global.",xv,command.close) )
+				.jsassign( xv, .jsp("DAGitty.GraphAnalyzer.listMsasDirectEffect(global.",xv,command.close) )
 			} else {
-				.jsassign( xv, .jsp("GraphAnalyzer.listMsasTotalEffect(global.",xv,command.close) )
+				.jsassign( xv, .jsp("DAGitty.GraphAnalyzer.listMsasTotalEffect(global.",xv,command.close) )
 			}
 			.jsassign( xv, .jsp("DagittyR.adj2r(global.",xv,")"))
 			r <- structure( .jsget(xv), class="dagitty.sets" )
@@ -1200,7 +1200,7 @@ isAdjustmentSet <- function( x, Z, exposure=NULL, outcome=NULL ){
 	tryCatch({
 		.jsassigngraph( xv, x )
 		.jsassign( Zv, as.list(Z) )
-		.jsassign( xv, .jsp("GraphAnalyzer.isAdjustmentSet(",xv,",",Zv,")") )
+		.jsassign( xv, .jsp("DAGitty.GraphAnalyzer.isAdjustmentSet(",xv,",",Zv,")") )
 		r <- .jsget(xv)
 	},finally={
 		.deleteJSVar(xv)
@@ -1233,7 +1233,7 @@ isAcyclic <- function( x ){
 	xv <- .getJSVar()
 	tryCatch({
 		.jsassigngraph( xv, x )
-		.jsassign( xv, .jsp("GraphAnalyzer.containsCycle(",xv,")===false") )
+		.jsassign( xv, .jsp("DAGitty.GraphAnalyzer.containsCycle(",xv,")===false") )
 		r <- .jsget(xv)
 	},finally={
 		.deleteJSVar(xv)
@@ -1254,7 +1254,7 @@ findCycle <- function( x ){
 		.jseval( paste0("var cycle = ''; var cc = '';
 				for( ",xv2," of ",xv,".getVertices() ){
 					",xv,".clearVisited();
-					",xv3," = GraphAnalyzer.searchCycleFrom(",xv2,")
+					",xv3," = DAGitty.GraphAnalyzer.searchCycleFrom(",xv2,")
 					if( typeof ",xv3," != 'undefined' ){
 						break
 					}
@@ -1361,19 +1361,19 @@ impliedConditionalIndependencies <- function( x, type="missing.edge", max.result
 	xv <- .getJSVar()
 	tryCatch({
 		.jsassign( xv, as.character(x) )
-		.jsassign( xv, .jsp("GraphParser.parseGuess(global.",xv,")") )
+		.jsassign( xv, .jsp("DAGitty.GraphParser.parseGuess(global.",xv,")") )
 
 		if( type == "missing.edge" ){
 			if( is.finite( max.results ) ){
 				.jsassign( xv,
-					.jsp("GraphAnalyzer.listMinimalImplications(global.",xv,",",
+					.jsp("DAGitty.GraphAnalyzer.listMinimalImplications(global.",xv,",",
 					as.numeric(max.results),")"))
 			} else {
 				.jsassign( xv, 
-					.jsp("GraphAnalyzer.listMinimalImplications(global.",xv,")"))
+					.jsp("DAGitty.GraphAnalyzer.listMinimalImplications(global.",xv,")"))
 			}
 		} else {
-			.jsassign( xv, .jsp("GraphAnalyzer.listBasisImplications(global.",xv,")"))
+			.jsassign( xv, .jsp("DAGitty.GraphAnalyzer.listBasisImplications(global.",xv,")"))
 		}
 		.jsassign( xv, .jsp("DagittyR.imp2r(global.",xv,")") )
 		r  <- structure( lapply( .jsget(xv), 
@@ -1426,7 +1426,7 @@ instrumentalVariables <- function( x, exposure=NULL, outcome=NULL ){
 	xv <- .getJSVar()
 	tryCatch({
 		.jsassigngraph( xv, x )
-		.jsassign( xv, .jsp("GraphAnalyzer.conditionalInstruments(global.",xv,")") )
+		.jsassign( xv, .jsp("DAGitty.GraphAnalyzer.conditionalInstruments(global.",xv,")") )
 		.jsassign( xv, .jsp("DagittyR.iv2r(global.",xv,")") )
 		r <- structure( .jsget(xv), class="dagitty.ivs" )
 	}, finally={.deleteJSVar(xv)})
@@ -1472,10 +1472,10 @@ vanishingTetrads <- function( x, type=NA ){
 	tryCatch({
 		.jsassigngraph( xv, x )
 		if( is.character( type ) ){
-			.jsassign( xv, .jsp("GraphAnalyzer.vanishingTetrads(global.",
+			.jsassign( xv, .jsp("DAGitty.GraphAnalyzer.vanishingTetrads(global.",
 				xv,",undefined,'",type,"')") )
 		} else {
-			.jsassign( xv, .jsp("GraphAnalyzer.vanishingTetrads(global.",
+			.jsassign( xv, .jsp("DAGitty.GraphAnalyzer.vanishingTetrads(global.",
 				xv,")") )
 	
 		}
@@ -1623,7 +1623,7 @@ dagitty <- function(x, layout=FALSE){
 	xv <- .getJSVar()
 	tryCatch({
 		.jsassign( xv, as.character(x) )
-		.jsassign( xv, .jsp("GraphParser.parseGuess(global.",xv,").toString()") )
+		.jsassign( xv, .jsp("DAGitty.GraphParser.parseGuess(global.",xv,").toString()") )
 		r <- structure( .jsget(xv), class="dagitty" )
 	}, error=function(e){
 		stop( e )
@@ -1992,7 +1992,7 @@ paths <- function(x,from=exposures(x),to=outcomes(x),Z=list(),limit=100,directed
 	tryCatch({
 		.jsassigngraph( xv, x )
 		.jsassign( xv2, as.list(Z) )
-		.jsassign( xv, .jsp("DagittyR.paths2r(GraphAnalyzer.listPaths(global.",
+		.jsassign( xv, .jsp("DagittyR.paths2r(DAGitty.GraphAnalyzer.listPaths(global.",
 			xv,",",tolower(directed),",",limit,"),",xv2,",",
 			xv,")" ) )
 		r <- .jsget(xv)
@@ -2073,7 +2073,7 @@ topologicalOrdering <- function( x ){
 	r <- NULL
 	tryCatch({
 		.jsassigngraph( xv, x )
-		.jsassign( xv, .jsp("GraphAnalyzer.topologicalOrdering(global.",xv,")") )
+		.jsassign( xv, .jsp("DAGitty.GraphAnalyzer.topologicalOrdering(global.",xv,")") )
 		r <- .jsget( xv )
 	}, 
 	error=function(e) stop(e),

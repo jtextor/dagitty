@@ -8,7 +8,7 @@ getExample(x)
 }
 \arguments{
 \item{x}{name of the example, or part thereof. Supported values are:
-\itemize{
+\describe{
  \item{"M-bias"}{ the M-bias graph.}
  \item{"confounding"}{ an extended confounding triangle.}
  \item{"mediator"}{ a small model with a mediator.}

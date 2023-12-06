@@ -11,7 +11,7 @@ canonicalize(x)
 }
 \value{
 A list containing the following components:
-\itemize{
+\describe{
  \item{g}{The resulting graph.}
  \item{L}{Names of newly inserted latent variables.}
  \item{S}{Names of newly inserted selection variables.}
