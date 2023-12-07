@@ -33,12 +33,12 @@ convert.dagitty <- function( x, to, ... ){
 			vv[,"y"] <- cc$y
 		}
 		eps <- .vertexAttributes( x, "eps" )
-		if( any( !is.na(eps) ) ){
-			vv[,"eps"] <- eps
+		if( any( !is.na(eps$a) ) ){
+			vv[,"eps"] <- eps$a
 		}
 		beta <- .edgeAttributes( x, "beta" )
-		if( any( !is.na(beta) ) ){
-			ee[,"beta"] <- beta
+		if( any( !is.na(beta$a) ) ){
+			ee[,"beta"] <- beta$a
 		}
 		ge <- edges( x )
 		ee <- data.frame( from=ge$v, to=ge$w, arrow.mode=ge$e )
