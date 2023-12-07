@@ -2115,7 +2115,7 @@ randomDAG <- function( N, p ){
 	tryCatch({
 	.jsassign( pv, p )
 	.jsassign( xv, as.list(paste0("x",seq_len(N))) )
-	.jsassign( xv, .jsp("GraphGenerator.randomDAG(",xv,",",pv,").toString()") )
+	.jsassign( xv, .jsp("DAGitty.GraphGenerator.randomDAG(",xv,",",pv,").toString()") )
 	r <- .jsget(xv)
 	},finally={
 		.deleteJSVar(xv)
