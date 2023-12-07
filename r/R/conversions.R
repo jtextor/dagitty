@@ -4,7 +4,7 @@
 #' to another package's format, if possible.
 #'
 #' @param x a \code{dagitty} object or a character string.
-#' @param to destination format, currently one of "dagitty", "tikz", "lavaan", "bnlearn", or "causaleffect".
+#' @param to destination format, currently one of "dagitty", "tikz", "lavaan", "bnlearn", "igraph", or "causaleffect".
 #' @param ... further arguments passed on to methods (currently unused)
 #' @export
 convert <- function( x, to, ... ) UseMethod("convert")
@@ -17,9 +17,32 @@ convert.character <- function( x, to, ... ){
 #' @export
 convert.dagitty <- function( x, to, ... ){
 	to <- match.arg( to, 
-		c("dagitty","tikz","lavaan","dagitty.old","bnlearn","singular","causaleffect","edgelist") )
+		c("dagitty","tikz","lavaan","dagitty.old","bnlearn","singular","causaleffect","edgelist","igraph") )
 	if( to %in% c("dagitty","tikz","lavaan","dagitty.old","bnlearn","singular","edgelist") ){
 		return( toString( x, to ) )
+	}
+	if( to == "igraph" ){
+		.supportsTypes( x, c("dag","mag","pdag") )
+		if( !requireNamespace( "igraph", quietly=TRUE ) ){
+			stop("This function requires the package 'igraph'!")
+		}
+		vv <- data.frame( name=names(x) )
+		cc <- coordinates( x )
+		if( any( !is.na(cc$x) ) ){
+			vv[,"x"] <- cc$x
+			vv[,"y"] <- cc$y
+		}
+		eps <- .vertexAttributes( x, "eps" )
+		if( any( !is.na(eps) ) ){
+			vv[,"eps"] <- eps
+		}
+		beta <- .edgeAttributes( x, "beta" )
+		if( any( !is.na(beta) ) ){
+			ee[,"beta"] <- beta
+		}
+		ge <- edges( x )
+		ee <- data.frame( from=ge$v, to=ge$w, arrow.mode=ge$e )
+		return( igraph::graph_from_data_frame( ee, directed=TRUE, vertices=vv ) )
 	}
 	if( to == "causaleffect" ){
 		.supportsTypes( x, "dag" )
