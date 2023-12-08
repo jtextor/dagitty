@@ -26,3 +26,9 @@ test_that("pags", {
 	expect_true(dconnected('pag { x @-@ y }',"x","y"))
 
 })
+
+test_that("mediation", {
+	g <- dagitty( "dag{ {x[e]}->m->{y[o]}->S }" )
+	expect_true(isAdjustmentSet(g,list()))
+	expect_false(isAdjustmentSet(g,list("m")))
+} )
