@@ -36,12 +36,12 @@ convert.dagitty <- function( x, to, ... ){
 		if( any( !is.na(eps$a) ) ){
 			vv[,"eps"] <- eps$a
 		}
+		ge <- edges( x )
+		ee <- data.frame( from=ge$v, to=ge$w, arrow.mode=ge$e )
 		beta <- .edgeAttributes( x, "beta" )
 		if( any( !is.na(beta$a) ) ){
 			ee[,"beta"] <- beta$a
 		}
-		ge <- edges( x )
-		ee <- data.frame( from=ge$v, to=ge$w, arrow.mode=ge$e )
 		return( igraph::graph_from_data_frame( ee, directed=TRUE, vertices=vv ) )
 	}
 	if( to == "causaleffect" ){
