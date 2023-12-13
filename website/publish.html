@@ -1,0 +1,198 @@
+<!doctype html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<title>Publish causal diagram online</title>
+	<meta http-equiv="Content-type" content="text/html; charset=UTF-8"></meta>
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" 
+		integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
+	<script>
+		function setModelCode( code ){
+			console.log( "called with code" , code )
+			document.getElementById("modelsavefrm_code").value = code
+		}
+
+		function requireEmailAgreement( v ){
+			if( v ){
+				document.getElementById("modelsaveform_email_agreement").required = true;
+			} else {
+				document.getElementById("modelsaveform_email_agreement").required = false;
+			}
+		}
+
+		function requireAuthorAgreement( v ){
+			if( v ){
+				document.getElementById("modelsaveform_author_agreement").required = true;
+			} else {
+				document.getElementById("modelsaveform_author_agreement").required = false;
+			}
+		}
+
+        	function submitForm() {
+            		const formData = new FormData(document.getElementById('dagform'))
+			fetch( 
+				"https://dagitty.net/db/store/",
+				{ method: "POST", body: formData }
+			)
+			.then( response => response.json() )
+			.then( data => handleResponse( data ) )
+			.catch( error => handleError( error ) )
+		}
+
+		function handleResponse( data ){
+			document.getElementById("submission_field").classList.add("bg-info")
+			if( data["exists"] ){
+				document.getElementById("submission_field").innerHTML = `This diagram is already present
+				in the database. It is available at:
+				<a href="https://dagitty.net/m${data["id"]}">https://dagitty.net/m${data["id"]}</a>`			
+			} else {
+				document.getElementById("submission_field").innerHTML = `Your diagram was saved and is 
+				now available at:
+				<a href="https://dagitty.net/m${data["id"]}">https://dagitty.net/m${data["id"]}</a>`
+			}
+		}
+
+		function handleError( error ){
+			console.log("Error:", error)
+			document.getElementById("submission_field").classList.add("bg-warning")
+			document.getElementById("submission_field").innerHTML = "Sorry, an error occurred. Your diagram could not be saved. Perhaps the server is overloaded at the moment. If the error persists, please contact us."
+		}
+
+
+	</script>
+</head>
+<body>
+
+
+<div class="container col-7 mt-3">
+	<h1>Publish your causal diagram</h1>
+
+	<p>
+		Using this form, you can publish your causal diagram on the dagitty website.
+		This will generate a shareable and permanent link to your model 
+		that you can include, for instance, in a paper or presentation. 	
+	</p>
+
+
+	<p>
+		You can choose to either publish your causal diagram anonymously
+		or link it to your e-mail address. Providing your e-mail
+		address will allow you to update your
+		published model later on.
+	</p>
+
+	<p>
+		We reserve the right to delete causal diagrams submitted for publication if 
+		we deem the content to be inappropriate (e.g., spam). We will consider requests 
+		to delete published diagrams on a case-by-case basis.
+	</p>
+
+	
+	<form class="needs-validation" id="dagform" action="https://dagitty.net/db/store/" 
+		onsubmit="submitForm(); return false" method="post">
+
+  <div class="mb-3">
+    <label for="modelsavefrm_author" class="form-label">Author name (optional)</label>
+    <input type="text" class="form-control" name="author" 
+		onchange="requireAuthorAgreement( this.value )"
+		id="modelsavefrm_author" autocomplete="name" value="">
+  </div>
+
+	<p>
+		Providing your name enables others to give you credit when 
+		they use your diagram, for example by citing its URL. 
+		Your name will be visible when users view the published diagram.
+		You can also choose to provide another identifier,  such as an 
+		<a "https://https://orcid.org/">ORCID</a>, instead of your name.
+	</p>
+
+	<p>
+		<div class="form-check">
+		<input class="form-check-input" type="checkbox" name="author_agreement" 
+			value="ok" 
+			id="modelsaveform_author_agreement">
+		<label class="form-check-label" for="modelsaveform_author_agreement">
+			I agree to the storage of the supplied name or other identifier for the
+			purpose of displaying it alongside the published diagram.
+		</label>
+		</div>
+	</p>
+
+
+
+
+<div class="mb-3">
+  <label for="modelsavefrm_email" class="form-label">Your e-mail address (optional)</label>
+  <input type="email" class="form-control" name="email" id="modelsavefrm_email" 
+	onchange="requireEmailAgreement( this.value )"
+	autocomplete="email" placeholder="name@example.com">
+  <div class="invalid-feedback">
+    Please provide a valid email address.
+  </div>
+</div>
+
+	<p>
+		If you choose to provide your e-mail address, we will store it on the dagitty.net server for the sole
+		purpose of enabling you to update your published diagram. We will not use your e-mail address for other
+		purposes nor share it with anyone else. Your e-mail address will not be visible when users view the
+		published diagram. 
+	</p>
+
+	<p>
+		<div class="form-check">
+		<input class="form-check-input" type="checkbox" name="email_agreement" 
+			value="ok" id="modelsaveform_email_agreement">
+		<label class="form-check-label" for="modelsaveform_email_agreement">
+			I agree to the storage of the supplied name and e-mail address on the dagitty.net server 
+			for the purpose of being able to update my published diagram. 
+		</label>
+		</div>
+	</p>
+
+
+
+	<label for="modelsavefrm_title">Title for diagram (required)</label> 
+	<input type="text" class="form-control" name="title" id="modelsavefrm_title" 
+		value="" required><br/><br/>
+	
+	<label for="modelsavefrm_desc">Description of diagram (optional)</label><br/>
+	<textarea class="form-control" name="desc" 
+		value="" id="modelsavefrm_desc"></textarea>
+	<br/>
+
+
+	<label for="modelsavefrm_code">DAGitty code</label><br/>
+	<textarea class="form-control" name="code" readonly required
+		value="" id="modelsavefrm_code"></textarea>
+	<br/>
+
+
+    <!-- Checkbox for CC0 waiver acknowledgment -->
+	<p>
+		<div class="form-check">
+		<input class="form-check-input" type="checkbox" name="cc0_agreement" 
+			value="ok" id="modelsaveform_cc0_agreement" required>
+		<label class="form-check-label" for="modelsaveform_cc0_agreement">
+			I dedicate this causal diagram to the public domain by applying the 
+			<a href="https://creativecommons.org/publicdomain/zero/1.0/" target="_blank">CC0 deed</a>.
+		</label>
+		</div>
+
+	</p>
+
+	<p id="submission_field" class="p-3">
+		<button type="submit" class="btn btn-primary" id="submit_button">Submit</button>
+	</p>
+
+	</form>
+
+	<p>&nbsp;</p>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+</body>
+</html>
+
+

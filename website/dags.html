@@ -30,12 +30,9 @@
     <script src="js/styles/semlike.js"></script>
     <script src="js/styles/original.js"></script>
 
-    <script src="js/main.js"></script>
+    <script src="js/main.js?v=2023-12-13"></script>
     <script src="js/base64.js"></script>
     
-    <script src="https://www.google.com/recaptcha/api.js?render=explicit" 
-        async defer></script>
-
     <meta name="viewport" content="width=device-width, initial-scale=1" />
 
     <script>
@@ -146,6 +143,7 @@
             <li><a href="#" onclick="exportPNG();displayHide('menu_model')">Export as PNG</a></li>
             <li><a href="#" onclick="exportJPEG();displayHide('menu_model')">Export as JPEG</a></li>
             <!--<li><a href="#" onclick="exportSVG();displayHide('menu_model')">Export as SVG</a></li>-->
+            <li><a href="#" onclick="saveOnlineForm();displayHide('menu_model')">Publish on dagitty.net</a></li>
 
             <script>
                 if( false && document.location.protocol == "https:" ){
