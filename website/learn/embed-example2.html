@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Embedding DAGitty: Example 2</title>
+		<script src="http://ajax.googleapis.com/ajax/libs/prototype/1.7.1.0/prototype.js"></script>
+		<script type="text/javascript" src="../lib/dagitty-2.1.js"></script>
+		<script type="text/javascript" src="../lib/styles/semlike.js"></script>
+		<script type="text/javascript">
+
+			// Definition of pre-defined example DAGs (usual DAGitty model syntax)
+			var examples = [
+				"xi1 U\neta1 U\neta2 U\nY1 1\n Y2 1\nY3 1\n Y4 1\nx1 1\n x2 1\n\nxi1 eta1 eta2 x1 x2\neta1 eta2 Y1 Y2\neta2 Y3 Y4",
+				"xi1 U\nxi2 U\nxi3 U\nx1 1\nx2 1\nx3 1\nx4 1\nx5 1\nx6 1\nx7 1\nx8 1\nx9 1\n\nxi1 xi2 xi3 x1 x2 x3\nxi2 xi1 xi3 x4 x5 x6\nxi3 xi1 xi2 x7 x8 x9",
+				"x1 1\nx10 1 \nx2 1 \nx3 1 \nx4 1 \nx5 1 \nx6 1 \nx7 1 \nx8 1 \nx9 1\nxi_1 U\nxi_2 U\n\nxi_1 xi_2 x1 x2 x3 x4 x5\nxi_2 xi_1 x6 x7 x8 x9 x10\nUa x1 x2\nUb x1 x6"
+			]
+
+			// Our event listener shows the text from of the current model.
+			// Fired whenever something changes in the DAG, either programatically or as
+			// a result of user interaction.
+			function showmodel(){
+					document.getElementById("modeltext").innerHTML =
+					dagcontrol.getGraph().toString()
+			}
+
+			// global variable for DAGitty controller object
+			var dagcontrol
+			var run_setup=1
+			function choosedag( nr ){
+				// if this is called for the first time, run setup
+				if( run_setup ){
+					DAGitty.setup();
+					// There can be multiple elements of class "dagitty" on the page.
+					// Each of those gets a separate controller. The indexing is according
+					// to the appearance of the elements on the page.
+					dagcontrol = DAGitty.controllers[0]
+
+					// Register an event listener that fires whenever something in the DAG
+					// is changed by the user. See below for the event listener function.
+					dagcontrol.observe( "graphchange", showmodel )
+					dagcontrol.observe( "graphlayoutchange", showmodel )
+
+					run_setup = 0
+				}
+
+				// "parseGuess" means that the input string can be either an adjacency
+				// list or an adjacency matrix (see manual), and the correct format is
+				// automatically determined.
+				var g = GraphParser.parseGuess( examples[nr] )
+
+				// We didn't provide layout information, so layout the graph automatically.
+				var layouter = new GraphLayouter.Spring( g )
+				layouter.layout()
+
+				// Tell the control that our DAG has changed. This will automatically render
+				// the DAG.
+				dagcontrol.setGraph( g )
+			}
+
+		</script>
+	</head>
+	<body>
+		<h1>
+			Select a DAG from a dropdown menu, apply automatic layout,
+			show the model code
+		</h1>
+
+		<p>
+		<select onchange="choosedag(this.value)" autocomplete="off">
+			<option value="" selected>choose ...</option>
+			<option value="0">DAG 1</option>
+			<option value="1">DAG 2</option>
+			<option value="2">DAG 3</option>
+		</select>
+		</p>
+
+		<pre class="dagitty" id="thedag" style="width:500px; height: 300px">
+
+		</pre>
+
+		<div id="modeltext" style="white-space: pre">
+		</div>
+
+	</body>
+</html>
