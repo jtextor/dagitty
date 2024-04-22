@@ -3,19 +3,20 @@
 	<head>
 		<title>Embedding DAGitty: Example 1</title>
 		<script src="http://ajax.googleapis.com/ajax/libs/prototype/1.7.1.0/prototype.js"></script>
-		<script type="text/javascript" src="../lib/dagitty-2.1.js"></script>
+		<script type="text/javascript" src="../lib/dagitty-3.0.js"></script>
 	</head>
 	<body onload="DAGitty.setup()">
 		<h1>A webpage with an embedded DAG</h1>
 
-		<pre class="dagitty" style="width:500px; height: 300px">
-I 1 @0.423,0.755
-X E @-1.193,1.639
-Y O @1.053,1.639
-
-I Y
-X I Y
-		</pre>
+		<div class="dagitty" style="width:500px; height: 300px">
+dag {
+I [pos="0.423,0.755"]
+X [exposure,pos="-1.193,1.639"]
+Y [outcome,pos="1.053,1.639"]
+I -&gt; Y
+X -&gt; I
+X -&gt; Y
+}		</div>
 
 	</body>
 </html>
