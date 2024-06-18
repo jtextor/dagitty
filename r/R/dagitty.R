@@ -2163,7 +2163,7 @@ print.dagitty.ivs <- function( x, prefix="", ... ){
 print.dagitty.sets <- function( x, prefix="", ... ){
 	for( i in x ){
 		if( length(i) == 0 ){
-			cat( prefix, "{}\n")
+			writeLines("{}")
 		} else {
 			l <- paste("{ ",paste(i,collapse=", ")," }\n")
 			writeLines( strwrap( l, exdent=2 ) )
