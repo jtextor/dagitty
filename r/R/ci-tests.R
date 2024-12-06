@@ -36,8 +36,8 @@
 
 .chisq.test <- function( x ){
 	x <- x[complete.cases(x),]
-	y <- x[,2]
-	x <- x[,1]
+	y <- x[[2]]
+	x <- x[[1]]
 	Oi <- table(x,y)
 	n <- length(x)
 	sX <- rowSums(Oi)
