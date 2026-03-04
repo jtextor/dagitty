@@ -4,6 +4,6 @@
   },
   "dependencies": {
     "qunit": "^2.18.0",
-    "underscore": "^1.13.2"
+    "underscore": "^1.13.8"
   }
 }
