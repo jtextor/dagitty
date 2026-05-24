@@ -56,3 +56,12 @@ h1{
 }
 
 
+.dagitty {
+    margin-bottom: 2em;
+    margin-right: 1em;
+    overflow: visible !important;
+}
+
+.dagitty svg {
+    overflow: visible !important;
+}
