@@ -154,12 +154,15 @@
 				rr <- rr[-which(rr.null)]
 			}
 
-			rmsea <- weighted.mean( sapply( rr, .rmsea ),
-				    weights=sapply(rr,`[[`,'observed') )
-			rmsea.lower <- weighted.mean( sapply(rr, .conf.interval.chisq, w=w),
-		    		weights=sapply(rr, `[[`, 'observed') )
-					rmsea.upper <- weighted.mean( sapply(rr, .conf.interval.chisq, w=(1-w)),
-		                 	weights=sapply(rr, `[[`, 'observed') )
+			# Weight each stratum by its sample size. The weights argument
+			# of weighted.mean is called 'w'; 'observed' holds the
+			# contingency table of the stratum, so its sum is the size.
+			n.stratum <- sapply( rr, function(r) sum(r$observed) )
+			rmsea <- weighted.mean( sapply( rr, .rmsea ), w=n.stratum )
+			rmsea.lower <- weighted.mean(
+				sapply(rr, .conf.interval.chisq, w=w), w=n.stratum )
+			rmsea.upper <- weighted.mean(
+				sapply(rr, .conf.interval.chisq, w=(1-w)), w=n.stratum )
 			tst <- list(
 			 	parameter=sum(sapply(rr,`[[`,'parameter')),
 			 	statistic=sum(sapply(rr,`[[`,'statistic'))
