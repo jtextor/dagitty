@@ -772,6 +772,250 @@ function exportSVG(){
 	window.URL.revokeObjectURL( url )
 }
 
+var localCacheStorageKey = "dagitty-local-cache-v1";
+var localCacheMaxNameLength = 80;
+var dagImportInput = null;
+
+function readLocalCacheState(){
+	var fallback = { autosave : null, slots : {} };
+	try {
+		var value = window.localStorage.getItem( localCacheStorageKey );
+		if( !value ){
+			return fallback;
+		}
+		var parsed = JSON.parse( value );
+		if( !parsed || typeof parsed !== "object" ){
+			return fallback;
+		}
+		if( !parsed.slots || typeof parsed.slots !== "object" ){
+			parsed.slots = {};
+		}
+		if( !parsed.autosave || typeof parsed.autosave !== "object" ){
+			parsed.autosave = null;
+		}
+		return parsed;
+	} catch( err ){
+		console.log( err );
+		return fallback;
+	}
+}
+
+function writeLocalCacheState( state ){
+	try {
+		window.localStorage.setItem( localCacheStorageKey, JSON.stringify( state ) );
+		return true;
+	} catch( err ){
+		msg( "Unable to write local cache. Your browser may block local storage or storage is full." );
+		console.log( err );
+		return false;
+	}
+}
+
+function sanitizeLocalCacheName( name ){
+	if( name === null || typeof name === "undefined" ){
+		return "";
+	}
+	name = (""+name).trim();
+	if( name.length > localCacheMaxNameLength ){
+		name = name.substring( 0, localCacheMaxNameLength );
+	}
+	return name;
+}
+
+function getSortedLocalCacheSlotNames(){
+	var state = readLocalCacheState();
+	var names = Object.keys( state.slots || {} );
+	names.sort(function( a, b ){
+		var ta = state.slots[a] && state.slots[a].updatedAt ? state.slots[a].updatedAt : "";
+		var tb = state.slots[b] && state.slots[b].updatedAt ? state.slots[b].updatedAt : "";
+		if( ta === tb ){
+			return a.localeCompare( b );
+		}
+		return tb.localeCompare( ta );
+	});
+	return names;
+}
+
+function writeLocalAutosave( dagText ){
+	if( !dagText ){
+		return false;
+	}
+	var state = readLocalCacheState();
+	state.autosave = {
+		dag : dagText,
+		updatedAt : new Date().toISOString()
+	};
+	return writeLocalCacheState( state );
+}
+
+function restoreLocalAutosave(){
+	var state = readLocalCacheState();
+	if( !state.autosave || !state.autosave.dag ){
+		return false;
+	}
+	document.getElementById("adj_matrix").value = state.autosave.dag;
+	try {
+		loadDAGFromTextData();
+		return true;
+	} catch( err ){
+		msg( "Could not restore cached DAG from local storage." );
+		console.log( err );
+		return false;
+	}
+}
+
+function saveToLocalCache(){
+	if( !Model.dag ){
+		msg( "No model available to store." );
+		return;
+	}
+	DAGittyControl.getView().openPromptDialog(
+		"Enter a local cache name", "default", function( slotName ){
+			var name = sanitizeLocalCacheName( slotName );
+			if( name === "" ){
+				msg( "Cache name cannot be empty." );
+				return;
+			}
+			var state = readLocalCacheState();
+			if( state.slots[name] && !window.confirm("Overwrite existing cache slot '"+name+"'?") ){
+				return;
+			}
+			state.slots[name] = {
+				dag : Model.dag.toString(),
+				updatedAt : new Date().toISOString()
+			};
+			if( writeLocalCacheState( state ) ){
+				msg( "Saved local cache slot '"+name+"'." );
+			}
+		}
+	);
+}
+
+function loadFromLocalCache(){
+	var names = getSortedLocalCacheSlotNames();
+	if( names.length === 0 ){
+		msg( "No local cache slots found." );
+		return;
+	}
+	DAGittyControl.getView().openPromptDialog(
+		"Enter cache name to load\nAvailable: "+names.join(", "), names[0], function( slotName ){
+			var name = sanitizeLocalCacheName( slotName );
+			var state = readLocalCacheState();
+			var entry = state.slots[name];
+			if( !entry || !entry.dag ){
+				msg( "Cache slot not found." );
+				return;
+			}
+			document.getElementById("adj_matrix").value = entry.dag;
+			try {
+				loadDAGFromTextData();
+				writeLocalAutosave( entry.dag );
+			} catch( err ){
+				msg( "Could not load cached DAG. The entry may be invalid." );
+				console.log( err );
+			}
+		}
+	);
+}
+
+function deleteFromLocalCache(){
+	var names = getSortedLocalCacheSlotNames();
+	if( names.length === 0 ){
+		msg( "No local cache slots found." );
+		return;
+	}
+	DAGittyControl.getView().openPromptDialog(
+		"Enter cache name to delete\nAvailable: "+names.join(", "), names[0], function( slotName ){
+			var name = sanitizeLocalCacheName( slotName );
+			var state = readLocalCacheState();
+			if( !state.slots[name] ){
+				msg( "Cache slot not found." );
+				return;
+			}
+			if( !window.confirm( "Delete local cache slot '"+name+"'?" ) ){
+				return;
+			}
+			delete state.slots[name];
+			if( writeLocalCacheState( state ) ){
+				msg( "Deleted local cache slot '"+name+"'." );
+			}
+		}
+	);
+}
+
+function clearLocalAutosave(){
+	var state = readLocalCacheState();
+	if( !state.autosave ){
+		msg( "No local autosave exists." );
+		return;
+	}
+	if( !window.confirm( "Clear local autosave?" ) ){
+		return;
+	}
+	state.autosave = null;
+	if( writeLocalCacheState( state ) ){
+		msg( "Local autosave cleared." );
+	}
+}
+
+function exportDAGFile(){
+	var dagText = Model.dag ? Model.dag.toString() : document.getElementById("adj_matrix").value;
+	if( !dagText || dagText.trim() === "" ){
+		msg( "No model available to export." );
+		return;
+	}
+	const blob = new Blob([dagText], {type:"text/plain;charset=utf-8"} );
+	const url = URL.createObjectURL(blob);
+	const a = document.createElement( 'a' );
+		a.style.display = "none";
+	a.href = url;
+	a.download = "dagitty-model.dag";
+	document.body.appendChild( a );
+	a.click();
+	document.body.removeChild( a );
+	window.URL.revokeObjectURL( url );
+}
+
+function getDAGImportInput(){
+	if( dagImportInput ){
+		return dagImportInput;
+	}
+	dagImportInput = document.createElement( "input" );
+	dagImportInput.type = "file";
+	dagImportInput.accept = ".dag,.txt,text/plain";
+	dagImportInput.style.display = "none";
+	dagImportInput.addEventListener( "change", function( ev ){
+		var file = ev.target.files && ev.target.files[0];
+		if( !file ){
+			return;
+		}
+		var reader = new FileReader();
+		reader.onload = function( loadEv ){
+			var content = "" + (loadEv.target.result || "");
+			document.getElementById("adj_matrix").value = content;
+			try {
+				loadDAGFromTextData();
+				writeLocalAutosave( content );
+			} catch( err ){
+				msg( "Import failed. The selected file does not contain valid DAG syntax." );
+				console.log( err );
+			}
+		};
+		reader.onerror = function(){
+			msg( "Import failed. Could not read the selected file." );
+		};
+		reader.readAsText( file );
+	});
+	document.body.appendChild( dagImportInput );
+	return dagImportInput;
+}
+
+function importDAGFile(){
+	var input = getDAGImportInput();
+	input.value = "";
+	input.click();
+}
+
 function hostName(){
 	switch( window.location.hostname ){
 		case "dagitty.net":

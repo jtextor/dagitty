@@ -72,6 +72,7 @@
             function(g){
                 Model.dag = g;
                 document.getElementById("adj_matrix").value = g.toString();
+            writeLocalAutosave( g.toString() )
                 // if previously highlighted variable no longer exists, fold up this menu
                 if( !g.getVertex(document.getElementById("variable_id").value) ){
                     document.getElementById("variable_id").value = ''
@@ -117,7 +118,9 @@
             // load user-supplied model
             loadOnline( "dagitty.net/m"+getid );
         } else {
+         if( !restoreLocalAutosave() ){
             DAGittyControl.graphChanged();
+         }
         }
 
         document.onkeydown = function(e){
@@ -142,8 +145,14 @@
             <li><a href="#" onclick="loadOnlineForm();displayHide('menu_model')">Load from dagitty.net</a></li>
             <li><a href="#" onclick="exportPNG();displayHide('menu_model')">Export as PNG</a></li>
             <li><a href="#" onclick="exportJPEG();displayHide('menu_model')">Export as JPEG</a></li>
+            <li><a href="#" onclick="exportDAGFile();displayHide('menu_model')">Export as .dag file</a></li>
+            <li><a href="#" onclick="importDAGFile();displayHide('menu_model')">Import .dag file</a></li>
             <!--<li><a href="#" onclick="exportSVG();displayHide('menu_model')">Export as SVG</a></li>-->
             <li><a href="#" onclick="saveOnlineForm();displayHide('menu_model')">Publish on dagitty.net</a></li>
+            <li><a href="#" onclick="saveToLocalCache();displayHide('menu_model')">Save to local cache</a></li>
+            <li><a href="#" onclick="loadFromLocalCache();displayHide('menu_model')">Load from local cache</a></li>
+            <li><a href="#" onclick="deleteFromLocalCache();displayHide('menu_model')">Delete local cache slot</a></li>
+            <li><a href="#" onclick="clearLocalAutosave();displayHide('menu_model')">Clear local autosave</a></li>
 
             <script>
                 if( false && document.location.protocol == "https:" ){
