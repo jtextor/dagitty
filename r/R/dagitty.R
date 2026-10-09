@@ -24,7 +24,7 @@ graphType <- function( x ){
 		.jsassign( xv, .jsp("global.",
 			xv,".getType()") )
 		r <- .jsget( xv )
-	}, 
+	},
 	error=function(e) stop(e),
 	finally={.deleteJSVar(xv)})
 	r
@@ -38,7 +38,7 @@ graphType <- function( x ){
 		.jsassigngraph( xv, x )
 		.jseval( paste0("global.",xv,".setType('",value,"')") )
 		r <- .jsgetgraph( xv )
-	}, 
+	},
 	error=function(e) stop(e),
 	finally={.deleteJSVar(xv)})
 	r
@@ -58,7 +58,7 @@ graphType <- function( x ){
 #'  \item{"Polzer"}{ DAG from a dentistry study (Polzer et al., 2012)}
 #'  \item{"Schipf"}{ DAG from a study on diabetes (Schipf et al., 2010)}
 #'  \item{"Shrier"}{ DAG from a classic sports medicine example (Shrier & Platt, 2008)}
-#'  \item{"Thoemmes"}{ DAG with unobserved variables 
+#'  \item{"Thoemmes"}{ DAG with unobserved variables
 #'	(communicated by Felix Thoemmes, 2013)}.
 #'  \item{"Kampen"}{ DAG from a psychiatry study (van Kampen, 2014)}
 #' }
@@ -70,10 +70,10 @@ graphType <- function( x ){
 #' pomerania (SHIP). \emph{The Aging Male} \bold{14}(3):168--75.
 #'
 #' Paola Sebastiani, Marco F. Ramoni, Vikki Nolan, Clinton T. Baldwin, and
-#' Martin H. Steinberg (2005), Genetic dissection and prognostic modeling of overt 
+#' Martin H. Steinberg (2005), Genetic dissection and prognostic modeling of overt
 #' stroke in sickle cell anemia. \emph{Nature Genetics}, \bold{37}:435--440.
-#' 
-#' Ian Shrier and Robert W. Platt (2008), 
+#'
+#' Ian Shrier and Robert W. Platt (2008),
 #' Reducing bias through directed acyclic graphs.
 #' \emph{BMC Medical Research Methodology}, \bold{8}(70).
 #'
@@ -86,7 +86,7 @@ graphType <- function( x ){
 #' The SSQ model of schizophrenic prodromal unfolding revised: An
 #'  analysis of its causal chains based on the language of directed graphs.
 #' \emph{European Psychiatry}, \bold{29}(7):437--48.
-#' 
+#'
 #' @examples
 #' g <- getExample("Shrier")
 #' plot(g)
@@ -143,7 +143,7 @@ impliedCovarianceMatrix <- function( x, b.default=NULL, b.lower=-.6, b.upper=.6,
 		for( i in seq_len( nrow(e) ) ){
 			b <- e$a[i]
 			if( e$e[i] == "<->" ){
-				lV <- paste0("l",cL) 
+				lV <- paste0("l",cL)
 				lb <- sqrt(abs(b))
 				Beta[lV,paste0("v",e$v[i])] <- lb
 				if( b < 0 ){
@@ -175,34 +175,34 @@ impliedCovarianceMatrix <- function( x, b.default=NULL, b.lower=-.6, b.upper=.6,
 
 #' Ancestral Relations
 #'
-#' Retrieve the names of all variables in a given graph that are in the specified 
+#' Retrieve the names of all variables in a given graph that are in the specified
 #' ancestral relationship to the input variable \code{v}.
 #'
 #' @param x the input graph, of any type.
 #' @param v name(s) of variable(s).
 #' @param proper logical. By default (\code{proper=FALSE}), the \code{descendants} or \code{ancestors}
-#' of a variable include the variable itself. For (\code{proper=TRUE}), the variable itself 
+#' of a variable include the variable itself. For (\code{proper=TRUE}), the variable itself
 #' is not included.
 #'
-#' \code{descendants(x,v)} retrieves variables that are are reachable from \code{v} via 
+#' \code{descendants(x,v)} retrieves variables that are are reachable from \code{v} via
 #' a directed path.
 #'
-#' \code{ancestors(x,v)} retrieves variables from which \code{v} is reachable via a 
+#' \code{ancestors(x,v)} retrieves variables from which \code{v} is reachable via a
 #' directed path.
 #'
-#' \code{children(x,v)} finds all variables \code{w} connected to \code{v} 
+#' \code{children(x,v)} finds all variables \code{w} connected to \code{v}
 #' by an edge \eqn{v} -> \eqn{w}.
 #'
-#' \code{parents(x,v)} finds all variables \code{w} connected to \code{v} 
+#' \code{parents(x,v)} finds all variables \code{w} connected to \code{v}
 #' by an edge \eqn{w} -> \eqn{v}.
 #'
 #' \code{markovBlanket(x,v}) returns \code{x}'s parents, its children, and all other
 #' parents of its children. The Markov blanket always renders \code{x} independent
 #' of all other nodes in the graph.
 #'
-#' By convention, \code{descendants(x,v)} and \code{ancestors(x,v)} include 
-#' \code{v} but \code{children(x,v)} and \code{parents(x,v)} do not. 
-#' 
+#' By convention, \code{descendants(x,v)} and \code{ancestors(x,v)} include
+#' \code{v} but \code{children(x,v)} and \code{parents(x,v)} do not.
+#'
 #' @name AncestralRelations
 #'
 #' @examples
@@ -212,8 +212,8 @@ impliedCovarianceMatrix <- function( x, b.default=NULL, b.lower=-.6, b.upper=.6,
 #' # Does not include "x"
 #' descendants(g,"x",TRUE)
 #' parents(g,"x")
-#' spouses(g,"x") 
-#' 
+#' spouses(g,"x")
+#'
 NULL
 
 #' @rdname AncestralRelations
@@ -282,7 +282,7 @@ markovBlanket <- function( x, v ){
 #' X -> Y -- Z to X -> Y -> Z.
 #'
 #' @param x the input graph, a PDAG.
-#' 
+#'
 #' @examples
 #' orientPDAG( "pdag { x -> y -- z }" )
 #' @export
@@ -298,9 +298,9 @@ orientPDAG <- function( x ){
 #' marginal independence model.
 #'
 #' @param x the input graph, a DAG
-#' 
+#'
 #' @examples
-#' toMAG( "dag { ParentalSmoking->Smoking 
+#' toMAG( "dag { ParentalSmoking->Smoking
 #'   { Profession [latent] } -> {Income->Smoking}
 #'   Genotype -> {Smoking->LungCancer} }")
 #' @export
@@ -311,13 +311,13 @@ toMAG <- function( x ){
 }
 
 #' Generating Equivalent Models
-#' 
-#' \code{equivalenceClass(x)} generates a complete partially directed acyclic graph 
-#' (CPDAG) from an input DAG \code{x}. The CPDAG represents all graphs that are Markov 
+#'
+#' \code{equivalenceClass(x)} generates a complete partially directed acyclic graph
+#' (CPDAG) from an input DAG \code{x}. The CPDAG represents all graphs that are Markov
 #' equivalent to \code{x}: undirected
 #' edges in the CPDAG can be oriented either way, as long as this does not create a cycle
 #' or a new v-structure (a sugraph a -> m <- b, where a and b are not adjacent).
-#' 
+#'
 #' \code{equivalentDAGs(x,n)} enumerates at most \code{n} DAGs that are Markov equivalent
 #' to the input DAG or CPDAG \code{x}.
 #'
@@ -355,7 +355,7 @@ equivalentDAGs <- function( x, n=100 ){
 		.jsassign( xv, .jsp("DAGitty.GraphTransformer.markovEquivalentDags(global.",
 			xv,",",n,").map(function(x){return x.toString()})") )
 		r <- .jsget( xv )
-	}, 
+	},
 	error=function(e) stop(e),
 	finally={.deleteJSVar(xv)})
 	lapply( r, dagitty )
@@ -365,8 +365,8 @@ equivalentDAGs <- function( x, n=100 ){
 #'
 #' Graph obtained from \code{x} by (1) \dQuote{marrying} (inserting an undirected
 #' ede between) all nodes that have common children, and then replacing all edges
-#' by undirected edges. If \code{x} contains bidirected edges, then all sets of 
-#' nodes connected by a path containing only bidirected edges are treated like a 
+#' by undirected edges. If \code{x} contains bidirected edges, then all sets of
+#' nodes connected by a path containing only bidirected edges are treated like a
 #' single node (see Examples).
 #'
 #' @param x the input graph, a DAG, MAG, or PDAG.
@@ -390,8 +390,8 @@ moralize <- function( x ){
 #'
 #' @param x the input graph, a DAG.
 #'
-#' @details Assumes that x is a graph where there are edges between 
-#' the latent variables, between the observed variables, and 
+#' @details Assumes that x is a graph where there are edges between
+#' the latent variables, between the observed variables, and
 #' from latent to observed variables, but no edge between
 #' a latent L and an observed X may have an arrowhead at L.
 #
@@ -409,8 +409,8 @@ structuralPart <- function( x ){
 #'
 #' @param x the input graph, a DAG.
 #'
-#' @details Assumes that x is a graph where there are edges between 
-#' the latent variables, between the observed variables, and 
+#' @details Assumes that x is a graph where there are edges between
+#' the latent variables, between the observed variables, and
 #' from latent to observed variables, but no edge between
 #' a latent L and an observed X may have an arrowhead at L.
 #'
@@ -430,19 +430,19 @@ measurementPart <- function( x ){
 #' @param x the input graph, a DAG, MAG, PDAG, or PAG.
 #'
 #' @references
-#' J. Zhang (2008), Causal Reasoning with Ancestral Graphs. 
+#' J. Zhang (2008), Causal Reasoning with Ancestral Graphs.
 #' \emph{Journal of Machine Learning Research} 9: 1437-1474.
-#' 
+#'
 #' @examples
 #' g <- dagitty( "dag { x <-> m <-> y <- x }" )
 #' backDoorGraph( g ) # x->y edge is removed
-#' 
+#'
 #' g <- dagitty( "mag { x <-> m <-> y <- x }" )
 #' backDoorGraph( g ) # x->y edge is not removed
-#' 
+#'
 #' g <- dagitty( "mag { x <-> m <-> y <- x <- i }" )
 #' backDoorGraph( g ) # x->y edge is removed
-#' 
+#'
 #' @export
 backDoorGraph <- function( x ){
 	x <- as.dagitty(x)
@@ -461,14 +461,14 @@ backDoorGraph <- function( x ){
 #'
 #' @details If the input graph is a MAG or PDAG, then all *possible* ancestors
 #' will be returned (see Examples).
-#' 
+#'
 #' @examples
 #' g <- dagitty("dag{ z <- x -> y }")
 #' ancestorGraph( g, "z" )
 #'
 #' g <- dagitty("pdag{ z -- x -> y }")
 #' ancestorGraph( g, "y" ) # includes z
-#' 
+#'
 #' @export
 ancestorGraph <- function( x, v=NULL ){
 	x <- as.dagitty(x)
@@ -488,7 +488,7 @@ ancestorGraph <- function( x, v=NULL ){
 		.jsassign( xv2, .jsp("DagittyR.getVertices(global.",xv,",global.",xv2,")") )
 		.jsassign( xv, .jsp("DAGitty.GraphTransformer.ancestorGraph(global.",xv,",global.",xv2,")") )
 		r <- .jsgetgraph( xv )
-	}, 
+	},
 	error=function(e) stop(e),
 	finally={.deleteJSVar(xv);.deleteJSVar(xv2)})
 	r
@@ -497,12 +497,12 @@ ancestorGraph <- function( x, v=NULL ){
 #' Variable Statuses
 #'
 #' Get or set variables with a given status in a graph. Variables in dagitty graphs can
-#' have one of several statuses. Variables with status \emph{exposure} and 
-#' \emph{outcome} are important when determining causal effects via the functions 
+#' have one of several statuses. Variables with status \emph{exposure} and
+#' \emph{outcome} are important when determining causal effects via the functions
 #' \code{\link{adjustmentSets}} and \code{\link{instrumentalVariables}}. Variables
-#' with status \emph{latent} are assumed 
+#' with status \emph{latent} are assumed
 #' to be unobserved variables or latent constructs, which is respected when deriving
-#' testable implications of a graph via the functions 
+#' testable implications of a graph via the functions
 #' \code{\link{impliedConditionalIndependencies}} or \code{\link{vanishingTetrads}}.
 #'
 #' \code{setVariableStatus} first removes the given status from all variables in the graph
@@ -596,9 +596,9 @@ setVariableStatus <- function( x, status, value ) {
 			.jsassign( vv, n )
 			.jseval( paste0( "global.",xv,".add",jsstatname,"(global.",vv,")" ) )
 		}
-		
+
 		r <- .jsget( paste0( xv,".toString()" ) )
-	},finally={ 
+	},finally={
 		.deleteJSVar(vv)
 		.deleteJSVar(xv)
 	})
@@ -632,11 +632,11 @@ names.dagitty <- function( x ){
 	r
 }
 
-#' Retrieve Exogenous Variables 
+#' Retrieve Exogenous Variables
 #'
 #' Returns the names of all variables that have no directed arrow pointing to them.
 #' Note that this does not preclude variables connected to bidirected arrows.
-#' 
+#'
 #' @param x the input graph, of any type.
 #' @export
 exogenousVariables <- function( x ){
@@ -647,20 +647,20 @@ exogenousVariables <- function( x ){
 
 #' Plot Coordinates of Variables in Graph
 #'
-#' The DAGitty syntax allows specification of plot coordinates for each variable in a 
+#' The DAGitty syntax allows specification of plot coordinates for each variable in a
 #' graph. This function extracts these plot coordinates from the graph description in a
-#' \code{dagitty} object. Note that the coordinate system is undefined, typically one 
+#' \code{dagitty} object. Note that the coordinate system is undefined, typically one
 #' needs to compute the bounding box before plotting the graph.
 #'
 #' @param x the input graph, of any type.
-#' @param value a list with components \code{x} and \code{y}, 
-#' giving relative coordinates for each variable. This format is suitable 
+#' @param value a list with components \code{x} and \code{y},
+#' giving relative coordinates for each variable. This format is suitable
 #' for \code{\link{xy.coords}}.
-#' 
+#'
 #' @examples
 #' ## Plot localization of each node in the Shrier example
 #' plot( coordinates( getExample("Shrier") ) )
-#' 
+#'
 #' ## Define a graph and set coordinates afterwards
 #' x <- dagitty('dag{
 #'     G <-> H <-> I <-> G
@@ -696,7 +696,7 @@ coordinates <- function( x ){
 	})
 	names(rx) <- labels
 	names(ry) <- labels
-	list( x=rx, y=ry ) 
+	list( x=rx, y=ry )
 }
 
 #' @rdname coordinates
@@ -727,7 +727,7 @@ coordinates <- function( x ){
 		}
 		.jsassign( xv, .jsp("global.",xv,".toString()") )
 		r <- .jsget( xv )
-	}, 
+	},
 	error=function(e) stop(e),
 	finally={.deleteJSVar(xv);.deleteJSVar(xv2)})
 	structure(r,class="dagitty")
@@ -736,11 +736,11 @@ coordinates <- function( x ){
 #' Canonicalize an Ancestral Graph
 #'
 #' Takes an input ancestral graph (a graph with directed, bidirected and undirected
-#' edges) and converts it to a DAG by replacing every bidirected edge x <-> y with a 
+#' edges) and converts it to a DAG by replacing every bidirected edge x <-> y with a
 #' substructure x <- L -> y, where L is a latent variable, and every undirected edge
 #' x -- y with a substructure x -> S <- y, where S is a selection variable. This function
 #' does not check whether the input is actually an ancestral graph.
-#' 
+#'
 #' @param x the input graph, a DAG or MAG.
 #' @return A list containing the following components:
 #' \describe{
@@ -748,7 +748,7 @@ coordinates <- function( x ){
 #'  \item{L}{Names of newly inserted latent variables.}
 #'  \item{S}{Names of newly inserted selection variables.}
 #' }
-#' 
+#'
 #' @examples
 #' canonicalize("mag{x<->y--z}") # introduces two new variables
 #' @export
@@ -766,17 +766,17 @@ canonicalize <- function( x ){
 		.jsassign( xv2, .jsp("DagittyR.pluck(",xv,".L,'id')") )
 		L <- .jsget( xv2 )
 		.jsassign( xv2, .jsp("DagittyR.pluck(",xv,".S,'id')") )
-		S <- .jsget( xv2 )	
+		S <- .jsget( xv2 )
 		r <- list( g=structure(g,class="dagitty"), L=L, S=S )
-	}, 
+	},
 	error=function(e) stop(e),
 	finally={.deleteJSVar(xv);.deleteJSVar(xv2)})
 	r
 }
 
 #' Graph Edges
-#' 
-#' Extracts edge information from the input graph. 
+#'
+#' Extracts edge information from the input graph.
 #'
 #' @param x the input graph, of any type.
 #' @return a data frame with the following variables:
@@ -786,7 +786,7 @@ canonicalize <- function( x ){
 #'  order of start and end node is arbitrary.}
 #'  \item{e}{ type of edge. Can be one of \code{"->"}, \code{"<->"} and \code{"--"}.}
 #'  \item{x}{ X coordinate for a control point. If this is not \code{NA}, then the edge
-#'  is drawn as an \code{\link{xspline}} through the start point, this control point, 
+#'  is drawn as an \code{\link{xspline}} through the start point, this control point,
 #'  and the end point. This is especially important for cases where there is more than
 #'  one edge between two variables (for instance, both a directed and a bidirected edge).}
 #'  \item{y}{ Y coordinate for a control point.}
@@ -795,7 +795,7 @@ canonicalize <- function( x ){
 #' @examples
 #' ## Which kinds of edges are used in the Shrier example?
 #' levels( edges( getExample("Shrier") )$e )
-#' @export 
+#' @export
 edges <- function( x ) UseMethod("edges")
 
 #' @export
@@ -815,11 +815,11 @@ edges.dagitty <- function( x ){
 }
 
 #' Test for Graph Class
-#' 
+#'
 #' A function to check whether an object has class \code{dagitty}.
 #'
 #' @param x object to be tested.
-#' 
+#'
 #' @export
 is.dagitty <- function(x) inherits(x,"dagitty")
 
@@ -827,14 +827,14 @@ is.dagitty <- function(x) inherits(x,"dagitty")
 #'
 #' This function generates plot coordinates for each variable in a graph that does not
 #' have them already. To this end, the well-known \dQuote{Spring} layout algorithm is
-#' used. Note that this is a stochastic algorithm, so the generated layout will be 
+#' used. Note that this is a stochastic algorithm, so the generated layout will be
 #' different every time (which also means that you can try several times until you find
 #' a decent layout).
-#' 
+#'
 #' @param x the input graph, of any type.
 #' @param method the layout method; currently, only \code{"spring"} is supported.
-#' @return the same graph as \code{x} but with layout coordinates added. 
-#' 
+#' @return the same graph as \code{x} but with layout coordinates added.
+#'
 #' @examples
 #' ## Generate a layout for the M-bias graph and plot it
 #' plot( graphLayout( dagitty( "dag { X <- U1 -> M <- U2 -> Y } " ) ) )
@@ -859,7 +859,7 @@ graphLayout <- function( x, method="spring" ){
 
 #' Plot Graph
 #'
-#' A simple plot method to quickly visualize a graph. This is intended mainly for 
+#' A simple plot method to quickly visualize a graph. This is intended mainly for
 #' simple visualization purposes and not as a full-fledged graph drawing
 #' function.
 #'
@@ -867,32 +867,32 @@ graphLayout <- function( x, method="spring" ){
 #' @param abbreviate.names logical. Whether to abbreviate variable names.
 #' @param show.coefficients logical. Whether to plot coefficients defined in the graph syntax
 #'  on the edges.
-#' @param adjust.coefficients numerical. Adjustment for coefficient labels; the distance between 
-#'  the edge labels and the midpoint of the edge can be controlled using this paramer. 
+#' @param adjust.coefficients numerical. Adjustment for coefficient labels; the distance between
+#'  the edge labels and the midpoint of the edge can be controlled using this paramer.
 #'  Can also be a vector of 2 numbers for separate horizontal and vertical adjustment. NA means
 #'  no adjustment (default).
-#' @param node.names If not NULL, a named vector or expression list 
-#'  to rename the nodes.  
+#' @param node.names If not NULL, a named vector or expression list
+#'  to rename the nodes.
 #' @param ... not used.
-#' 
-#' @details If \code{node.names} is not \code{NULL}, it should be a 
-#'  named vector of characters or expressions to use to rename (some of) 
+#'
+#' @details If \code{node.names} is not \code{NULL}, it should be a
+#'  named vector of characters or expressions to use to rename (some of)
 #'  the nodes, e.g. node \code{"X"} could be renamed using \code{expression(X = alpha^2)}.
 #'
 #' @examples
 #'
 #' # Showing usage of "node.names"
 #' plot(dagitty('{x[pos="0,0"]}->{y[pos="1,0"]}'), node.names=expression(x = alpha^2, y=gamma^2))
-#' 
+#'
 #'
 #' @export
 plot.dagitty <- function( x,
-	abbreviate.names=FALSE, 
+	abbreviate.names=FALSE,
 	show.coefficients=FALSE,
 	adjust.coefficients=NA,
 	node.names=NULL,
-	... ){	
-	parms <- list(...)	
+	... ){
+	parms <- list(...)
 	x <- as.dagitty( x )
 	.supportsTypes(x,c("dag","mag","pdag"))
 	coords <- coordinates( x )
@@ -911,8 +911,8 @@ plot.dagitty <- function( x,
 	  if(is.null(names(node.names)))
 	    stop("'node.names' must be named")
 	  if(!all(names(node.names) %in% names(labels)))
-	    stop("node(s) not found: ", 
-	         paste0("'", setdiff(names(node.names), names(labels)), "'", 
+	    stop("node(s) not found: ",
+	         paste0("'", setdiff(names(node.names), names(labels)), "'",
 	               collapse = ","))
 	  labels[names(node.names)] <- node.names
 	  names(labels) <- names(coords$x) # If coerced to expression, names are lost
@@ -921,9 +921,9 @@ plot.dagitty <- function( x,
 	par(mar=rep(0,4))
 	plot.new()
 	par(new=TRUE)
-	wx <- sapply( labels, 
+	wx <- sapply( labels,
 	              function(s) strwidth(s,units="inches") ) + strwidth("mm",units="inches")
-	wy <- sapply( labels, 
+	wy <- sapply( labels,
 	              function(s) strheight(s,units="inches") ) + strheight("\n")
 	ppi.x <- dev.size("in")[1] / (max(coords$x)-min(coords$x))
 	ppi.y <- dev.size("in")[2] / (max(coords$y)-min(coords$y))
@@ -943,7 +943,7 @@ plot.dagitty <- function( x,
 
 	plot( NA, xlim=xlim, ylim=ylim, xlab="", ylab="", bty="n",
 		xaxt="n", yaxt="n" )
-	wx <- sapply( labels, strwidth ) + strwidth("xx") 
+	wx <- sapply( labels, strwidth ) + strwidth("xx")
 	wy <- sapply( labels, strheight ) + strheight("\n")
 	asp <- par("pin")[1]/diff(par("usr")[1:2]) /
 		(par("pin")[2]/diff(par("usr")[3:4]))
@@ -994,15 +994,15 @@ plot.dagitty <- function( x,
 	}
 	directed <- acode==2 & !has.control.point
 	undirected <- acode==0 & !has.control.point
-	arrows( ax1[directed], -ay1[directed], 
+	arrows( ax1[directed], -ay1[directed],
 		ax2[directed], -ay2[directed], length=0.1, col="gray" )
-	segments( ax1[undirected], -ay1[undirected], 
+	segments( ax1[undirected], -ay1[undirected],
 		ax2[undirected], -ay2[undirected], col="black", lwd=2 )
 	ic <- which( has.control.point )
 	for( i in ic ){
-		.arc( ax1[i], -ay1[i], 
-			ax2[i], -ay2[i], axc[i], -ayc[i], 
-			col=c("gray","black")[1+(acode[i]==0)], 
+		.arc( ax1[i], -ay1[i],
+			ax2[i], -ay2[i], axc[i], -ayc[i],
+			col=c("gray","black")[1+(acode[i]==0)],
 			code=acode[i], length=0.1, lwd=1+(acode[i]==0) )
 	}
 	if( show.coefficients ){
@@ -1013,7 +1013,7 @@ plot.dagitty <- function( x,
 		if( length(adjust.coefficients)==1 ){
 			text( axm, -aym, as.character(ex$a), adj=adjust.coefficients*c(sign(ax1-ax2),sign(ay1-ay2)) )
 		} else if( length(adjust.coefficients)==2 ){
-			text( axm, -aym, as.character(ex$a), adj=adjust.coefficients )		
+			text( axm, -aym, as.character(ex$a), adj=adjust.coefficients )
 		}
 	}
 	text( coords$x, -coords$y, labels )
@@ -1023,29 +1023,29 @@ plot.dagitty <- function( x,
 #' Covariate Adjustment Sets
 #'
 #' Enumerates sets of covariates that (asymptotically) allow unbiased estimation of causal
-#' effects from observational data, assuming that the input causal graph is correct.  
+#' effects from observational data, assuming that the input causal graph is correct.
 #'
 #' @param x the input graph, a DAG, MAG, PDAG, or PAG.
-#' @param exposure name(s) of the exposure variable(s). If not given (default), then the 
+#' @param exposure name(s) of the exposure variable(s). If not given (default), then the
 #'  exposure variables are supposed to be defined in the graph itself.
-#' @param outcome name(s) of the outcome variable(s), also taken from the graph if 
+#' @param outcome name(s) of the outcome variable(s), also taken from the graph if
 #' not given.
 #' @param effect which effect is to be identified. If \code{effect="total"}, then the
-#' total effect is to be identified, and the adjustment criterion by Perkovic et 
-#' al (2015; see also van der Zander et al., 2014), 
-#' an extension of Pearl's back-door criterion, is used. Otherwise, if 
+#' total effect is to be identified, and the adjustment criterion by Perkovic et
+#' al (2015; see also van der Zander et al., 2014),
+#' an extension of Pearl's back-door criterion, is used. Otherwise, if
 #' \code{effect="direct"}, then the average direct effect is to be identified, and Pearl's
 #' single-door criterion is used (Pearl, 2009). In a structural equation model (Gaussian
 #' graphical model), direct effects are simply the path coefficients.
 #' @param type which type of adjustment set(s) to compute. If \code{type="minimal"},
-#' then only minimal sufficient adjustment sets are returned (default). For 
+#' then only minimal sufficient adjustment sets are returned (default). For
 #' \code{type="all"}, all valid adjustment sets are returned. For \code{type="canonical"},
 #' a single adjustment set is returned that consists of all (possible) ancestors
 #' of exposures and outcomes, minus (possible) descendants of nodes on proper causal
 #' paths. This canonical adjustment set is always valid if any valid set exists
 #' at all.
 #' @param max.results integer. The listing of adjustment set is stopped once
-#' this many results have been found. Use \code{Inf} to generate them all. 
+#' this many results have been found. Use \code{Inf} to generate them all.
 #' This only applys when \code{type="minimal"}.
 #'
 #' @details
@@ -1053,19 +1053,19 @@ plot.dagitty <- function( x,
 #' edges (=hidden selection variables).
 #'
 #' @references
-#' J. Pearl (2009), Causality: Models, Reasoning and Inference. 
+#' J. Pearl (2009), Causality: Models, Reasoning and Inference.
 #' Cambridge University Press.
 #'
 #' B. van der Zander, M. Liskiewicz and J. Textor (2014),
 #' Constructing separators and adjustment sets in ancestral graphs.
 #' In \emph{Proceedings of UAI 2014.}
-#' 
+#'
 #' E. Perkovic, J. Textor, M. Kalisch and M. H. Maathuis (2015), A
 #' Complete Generalized Adjustment Criterion. In \emph{Proceedings of UAI
 #' 2015.}
-#' 
+#'
 #' @examples
-#' # The M-bias graph showing that adjustment for 
+#' # The M-bias graph showing that adjustment for
 #' # pre-treatment covariates is not always valid
 #' g <- dagitty( "dag{ x -> y ; x <-> m <-> y }" )
 #' adjustmentSets( g, "x", "y" ) # empty set
@@ -1074,12 +1074,12 @@ plot.dagitty <- function( x,
 #' confint( lm( y ~ x, d ) )["x",] # includes .5
 #' confint( lm( y ~ x + m, d ) )["x",] # does not include .5
 #'
-#' # Adjustment sets can also sometimes be computed for graphs in which not all 
+#' # Adjustment sets can also sometimes be computed for graphs in which not all
 #' # edge directions are known
 #' g <- dagitty("pdag { x[e] y[o] a -- {i z b}; {a z i} -> x -> y <- {z b} }")
 #' adjustmentSets( g )
 #' @export
-adjustmentSets <- function( x, exposure=NULL, outcome=NULL, 
+adjustmentSets <- function( x, exposure=NULL, outcome=NULL,
 	type=c("minimal","canonical","all"), effect=c("total","direct"),
 	max.results=Inf ){
 	effect <- match.arg( effect )
@@ -1112,7 +1112,7 @@ adjustmentSets <- function( x, exposure=NULL, outcome=NULL,
 		}
 		tryCatch({
 			.jsassigngraph( xv, x )
-			if( effect=="direct" ){	
+			if( effect=="direct" ){
 				.jsassign( xv, .jsp("DAGitty.GraphAnalyzer.listMsasDirectEffect(global.",xv,command.close) )
 			} else {
 				.jsassign( xv, .jsp("DAGitty.GraphAnalyzer.listMsasTotalEffect(global.",xv,command.close) )
@@ -1134,7 +1134,7 @@ adjustmentSets <- function( x, exposure=NULL, outcome=NULL,
 		non.r <- which(sapply(r,function(x) isTRUE(is.na(x))))
 		if( length(non.r) > 0 ){
 			r <- r[-non.r]
-		} 
+		}
 		r <- structure(r,class="dagitty.sets")
 	} else { # type == "canonical"
 		xv <- .getJSVar()
@@ -1148,18 +1148,18 @@ adjustmentSets <- function( x, exposure=NULL, outcome=NULL,
 }
 
 #' Adjustment Criterion
-#' 
+#'
 #' Test whether a set fulfills the adjustment criterion, that means,
 #' it removes all confounding bias when estimating a *total* effect.
-#' This is an #' Back-door criterion (Shpitser et al, 2010; van der Zander et al, 
-#' 2014; Perkovic et al, 2015) 
+#' This is an #' Back-door criterion (Shpitser et al, 2010; van der Zander et al,
+#' 2014; Perkovic et al, 2015)
 #' which is complete in the sense that either a set
 #' fulfills this criterion, or it does not remove all confounding bias.
 #'
 #' @param x the input graph, a DAG, MAG, PDAG, or PAG.
-#' @param exposure name(s) of the exposure variable(s). If not given (default), then the 
+#' @param exposure name(s) of the exposure variable(s). If not given (default), then the
 #'  exposure variables are supposed to be defined in the graph itself.
-#' @param outcome name(s) of the outcome variable(s), also taken from the graph if 
+#' @param outcome name(s) of the outcome variable(s), also taken from the graph if
 #' not given.
 #' @param Z vector of variable names.
 #'
@@ -1306,14 +1306,14 @@ isCollider <- function( x, u, v, w ) {
 #' probability distribution compatible with the given model.
 #'
 #' @param x the input graph, a DAG, MAG, or PDAG.
-#' @param type can be one of "missing.edge", "basis.set", or "all.pairs". With the first, one or 
+#' @param type can be one of "missing.edge", "basis.set", or "all.pairs". With the first, one or
 #' more minimal testable implication (with the smallest possible conditioning set)
 #' is returned per missing edge of the graph. With "basis.set", one testable
 #' implication is returned per vertex of the graph that has non-descendants other than
 #' its parents. Basis sets can be smaller, but they involve higher-dimensional independencies,
 #' whereas missing edge sets involve only independencies between two variables at a time.
 #' With "all.pairs", the function will return a list of all implied conditional independencies
-#' between two variables at a time. Beware, because this can be a very long list and it 
+#' between two variables at a time. Beware, because this can be a very long list and it
 #' may not be feasible to compute this except for small graphs.
 #' @param max.results integer. The listing of conditional independencies is stopped once
 #' this many results have been found. Use \code{Inf} to generate them all. This applies
@@ -1338,7 +1338,7 @@ impliedConditionalIndependencies <- function( x, type="missing.edge", max.result
 			if( length(covariates) == 0 ){
 				if( dseparated( x, v[1], v[2] ) ){
 					return(list(structure(
-						list(X=v[1],Y=v[2],Z=list()), 
+						list(X=v[1],Y=v[2],Z=list()),
 						class="dagitty.ci")
 					))
 				} else {
@@ -1346,7 +1346,7 @@ impliedConditionalIndependencies <- function( x, type="missing.edge", max.result
 				}
 			}
 			subsets <- expand.grid( rep( list(c(F,T)),length(covariates)) )
-			wh <- which( apply( subsets, 1, 
+			wh <- which( apply( subsets, 1,
 				function( w ) dseparated( x, v[1], v[2], covariates[w] ) ) )
 			if( length(wh) > 0 ){
 				lapply( wh, function(i) structure(
@@ -1369,27 +1369,186 @@ impliedConditionalIndependencies <- function( x, type="missing.edge", max.result
 					.jsp("DAGitty.GraphAnalyzer.listMinimalImplications(global.",xv,",",
 					as.numeric(max.results),")"))
 			} else {
-				.jsassign( xv, 
+				.jsassign( xv,
 					.jsp("DAGitty.GraphAnalyzer.listMinimalImplications(global.",xv,")"))
 			}
 		} else {
 			.jsassign( xv, .jsp("DAGitty.GraphAnalyzer.listBasisImplications(global.",xv,")"))
 		}
 		.jsassign( xv, .jsp("DagittyR.imp2r(global.",xv,")") )
-		r  <- structure( lapply( .jsget(xv), 
+		r  <- structure( lapply( .jsget(xv),
 				function(x) structure(x,class="dagitty.ci") ), class="dagitty.cis" )
 	},finally={.deleteJSVar(xv)})
 	r
+}
+
+#' Find Front-Door Adjustment Sets
+#'
+#' Enumerates all valid (unconditional) front-door mediator sets for estimating
+#' the causal effect of an exposure on an outcome, based on Pearl's front-door
+#' criterion (Pearl, 2009). A set \eqn{M} satisfies the front-door criterion
+#' relative to \eqn{(X,Y)} if: (1) \eqn{M} intercepts all directed paths from
+#' \eqn{X} to \eqn{Y}; (2) there is no unblocked back-door path from \eqn{X}
+#' to \eqn{M}; and (3) all back-door paths from \eqn{M} to \eqn{Y} are blocked
+#' by \eqn{X}.
+#'
+#' @param x the input graph, a DAG (of class \code{dagitty}).
+#' @param exposure name of the exposure variable. If not given (default),
+#'   the exposure variable is extracted from the graph.
+#' @param outcome name of the outcome variable. If not given (default),
+#'   the outcome variable is extracted from the graph.
+#' @param I character vector of variable names that must be included in every
+#'   valid front-door set. Defaults to \code{NULL} (no inclusion constraint).
+#' @param R character vector of variable names that are allowed in a front-door
+#'   set. Any candidate containing a variable not in \code{R} is discarded.
+#'   Defaults to \code{NULL} (no restriction).
+#' @param verbose logical. If \code{TRUE}, prints diagnostic messages showing
+#'   which candidate sets were considered, which criteria they passed or failed,
+#'   and which sets are valid. Defaults to \code{FALSE}.
+#'
+#' @return a list of character vectors, each representing a valid front-door
+#'   mediator set, with class \code{dagitty.sets}. Returns an empty list
+#'   (of class \code{dagitty.sets}) if no valid front-door set exists.
+#'
+#' @references
+#' Glynn, A. N., & Kashin, K. (2018). Front-door versus back-door adjustment
+#' with unmeasured confounding: Bias formulas for front-door and hybrid
+#' adjustments with application to a job training program.
+#' \doi{10.1080/01621459.2017.1398657}
+#'
+#' Pearl, J. (2009). Causality: Models, Reasoning and Inference. 2nd Edition,
+#' Cambridge University Press.
+#' \doi{10.1017/CBO9780511803161}
+#'
+#' Textor, J., van der Zander, B., Gilthorpe, M. S., Liskiewicz, M., &
+#' Ellison, G. T. H. (2016). Robust causal inference using directed acyclic
+#' graphs: the R package 'dagitty'. International Journal of Epidemiology,
+#' 45(6), 1887--1894.
+#' \doi{10.1093/ije/dyw341}
+#'
+#' Thoemmes, F., & Kim, Y. (2023). Bias and Sensitivity Analyses for Linear
+#' Front-Door Models. Methodology, 19(3), Article e9205.
+#' \doi{10.5964/meth.9205}
+#'
+#' @examples
+#' # Classic front-door: X -> M -> Y with unobserved confounder X <-> Y
+#' g <- dagitty("dag{ X -> M -> Y ; X <-> Y }")
+#' frontDoorSets( g, "X", "Y" )
+#'
+#' # See which candidates were considered and why
+#' frontDoorSets( g, "X", "Y", verbose=TRUE )
+#'
+#' # No front-door when there is a direct edge X -> Y
+#' g2 <- dagitty("dag{ X -> M -> Y ; X -> Y ; X <-> Y }")
+#' frontDoorSets( g2, "X", "Y" )
+#'
+#' # Restrict: M1 must be included, only M1 and M2 are measurable
+#' g3 <- dagitty("dag{ X -> M1 -> M2 -> Y ; X <-> Y }")
+#' frontDoorSets( g3, "X", "Y", I=c("M1"), R=c("M1","M2") )
+#'
+#' @export
+frontDoorSets <- function( x, exposure=NULL, outcome=NULL, I=NULL, R=NULL, verbose=FALSE ){
+  x <- as.dagitty( x )
+  .supportsTypes( x, "dag" )
+
+  if( is.null(exposure) ){
+    exposure <- exposures(x)
+  }
+  if( is.null(outcome) ){
+    outcome <- outcomes(x)
+  }
+  if( length(exposure) != 1 || length(outcome) != 1 ){
+    stop("Exactly one exposure and one outcome are required.")
+  }
+  .checkAllNames( x, c(exposure, outcome) )
+  if( !is.null(I) && !is.null(R) && !all(I %in% R) ){
+    stop("All variables in I must also be in R.")
+  }
+  if( !is.null(I) ) .checkAllNames( x, I )
+  if( !is.null(R) ) .checkAllNames( x, R )
+  X <- exposure
+  Y <- outcome
+
+  # Fail-fast: direct edge X -> Y means no front-door
+  if( Y %in% children(x, X) ){
+    if( verbose ) message("No valid front-door: direct edge ", X, " -> ", Y, " exists.")
+    return(structure(list(), class="dagitty.sets"))
+  }
+
+  # Pre-compute the graph with outgoing edges from X removed (for Criterion 2)
+  dag_Xcut <- .removeOutEdges(x, X)
+
+  # Step 1: find all directed paths X -> ... -> Y
+  paths <- .findDirectedPaths(x, X, Y)
+  if( length(paths) == 0 ){
+    if( verbose ) message("No directed paths from ", X, " to ", Y, ".")
+    return(structure(list(), class="dagitty.sets"))
+  }
+
+  # Pre-filter: remove intermediate nodes that fail Criterion 2
+  paths <- lapply(paths, function(path){
+    Filter(function(v){
+      v == X || v == Y || dseparated(dag_Xcut, X, v, list())
+    }, path)
+  })
+
+  # If any path has no intermediate nodes left, no valid set exists
+  if( any(vapply(paths, function(p) length(setdiff(p, c(X, Y))) == 0, logical(1))) ){
+    if( verbose ) message("No candidates pass Criterion 2.")
+    return(structure(list(), class="dagitty.sets"))
+  }
+
+  # Step 2: generate candidate sets (Cartesian product of path subsets)
+  cand_sets <- .subsetPaths(paths, X, Y)
+  if( length(cand_sets) == 0 ){
+    if( verbose ) message("No candidate sets found.")
+    return(structure(list(), class="dagitty.sets"))
+  }
+
+  # Apply I and R constraints: I must be subset of M, M must be subset of R
+  if( !is.null(I) ){
+    cand_sets <- Filter(function(M) all(I %in% M), cand_sets)
+  }
+  if( !is.null(R) ){
+    cand_sets <- Filter(function(M) all(M %in% R), cand_sets)
+  }
+  if( length(cand_sets) == 0 ){
+    if( verbose ) message("No candidate sets satisfy I/R constraints.")
+    return(structure(list(), class="dagitty.sets"))
+  }
+
+  if( verbose ){
+    message("Candidates: ",
+            paste(vapply(cand_sets, function(s) paste0("{",paste(sort(s),collapse=", "),"}"), ""), collapse=", "))
+  }
+
+  # Step 3: check Criterion 3 - no unblocked back-door M -> Y given X
+  valid_sets <- list()
+  for( M in cand_sets ){
+    dag_Mcut <- .removeOutEdges(x, M)
+    if( dseparated(dag_Mcut, M, Y, X) ){
+      valid_sets[[length(valid_sets) + 1]] <- M
+      if( verbose ) message("VALID front-door: ", paste0("{",paste(sort(M),collapse=", "),"}"))
+    } else {
+      if( verbose ) message("Criterion 3 failed: ", paste0("{",paste(sort(M),collapse=", "),"}"))
+    }
+  }
+
+  if( verbose && length(valid_sets) == 0 ){
+    message("No valid front-door sets found.")
+  }
+
+  structure(valid_sets, class="dagitty.sets")
 }
 
 #' Find Instrumental Variables
 #'
 #' Generates a list of instrumental variables that can be used to infer the total effect
 #' of an exposure on an outcome in the presence of latent confounding, under linearity
-#' assumptions. 
+#' assumptions.
 #'
 #' @param x the input graph, a DAG.
-#' @param exposure name of the exposure variable. If not given (default), then the 
+#' @param exposure name of the exposure variable. If not given (default), then the
 #' exposure variable is supposed to be defined in the graph itself. Only a single
 #' exposure variable and a single outcome variable supported.
 #' @param outcome name of the outcome variable, also taken from the graph if not given.
@@ -1398,7 +1557,7 @@ impliedConditionalIndependencies <- function( x, type="missing.edge", max.result
 #' @references
 #' B. van der Zander, J. Textor and M. Liskiewicz (2015),
 #' Efficiently Finding Conditional Instruments for Causal Inference.
-#' In \emph{Proceedings of the 24th International Joint Conference on 
+#' In \emph{Proceedings of the 24th International Joint Conference on
 #' Artificial Intelligence (IJCAI 2015)}, pp. 3243-3249. AAAI Press, 2015.
 #'
 #' @examples
@@ -1442,13 +1601,13 @@ instrumentalVariables <- function( x, exposure=NULL, outcome=NULL ){
 #' @param type restrict output to one level of Kenny's tetrad typology.
 #' Possible values are "within" (homogeneity within constructs; all four
 #' variables have the same parents), "between" (homogeneity between constructs;
-#' two pairs of variables each sharing one parent) 
+#' two pairs of variables each sharing one parent)
 #' and "epistemic" (consistency of epistemic correlations; three variables have
 #' the same parent). By default, all tetrads are listed.
 #' @return a data frame with four columns, where each row of the form
 #' i,j,k,l means that the tetrad Cov(i,j)Cov(k,l) - Cov(i,k)Cov(j,l) vanishes
 #' (is equal to 0) according to the model.
-#' 
+#'
 #' @examples
 #' # Specify two-factor model with 4 indicators each
 #' g <- dagitty("dag{{x1 x2 x3 x4} <- x <-> y -> {y1 y2 y3 y4}}")
@@ -1477,7 +1636,7 @@ vanishingTetrads <- function( x, type=NA ){
 		} else {
 			.jsassign( xv, .jsp("DAGitty.GraphAnalyzer.vanishingTetrads(global.",
 				xv,")") )
-	
+
 		}
 		r <- .jsget(xv)
 	}, finally={.deleteJSVar(xv)})
@@ -1488,13 +1647,13 @@ vanishingTetrads <- function( x, type=NA ){
 
 #' Parse DAGitty Graph
 #'
-#' Constructs a \code{dagitty} graph object from a textual description. 
+#' Constructs a \code{dagitty} graph object from a textual description.
 #'
 #' @param x character, string describing a graphical model in dagitty syntax.
 #' @param layout logical, whether to automatically generate layout coordinates for each
-#' variable (see \code{\link{graphLayout}}) 
+#' variable (see \code{\link{graphLayout}})
 #' @details
-#' The textual syntax for DAGitty graph is based on the dot language of the 
+#' The textual syntax for DAGitty graph is based on the dot language of the
 #' graphviz software (\url{https://graphviz.gitlab.io/_pages/doc/info/lang.html}). This is a
 #' fairly intuitive syntax -- use the examples below and in the other functions to
 #' get you started. An important difference to graphviz is that the DAGitty language
@@ -1525,33 +1684,33 @@ vanishingTetrads <- function( x, type=NA ){
 #' \code{x -> y}
 #'
 #' declares a directed edge from variable x to variable y. Explicit variable statements
-#' are not required for the variables involved in edge statements, unless attributes 
+#' are not required for the variables involved in edge statements, unless attributes
 #' such as position or exposure/outcome status need to be set.
 #'
-#' DAGs (directed acyclic graphs) can contain the following edges: \code{->}, \code{<->}. 
-#' Bidirected edges in DAGs are simply shorthands for substructures \code{<- U ->}, 
+#' DAGs (directed acyclic graphs) can contain the following edges: \code{->}, \code{<->}.
+#' Bidirected edges in DAGs are simply shorthands for substructures \code{<- U ->},
 #' where U is an unobserved variable.
 #'
 #' MAGs (maximal ancestral graphs) can contain the following edges: \code{->},
-#' \code{<->}, \code{--}. 
-#' The bidirected and directed edges of MAGs can represent latent confounders, and 
-#' the undirected edges represent latent selection variables. 
+#' \code{<->}, \code{--}.
+#' The bidirected and directed edges of MAGs can represent latent confounders, and
+#' the undirected edges represent latent selection variables.
 #' For details, see Richardson and Spirtes (2002).
 #'
 #' PDAGs (partially directed acyclic graphs) can contain the following edges: \code{->},
-#' \code{<->}, \code{--}. 
+#' \code{<->}, \code{--}.
 #' The bidirected edges mean the same thing as in DAGs. The undirected edges represent
 #' edges whose direction is not known. Thus, PDAGs are used to represent equivalence
 #' classes of DAGs (see also the function \code{\link{equivalenceClass}}).
 #'
 #' PAGs (partial ancestral graphs) are to MAGs what PDAGs are to DAGs: they represent
-#' equivalence classes of MAGs. MAGs can contain the following edges: \code{@-@}, 
+#' equivalence classes of MAGs. MAGs can contain the following edges: \code{@-@},
 #' \code{->}, \code{@->}, \code{--}, \code{@--}
 #' (the @ symbols are written as circle marks in most of the literature). For
 #' details on PAGs, see Zhang et al (2008). For now, only a few DAGitty functions
 #' support PAGs (for instance, \code{\link{adjustmentSets}}.
 #'
-#' The DAGitty parser does not perform semantic validation. That is, 
+#' The DAGitty parser does not perform semantic validation. That is,
 #' it will not check whether a DAG is actually acyclic, or whether all chain components
 #' in a PAG are actually chordal. This is not done because it can be computationally
 #' rather expensive.
@@ -1560,31 +1719,31 @@ vanishingTetrads <- function( x, type=NA ){
 #' Richardson, Thomas; Spirtes, Peter (2002), Ancestral graph Markov models.
 #' \emph{The Annals of Statistics} 30(4): 962-1030.
 #'
-#' J. Zhang (2008), Causal Reasoning with Ancestral Graphs. 
+#' J. Zhang (2008), Causal Reasoning with Ancestral Graphs.
 #' \emph{Journal of Machine Learning Research} 9: 1437-1474.
 #'
-#' B. van der Zander and M. Liskiewicz (2016), 
+#' B. van der Zander and M. Liskiewicz (2016),
 #' Separators and Adjustment Sets in Markov Equivalent DAGs.
-#' In \emph{Proceedings of the Thirtieth AAAI Conference on Artificial Intelligence (AAAI'16)}, 
+#' In \emph{Proceedings of the Thirtieth AAAI Conference on Artificial Intelligence (AAAI'16)},
 #' Phoenix, Arizona, USA.
 #' @examples
 #' # Specify a simple DAG containing one path
-#' g <- dagitty("dag{ 
+#' g <- dagitty("dag{
 #'   a -> b ;
 #'   b -> c ;
 #'   d -> c
 #'  }")
 #' # Newlines and semicolons are optional
-#' g <- dagitty("dag{ 
+#' g <- dagitty("dag{
 #'   a -> b b -> c c -> d
 #'  }")
 #' # Paths can be specified in one go; the semicolon below is
 #' # optional
-#' g <- dagitty("dag{ 
+#' g <- dagitty("dag{
 #'   a -> b ->c ; c -> d
 #'  }")
 #' # Edges can be written in reverse notation
-#' g <- dagitty("dag{ 
+#' g <- dagitty("dag{
 #'   a -> b -> c <- d
 #'  }")
 #' # Spaces are optional as well
@@ -1596,7 +1755,7 @@ vanishingTetrads <- function( x, type=NA ){
 #'   x [exposure]
 #'   y [outcome]
 #'   z [unobserved]
-#' }") 
+#' }")
 #' # The same graph as above
 #' g <- dagitty("dag{x[e]y[o]z[u]x<-z->y<-x}")
 #' # A two-factor latent variable model
@@ -1605,7 +1764,7 @@ vanishingTetrads <- function( x, type=NA ){
 #'   X -> a X -> b X -> c X -> d
 #'   Y -> a Y -> b Y -> c Y -> d
 #' }")
-#' # Curly braces can be used to "group" variables and 
+#' # Curly braces can be used to "group" variables and
 #' # specify edges to whole groups of variables
 #' # The same two-factor model
 #' g <- dagitty("dag{ {X<->Y} -> {a b c d} }")
@@ -1614,7 +1773,7 @@ vanishingTetrads <- function( x, type=NA ){
 #' # A PDAG
 #' g <- dagitty("pdag{ x -- y -- z }")
 #' # A PAG
-#' g <- dagitty("pag{ x @-@ y @-@ z }")  
+#' g <- dagitty("pag{ x @-@ y @-@ z }")
 #' @export
 dagitty <- function(x, layout=FALSE){
 	if(!is.character(x)){
@@ -1664,10 +1823,10 @@ downloadGraph <- function(x="dagitty.net/mz-Tuw9"){
 #' @param x the input graph, a DAG, MAG, or PDAG. Either an input graph or an explicit
 #'  list of tests needs to be specified.
 #' @param tests list of the precise tests to perform. If not given, the list
-#'  of tests is automatically derived from the input graph. Can be used to restrict 
+#'  of tests is automatically derived from the input graph. Can be used to restrict
 #'  testing to only a certain subset of tests (for instance, to test only those conditional
 #'  independencies for which the conditioning set is of a reasonably low dimension, such
-#'  as shown in the example). 
+#'  as shown in the example).
 #' @param X vector of variable names.
 #' @param Y vector of variable names.
 #' @param Z vector of variable names.
@@ -1677,24 +1836,24 @@ downloadGraph <- function(x="dagitty.net/mz-Tuw9"){
 #' @param sample.nobs number of observations; ignored if \code{data} is supplied.
 #' @param type character indicating which kind of local
 #'  test to perform. Supported values are \code{"cis"} (linear conditional independence),
-#'  \code{"cis.loess"} (conditional independence using loess regression), 
+#'  \code{"cis.loess"} (conditional independence using loess regression),
 #'  \code{"cis.chisq"} (for categorical data, based on the chi-square test),
 #'  \code{"cis.pillai"} (for mixed data, based on canonical correlations),
-#'  \code{"tetrads"} and \code{"tetrads.type"}, where "type" is one of the items of the 
+#'  \code{"tetrads"} and \code{"tetrads.type"}, where "type" is one of the items of the
 #'  tetrad typology, e.g. \code{"tetrads.within"} (see \code{\link{vanishingTetrads}}).
 #'  Tetrad testing is only implemented for DAGs.
 #' @param R how many bootstrap replicates for estimating confidence
 #'   intervals. If \code{NULL}, then confidence intervals are based on normal
-#'   approximation. For tetrads, the normal approximation is only valid in 
+#'   approximation. For tetrads, the normal approximation is only valid in
 #'   large samples even if the data are normally distributed.
 #' @param tol bound value for tolerated deviation from local test value. By default, we perform
 #'    a two-sided test of the hypothesis theta=0. If this parameter is given, the test changes
 #'    to abs(theta)=tol versus abs(theta)>tol.
-#' @param max.conditioning.variables for conditional independence testing, this 
+#' @param max.conditioning.variables for conditional independence testing, this
 #'    parameter can be used to perform only those tests where the number of conditioning
 #'   variables does not exceed the given value. High-dimensional
 #'   conditional independence tests can be very unreliable.
-#' @param abbreviate.names logical. Whether to abbreviate variable names (these are used as 
+#' @param abbreviate.names logical. Whether to abbreviate variable names (these are used as
 #'   row names in the returned data frame).
 #' @param conf.level determines the size of confidence intervals for test
 #'   statistics.
@@ -1714,18 +1873,18 @@ downloadGraph <- function(x="dagitty.net/mz-Tuw9"){
 #' (it the raw data is given) is performed.
 #' Both tetrad and CI tests also support bootstrapping instead of estimating parametric
 #' confidence intervals.
-#' For the canonical correlations approach, all ordinal variables are integer-coded, and 
-#' all categorical variables are dummy-coded (omitting the dummy representing the most frequent 
+#' For the canonical correlations approach, all ordinal variables are integer-coded, and
+#' all categorical variables are dummy-coded (omitting the dummy representing the most frequent
 #' category). To text X _||_ Y | Z, we first regress both X and Y (which now can be multivariate)
 #' on Z, and then we compute the canonical correlations between the residuals. The effect size
-#' is the root mean square canonical correlation (closely related to Pillai's trace, which is the 
+#' is the root mean square canonical correlation (closely related to Pillai's trace, which is the
 #' root of the squared sum of all canonical correlations).
-#' 
+#'
 #' @examples
 #' # Simulate full mediation model with measurement error of M1
 #' set.seed(123)
 #' d <- simulateSEM("dag{X->{U1 M2}->Y U1->M1}",.6,.6)
-#' 
+#'
 #' # Postulate and test full mediation model without measurement error
 #' r <- localTests( "dag{ X -> {M1 M2} -> Y }", d, "cis" )
 #' plotLocalTestResults( r )
@@ -1733,7 +1892,7 @@ downloadGraph <- function(x="dagitty.net/mz-Tuw9"){
 #' # Simulate data from example SEM
 #' g <- getExample("Polzer")
 #' d <- simulateSEM(g,.1,.1)
-#' 
+#'
 #' # Compute independencies with at most 3 conditioning variables
 #' r <- localTests( g, d, "cis.loess", R=100, loess.pars=list(span=0.6),
 #'         max.conditioning.variables=3 )
@@ -1744,7 +1903,7 @@ downloadGraph <- function(x="dagitty.net/mz-Tuw9"){
 #' localTests( "dag{X->{M1 M2}->Y}", d, type="cis.chisq" )
 #'
 #' @export
-localTests <- function(x=NULL, data=NULL, 
+localTests <- function(x=NULL, data=NULL,
 	type=c("cis","cis.loess","cis.chisq","cis.pillai",
 	       "tetrads","tetrads.within","tetrads.between","tetrads.epistemic"),
 	tests=NULL,
@@ -1813,7 +1972,7 @@ localTests <- function(x=NULL, data=NULL,
 		tetrad.sample.sds <- sapply(seq_len(nrow(tests)),
 			function(i) .tetrad.sem(tests[i,],sample.cov,sample.nobs))
 		r <- data.frame(
-				row.names=apply( tests, 1, 
+				row.names=apply( tests, 1,
 					function(x) paste(x,collapse=",") ),
 				estimate=tetrad.values
 		)
@@ -1847,7 +2006,7 @@ localTests <- function(x=NULL, data=NULL,
 			tests <- impliedConditionalIndependencies( x )
 		}
 		if( !is.null(max.conditioning.variables) ){
-			tests <- Filter(function(x) length(x$Z)<=max.conditioning.variables, 
+			tests <- Filter(function(x) length(x$Z)<=max.conditioning.variables,
 					tests)
 		}
 		if( length(tests) == 0 ){
@@ -1870,14 +2029,14 @@ localTests <- function(x=NULL, data=NULL,
 			)
 		} else {
 			if( type == "cis" ){
-				f <- function(i) 
+				f <- function(i)
 					.ci.test.covmat(sample.cov,sample.nobs,i,conf.level,tol)
 				if( !is.null(data) ){
 					sample.cov <- cov2cor(cov(data))
 					sample.nobs <- nrow(data)
 				}
 			} else if( type.postfix == "chisq" ){
-				f <- function(i) 
+				f <- function(i)
 					.ci.test.chisq(data,i,conf.level)
 			} else if( type.postfix == "pillai" ){
 				f <- function(i)
@@ -1888,7 +2047,7 @@ localTests <- function(x=NULL, data=NULL,
 				t(sapply( tests, f ))
 			)
 		}
-	} 
+	}
 	return(r)
 }
 
@@ -1906,17 +2065,17 @@ ciTest <- function(X,Y,Z=NULL,data,...){
 #' (see \link{localTests}). For each test, a test statistic and
 #' the confidence interval are shown.
 #'
-#' @param x data frame; results of the local tests as returned by 
-#' \link{localTests}. 
+#' @param x data frame; results of the local tests as returned by
+#' \link{localTests}.
 #' @param xlab X axis label.
 #' @param xlim numerical vector with 2 elements; range of X axis.
 #' @param axis.pars arguments to be passed on to \code{\link{axis}}
 #'  when generating the Y axis for the plot.
 #' @param sort.by.statistic logical. Sort the rows of \code{x} by
 #'  the absolute value of the test statistic before plotting.
-#' @param n plot only the n tests for which the absolute value of 
+#' @param n plot only the n tests for which the absolute value of
 #'  the test statistics diverges most from 0.
-#' @param auto.margin logical. Computes the left margin to fit the 
+#' @param auto.margin logical. Computes the left margin to fit the
 #'  Y axis labels.
 #' @param ... further arguments to be passed on to \code{\link{plot}}.
 #'
@@ -1952,7 +2111,7 @@ plotLocalTestResults <- function(x,xlab="test statistic (95% CI)",
 	plot( x[,1], y,xlab=xlab,xlim=xlim, yaxt="n", ylab="", ... )
 	do.call( axis, c( list( 2, at=y, labels=rownames(x)), axis.pars ) )
 	segments( x[,ncol(x)-1], y, x[,ncol(x)], y )
-	#segments( seq_len(nrow(x))+.1, x[,1]-2*x[,2], 
+	#segments( seq_len(nrow(x))+.1, x[,1]-2*x[,2],
 	#	y1=x[,1]+2*x[,2], col=2 )
 	abline( v=0 )
 }
@@ -1964,14 +2123,14 @@ plotLocalTestResults <- function(x,xlab="test statistic (95% CI)",
 #' or closed (d-separated).
 #'
 #' @param x the input graph, a DAG, PDAG, or MAG.
-#' @param from name(s) of first variable(s). 
-#' @param to name(s) of last variable(s). 
+#' @param from name(s) of first variable(s).
+#' @param to name(s) of last variable(s).
 #' @param Z names of variables to condition on for determining open
 #' paths.
 #' @param limit maximum amount of paths to show. In general, the number of paths grows
 #' exponentially with the number of variables in the graph, such that path inspection
 #' is not useful except for the most simple models.
-#' @param directed logical; should only directed (i.e., causal) paths 
+#' @param directed logical; should only directed (i.e., causal) paths
 #' be shown?
 #'
 #' @examples
@@ -2011,7 +2170,7 @@ paths <- function(x,from=exposures(x),to=outcomes(x),Z=list(),limit=100,directed
 #' @param Y vector of variable names.
 #' @param Z vector of variable names.
 #'
-#' \code{dseparated(x,X,Y,Z)} checks if all paths between X and Y are 
+#' \code{dseparated(x,X,Y,Z)} checks if all paths between X and Y are
 #' d-separated by Z.
 #'
 #' \code{dconnected(x,X,Y,Z)} checks if at least one path between X and Y
@@ -2026,7 +2185,7 @@ paths <- function(x,from=exposures(x),to=outcomes(x),Z=list(),limit=100,directed
 #' @examples
 #' dconnected( "dag{x->m->y}", "x", "y", c() ) # TRUE
 #' dconnected( "dag{x->m->y}", "x", "y", c("m") ) # FALSE
-#' dseparated( "dag{x->m->y}", "x", "y", c() ) # FALSE 
+#' dseparated( "dag{x->m->y}", "x", "y", c() ) # FALSE
 #' dseparated( "dag{x->m->y}", "x", "y", c("m") ) # TRUE
 #'
 #' @export
@@ -2058,7 +2217,7 @@ dconnected <- function(x,X,Y=list(),Z=list()){
 }
 
 #' Get Topological Ordering of DAG
-#' 
+#'
 #' Computes a topological ordering of the nodes, i.e., a number for each node
 #' such that every node's number is smaller than the one of all its descendants.
 #' Bidirected edges (<->) are ignored.
@@ -2075,7 +2234,7 @@ topologicalOrdering <- function( x ){
 		.jsassigngraph( xv, x )
 		.jsassign( xv, .jsp("DAGitty.GraphAnalyzer.topologicalOrdering(global.",xv,")") )
 		r <- .jsget( xv )
-	}, 
+	},
 	error=function(e) stop(e),
 	finally={.deleteJSVar(xv)})
 	r
@@ -2130,7 +2289,7 @@ randomDAG <- function( N, p ){
 #' in which the variables are given corresponds to the topological ordering
 #' of the DAG. Returns a named list.
 #'
-#' @param x variable names. Can also be a positive integer, in which case 
+#' @param x variable names. Can also be a positive integer, in which case
 #' the variables will be called  x1,...,xN.
 #' @export
 completeDAG <- function( x ){
@@ -2179,7 +2338,7 @@ as.character.dagitty.ci <- function( x, abbreviate.names=TRUE, ... ){
 	if( abbreviate.names ){
 		nn <- abbreviate(nn)
 	}
-	r <- paste0( paste(nn[seq_along(x$X)],collapse=", "), " _||_ ", 
+	r <- paste0( paste(nn[seq_along(x$X)],collapse=", "), " _||_ ",
 		paste(nn[seq_along(x$Y)+nX],collapse=", ") )
 	if( length( x$Z > 0 ) ){
 		r <- paste0( r, " | ", paste(nn[seq_along(x$Z)+nX+nY],collapse=", ") )

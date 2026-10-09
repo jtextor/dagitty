@@ -29,12 +29,12 @@
 	lines(res, col=col, lwd=lwd)
 	nr <- length(res$x)
 	if( code >= 3 ){
-		arrows(res$x[1], res$y[1], res$x[4], res$y[4], col=col, 
+		arrows(res$x[1], res$y[1], res$x[4], res$y[4], col=col,
 			code = 1, length = length, lwd=lwd)
 	}
 	if( code >= 2 ){
-		arrows(res$x[nr-3], res$y[nr-3], res$x[nr], res$y[nr], 
-			col=col, code = 2, length = length, lwd=lwd)	
+		arrows(res$x[nr-3], res$y[nr-3], res$x[nr], res$y[nr],
+			col=col, code = 2, length = length, lwd=lwd)
 	}
 }
 
@@ -42,13 +42,13 @@
 	qx, qy, q2x, q2y ){
 	rx <- p2x-px; ry <- p2y-py
 	sx <- q2x-qx; sy <- q2y-qy
-	rxs <- .crossprod( rx, ry, sx, sy ) 
+	rxs <- .crossprod( rx, ry, sx, sy )
 	if( rxs == 0 ){
 		return( NULL )
 	}
-	t <- .crossprod( qx-px, qy-py, 
+	t <- .crossprod( qx-px, qy-py,
 		sx, sy ) / rxs
-	u <- .crossprod( qx-px, qy-py, 
+	u <- .crossprod( qx-px, qy-py,
 		rx, ry ) / rxs
 	if( u < 0 || u > 1 || t < 0 || t > 1 ){
 		return( NULL )
@@ -61,17 +61,17 @@
 .lineSegBoxIntersect <- function(
 	px, py, qx, qy, ax, ay, bx, by ){
 	c(
-	.lineSegIntersect( 
-		px, py, qx, py, 
+	.lineSegIntersect(
+		px, py, qx, py,
 		ax, ay, bx, by ),
-	.lineSegIntersect( 
-		px, py, px, qy, 
+	.lineSegIntersect(
+		px, py, px, qy,
 		ax, ay, bx, by ),
-	.lineSegIntersect( 
-		px, qy, qx, qy, 
+	.lineSegIntersect(
+		px, qy, qx, qy,
 		ax, ay, bx, by ),
-	.lineSegIntersect( 
-		qx, py, qx, qy, 
+	.lineSegIntersect(
+		qx, py, qx, qy,
 		ax, ay, bx, by )
 	)
 }
@@ -127,17 +127,17 @@
         invisible(ct$eval(paste("global.", name, "=", value)))
     }
     else {
-        invisible(ct$eval(paste("global.", name, "=", jsonlite::toJSON(value, 
+        invisible(ct$eval(paste("global.", name, "=", jsonlite::toJSON(value,
             auto_unbox = auto_unbox, ...))))
     }
 }
 
-.jsget <- function (name, ...) 
+.jsget <- function (name, ...)
 {
     stopifnot(is.character(name))
     requireNamespace("jsonlite",quietly=TRUE)
     ct <- .getJSContext()
-    jsonlite::fromJSON(ct$eval(c("JSON.stringify(global.", name, ")")), 
+    jsonlite::fromJSON(ct$eval(c("JSON.stringify(global.", name, ")")),
         ...)
 }
 
@@ -246,12 +246,12 @@
 
 .tetradsFromData <- function( x, tets, i=seq_len(nrow(x)) ){
 	M <- cov(x[i,])
-	sapply( seq_len(nrow(tets)), 
+	sapply( seq_len(nrow(tets)),
 		function(j) det(M[tets[j,c(1,4)],tets[j,c(2,3)]]) )
 }
 
 .tetradsFromCov <- function( M, tets ){
-	sapply( seq_len(nrow(tets)), 
+	sapply( seq_len(nrow(tets)),
 		function(j) det(M[tets[j,c(1,4)],tets[j,c(2,3)]]) )
 }
 
@@ -272,7 +272,7 @@
 		.jsassign( xv, .jsp("DAGitty.GraphTransformer.",method,"(global.",xv,")") )
 		.jsassign( xv, .jsp("global.",xv,".toString()") )
 		r <- .jsget( xv )
-	}, 
+	},
 	error=function(e) stop(e),
 	finally={.deleteJSVar(xv)})
 	structure(r,class="dagitty")
@@ -293,11 +293,74 @@
 
 .checkAllNames <- function(x, vv) {
 	nx <- names(x)
-	for( v in vv ){ 
+	for( v in vv ){
 		if (!(v %in% nx)){
 			stop(paste(v, "is not a variable in `x`"))
 		}
 	}
+}
+
+.removeOutEdges <- function( dag, nodes_to_cut ){
+  nodes_to_cut <- as.character(nodes_to_cut)
+  ed <- edges(dag)
+  keep <- !(ed$e == "->" & ed$v %in% nodes_to_cut)
+  ed_keep <- ed[keep, , drop=FALSE]
+  if( nrow(ed_keep) == 0 ){
+    spec <- paste0("dag {\n",paste(names(dag),collapse="\n"),"\n}")
+    return(dagitty(spec))
+  }
+  edge_strings <- paste(ed_keep$v, ed_keep$e, ed_keep$w)
+  spec <- paste0("dag {\n",paste(names(dag),collapse="\n"),"\n",
+                 paste(edge_strings,collapse="\n"),"\n}")
+  dagitty(spec)
+}
+
+.findDirectedPaths <- function( g, X, Y, curr_path=c(X), seen=c() ){
+  if( X == Y ){
+    return(list(curr_path))
+  }
+  seen <- c(seen, X)
+  paths <- list()
+  for( nbr in c(children(g, X)) ){
+    if( nbr %in% seen ) next
+    subpaths <- .findDirectedPaths(g, nbr, Y,
+                                   curr_path=c(curr_path, nbr), seen=seen)
+    if( length(subpaths) ){
+      paths <- c(paths, subpaths)
+    }
+  }
+  paths
+}
+
+.subsetPaths <- function( paths, X, Y ){
+  path_subsets <- list()
+  for( path in paths ){
+    path_nodes <- setdiff(path, c(X, Y))
+    if( length(path_nodes) == 0 ) next
+    path_subs <- list()
+    for( i in seq_along(path_nodes) ){
+      path_subs <- c(path_subs, combn(path_nodes, i, simplify=FALSE))
+    }
+    path_subsets[[length(path_subsets) + 1]] <- path_subs
+  }
+  if( length(path_subsets) == 0 ) return(list())
+  result <- lapply(path_subsets[[1]], function(x) list(x))
+  if( length(path_subsets) > 1 ){
+    for( i in 2:length(path_subsets) ){
+      new_result <- list()
+      for( existing_combo in result ){
+        for( new_subset in path_subsets[[i]] ){
+          combined <- unlist(c(existing_combo, list(new_subset)),
+                             use.names=FALSE)
+          new_result[[length(new_result) + 1]] <- combined
+        }
+      }
+      result <- new_result
+    }
+  } else {
+    result <- lapply(result, function(x) x[[1]])
+  }
+  unique(lapply(result, function(x) sort(unique(x))))
 }
 
 
