@@ -276,7 +276,8 @@ var DAGittyController = Class.extend({
 	}
 })
 
-var DAGitty = {
+// extends the DAGitty namespace defined by libdagitty
+var DAGitty = Object.assign( DAGitty, {
 	makeController : function( el, op ){
 		for( var k of Object.keys( el.dataset ) ){
 			if( !op.hasOwnProperty( k ) ){
@@ -420,5 +421,4 @@ var DAGitty = {
 			}
 		}
 	}
-}
-
+} )
