@@ -15,3 +15,18 @@ test_that("different serializers", {
 	expect_true( endsWith( toString(g,"lavaan"), "b~a\n" ) )
 } )
 
+test_that("edge serializers accept graphs with isolated nodes", {
+	g <- dagitty("dag { a; b }")
+	expect_identical( edges(g), data.frame( v=character(), w=character(),
+		e=character(), x=numeric(), y=numeric() ) )
+	expect_equal( convert(g, "bnlearn"), "[a][b]" )
+	expect_equal( toString(g, "edgelist"), "[]" )
+} )
+
+test_that("igraph conversion preserves isolated nodes", {
+	skip_if_not_installed("igraph")
+	g <- convert( dagitty("dag { a; b }"), "igraph" )
+	expect_setequal( igraph::vertex_attr(g, "name"), c("a", "b") )
+	expect_equal( igraph::ecount(g), 0 )
+} )
+

@@ -811,6 +811,11 @@ edges.dagitty <- function( x ){
 		.jsassign( xv, .jsp("DagittyR.edge2r(global.",xv,")") )
 		r <- .jsget(xv)
 	}, finally={.deleteJSVar(xv)})
+	# Empty JavaScript arrays decode as lists without data frame columns.
+	if( length(r$v) == 0L ){
+		return( data.frame( v=character(), w=character(), e=character(),
+			x=numeric(), y=numeric() ) )
+	}
 	as.data.frame(r)
 }
 
