@@ -70,6 +70,24 @@ test_that("ci tests", {
 		sample.nobs=500, type="cis" )), 1 )
 })
 
+test_that("ci tests report missing variables by name", {
+	x <- dagitty("dag { a <- z -> b }")
+	data <- simulateSEM(x, N=100)
+	expect_error( localTests(x, data=data["a"]),
+		"Variables missing from data: b, z", fixed=TRUE )
+	sample.cov <- cov(data)
+	expect_error( localTests(x, sample.cov=sample.cov[c("a","b"),], sample.nobs=100),
+		"Variables missing from sample.cov: z", fixed=TRUE )
+})
+
+test_that("ci tests use the expanded names of matrix columns", {
+	x <- dagitty('dag { "block.a" <- z -> "block.b" }')
+	data <- simulateSEM(dagitty("dag { a <- z -> b }"), N=100)
+	observations <- data.frame(block=I(as.matrix(data[c("a","b")])), z=data$z)
+	expect_equal( localTests(x, data=observations),
+		localTests(x, data=as.matrix(observations)) )
+})
+
 test_that("equiv class", {
 	expect_equal( length(equivalentDAGs("dag{a->{b c d} b->{c d}}")), 10 )
 	expect_equal( length(equivalentDAGs("dag{a->{b c d} b->{c d}}",3)), 3 )	
