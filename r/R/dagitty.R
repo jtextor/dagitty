@@ -1766,7 +1766,7 @@ localTests <- function(x=NULL, data=NULL,
 	if( is.null(x) && is.null(tests) ){
 		stop("Please provide either an input graph or a list of tests")
 	}
-	if( !is.null(sample.cov) && is.null(sample.nobs) ){
+	if( is.null(data) && !is.null(sample.cov) && is.null(sample.nobs) ){
 		stop("Please provide sample size (sample.nobs)!")
 	}
 	if( !is.null(R) && is.null(data) ){
@@ -1800,13 +1800,11 @@ localTests <- function(x=NULL, data=NULL,
 		if( length(tests) == 0 ){
 			return(data.frame())
 		}
-		if( is.null( sample.cov ) ){
+		if( !is.null(data) ){
 			sample.cov <- cor(data)
-		} else {
-			sample.cov <- cov2cor(data)
-		}
-		if( is.null( sample.nobs ) ){
 			sample.nobs <- nrow(data)
+		} else {
+			sample.cov <- cov2cor(sample.cov)
 		}
 		w <- (1-conf.level)/2
 		tetrad.values <- .tetradsFromCov(sample.cov,tests)
@@ -1870,10 +1868,25 @@ localTests <- function(x=NULL, data=NULL,
 			)
 		} else {
 			if( type == "cis" ){
+				variables <- lapply(tests, function(i) unlist(c(i$X,i$Y,i$Z)))
+				variables <- unlist(Filter(is.character, variables))
+				if( is.null(data) ){
+					available <- intersect(rownames(sample.cov), colnames(sample.cov))
+					input <- "sample.cov"
+				} else {
+					cov.data <- if( is.data.frame(data) ) as.matrix(data) else data
+					available <- colnames(cov.data)
+					input <- "data"
+				}
+				missing <- setdiff(variables, available)
+				if( length(missing) ){
+					stop("Variables missing from ", input, ": ",
+						paste(missing, collapse=", "), call.=FALSE)
+				}
 				f <- function(i) 
 					.ci.test.covmat(sample.cov,sample.nobs,i,conf.level,tol)
 				if( !is.null(data) ){
-					sample.cov <- cov2cor(cov(data))
+					sample.cov <- cov2cor(cov(cov.data))
 					sample.nobs <- nrow(data)
 				}
 			} else if( type.postfix == "chisq" ){

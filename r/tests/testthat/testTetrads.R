@@ -7,3 +7,19 @@ test_that(
 	}
 )
 
+test_that("local tetrad tests accept covariance matrices", {
+	g <- dagitty("dag { f [latent]; f -> {a b c d} }")
+	data <- simulateSEM(g, N=100)
+	sample.cov <- cov(data)
+	expected <- localTests(g, data=data, type="tetrads")
+	expect_true( nrow(expected) > 0 )
+	expect_equal( localTests(g, type="tetrads", sample.cov=sample.cov,
+		sample.nobs=nrow(data)), expected )
+	expect_equal( localTests(g, data=data, type="tetrads",
+		sample.cov=diag(4)), expected )
+	expect_equal( localTests(g, data=data, type="tetrads",
+		sample.nobs=1), expected )
+	expect_error( localTests(g, type="tetrads", sample.cov=sample.cov),
+		"Please provide sample size", fixed=TRUE )
+})
+
