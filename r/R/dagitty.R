@@ -1395,6 +1395,12 @@ impliedConditionalIndependencies <- function( x, type="missing.edge", max.result
 #' @param outcome name of the outcome variable, also taken from the graph if not given.
 #' Only a single outcome variable is supported.
 #'
+#' @details
+#' The function returns one conditioning set per reported instrument. Other
+#' valid sets may exist for the same instrument, including smaller sets.
+#' Use \code{\link[=latents]{latents(x) <- value}} to mark unobserved variables
+#' as latent so the search excludes them from the conditioning sets.
+#'
 #' @references
 #' B. van der Zander, J. Textor and M. Liskiewicz (2015),
 #' Efficiently Finding Conditional Instruments for Causal Inference.

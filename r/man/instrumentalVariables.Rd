@@ -21,6 +21,12 @@ Generates a list of instrumental variables that can be used to infer the total e
 of an exposure on an outcome in the presence of latent confounding, under linearity
 assumptions.
 }
+\details{
+The function returns one conditioning set per reported instrument. Other
+valid sets may exist for the same instrument, including smaller sets.
+Use \code{\link[=latents]{latents(x) <- value}} to mark unobserved variables
+as latent so the search excludes them from the conditioning sets.
+}
 \examples{
 # The classic IV model
 instrumentalVariables( "dag{ i->x->y; x<->y }", "x", "y" )
